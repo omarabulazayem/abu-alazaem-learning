@@ -1,0 +1,17 @@
+.teacher-students-card { margin-top: 22px; }
+.teacher-student-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.teacher-student-item { border: 1px solid #e5edf2; border-radius: 18px; padding: 16px; background: #fff; display: grid; gap: 13px; }
+.teacher-student-head, .teacher-student-identity, .teacher-student-foot, .teacher-progress-row > div:first-child { display: flex; align-items: center; }
+.teacher-student-head, .teacher-student-foot, .teacher-progress-row > div:first-child { justify-content: space-between; gap: 12px; }
+.teacher-student-identity { gap: 10px; min-width: 0; }
+.teacher-student-identity > div { display: grid; gap: 3px; min-width: 0; }
+.teacher-student-identity span, .teacher-student-foot > span:first-child { color: #78909d; font-size: 12px; }
+.teacher-student-avatar { width: 42px; height: 42px; border-radius: 14px; background: #eef9fd; display: grid; place-items: center; font-size: 23px; flex: 0 0 auto; }
+.teacher-student-points { display: inline-flex; gap: 5px; align-items: center; background: #fff7e9; color: #b47d37; border-radius: 999px; padding: 6px 9px; font-size: 12px; white-space: nowrap; }
+.teacher-student-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.teacher-student-metrics span { background: #f7fafc; border-radius: 11px; padding: 8px; text-align: center; color: #718692; font-size: 11px; }
+.teacher-student-metrics b { display: block; color: #243b49; font-size: 15px; margin-bottom: 2px; }
+.teacher-progress-row { display: grid; gap: 6px; }
+.teacher-progress-row span, .teacher-progress-row b { font-size: 12px; }
+.teacher-student-foot { border-top: 1px dashed #e5edf2; padding-top: 10px; }
+@media (max-width: 820px) { .teacher-student-list { grid-template-columns: 1fr; } .teacher-student-metrics { grid-template-columns: repeat(2, 1fr); } }
