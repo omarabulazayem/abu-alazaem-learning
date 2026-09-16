@@ -5,15 +5,14 @@ export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: AppUser | null;
+  accessToken: string | null;
 };
 
 export async function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
-  let user: AppUser | null = null;
   try {
-    user = await authenticateSupabaseRequest(opts.req);
+    const session = await authenticateSupabaseRequest(opts.req);
+    return { req: opts.req, res: opts.res, user: session.user, accessToken: session.accessToken };
   } catch {
-    user = null;
+    return { req: opts.req, res: opts.res, user: null, accessToken: null };
   }
-
-  return { req: opts.req, res: opts.res, user };
 }
