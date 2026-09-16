@@ -1,3 +1,4 @@
+import "./pages/LearningExtensions.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -14,6 +15,8 @@ import Review from "./pages/Review";
 import Games from "./pages/Games";
 import Room from "./pages/Room";
 import Achievements from "./pages/Achievements";
+import Challenges from "./pages/Challenges";
+import ChildMode from "./pages/ChildMode";
 
 function Router() {
   return (
@@ -21,6 +24,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/teacher" component={Teacher} />
       <Route path="/family" component={Family} />
+      <Route path="/child" component={ChildMode} />
       <Route path="/" component={Home} />
       <Route path="/quran" component={Quran} />
       <Route path="/memorize" component={Memorize} />
@@ -29,7 +33,7 @@ function Router() {
       <Route path="/achievements" component={Achievements} />
       <Route path="/room" component={Room} />
       <Route path="/board" component={Home} />
-      <Route path="/challenges" component={Home} />
+      <Route path="/challenges" component={Challenges} />
       <Route path="/leaderboard" component={Home} />
       <Route path="/about" component={Home} />
       <Route path="/404" component={NotFound} />
