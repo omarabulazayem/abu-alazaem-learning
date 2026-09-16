@@ -1,10 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getActiveChildId, setActiveChildId } from "@/lib/activeChild";
+import { setActiveChildId, useActiveChildId } from "@/lib/activeChild";
 import { trpc } from "@/lib/trpc";
 import { Baby, BookOpen, CheckCircle2, Link2, LogOut, Plus, Users } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import "./Family.css";
 
 type AgeBand = "3-6" | "7-9" | "10-12";
 
@@ -23,6 +22,7 @@ export default function Family() {
   const [, navigate] = useLocation();
   const isParent = auth.user?.accountType === "parent" || auth.user?.accountType === "admin";
   const childrenQuery = trpc.family.children.list.useQuery(undefined, { enabled: isParent, retry: false });
+  const overviewQuery = trpc.family.overview.useQuery(undefined, { enabled: isParent, retry: false });
   const [displayName, setDisplayName] = useState("");
   const [ageBand, setAgeBand] = useState<AgeBand>("7-9");
   const [joinCodes, setJoinCodes] = useState<Record<string, string>>({});
@@ -33,7 +33,7 @@ export default function Family() {
       setDisplayName("");
       setNotice("تم إنشاء ملف الطفل بنجاح.");
       setActiveChildId(String((child as Record<string, unknown>).id ?? ""));
-      await childrenQuery.refetch();
+      await Promise.all([childrenQuery.refetch(), overviewQuery.refetch()]);
     },
   });
 
@@ -42,7 +42,9 @@ export default function Family() {
   });
 
   const children = useMemo(() => (childrenQuery.data ?? []) as ChildRow[], [childrenQuery.data]);
-  const activeChildId = getActiveChildId();
+  const activeChildId = useActiveChildId();
+  const overviewChildren = ((overviewQuery.data as { children?: Array<{ id: string; memorizedAverage: number; reviewAverage: number; masteredCount: number; dailyChallengesCompleted: number; lastActivityAt: string | null }> } | undefined)?.children ?? []);
+  const activeOverview = overviewChildren.find(child => child.id === activeChildId);
 
   useEffect(() => {
     if (!auth.loading && auth.user && !isParent) navigate(auth.user.accountType === "teacher" ? "/teacher" : "/");
@@ -91,6 +93,15 @@ export default function Family() {
         <div className="teacher-hero-icon"><Baby size={44} /></div>
       </section>
 
+      <section className="family-overview-stats">
+        <div className="stat-card"><div className="stat-icon">👨‍👩‍👧</div><div><b>{children.length}</b><span>طفل داخل الحساب</span></div></div>
+        <div className="stat-card"><div className="stat-icon">📖</div><div><b>{activeOverview?.memorizedAverage ?? 0}%</b><span>متوسط حفظ الطفل النشط</span></div></div>
+        <div className="stat-card"><div className="stat-icon">🧠</div><div><b>{activeOverview?.reviewAverage ?? 0}%</b><span>متوسط المراجعة</span></div></div>
+        <div className="stat-card"><div className="stat-icon">🎯</div><div><b>{activeOverview?.dailyChallengesCompleted ?? 0}/3</b><span>تحديات اليوم</span></div></div>
+      </section>
+
+      <div className="family-child-mode-banner"><div><strong>وضع الطفل</strong><span>واجهة مبسطة للحفظ والمراجعة والألعاب داخل نفس حساب الأسرة.</span></div><button className="primary-button" disabled={!activeChildId} onClick={() => navigate(activeChildId ? "/child" : "/family")}>فتح وضع الطفل ←</button></div>
+
       <section className="family-grid">
         <div className="card">
           <div className="card-head"><div><h3>إضافة طفل</h3><p>يمكن إضافة أكثر من طفل داخل نفس حساب ولي الأمر.</p></div><Plus size={19} /></div>
@@ -100,6 +111,7 @@ export default function Family() {
             <button className="primary-button" disabled={createChild.isPending}><Plus size={15} /> {createChild.isPending ? "جارٍ الإضافة..." : "إضافة الطفل"}</button>
           </form>
           {createChild.error && <div className="auth-error">{createChild.error.message}</div>}
+          {overviewQuery.error && <div className="auth-error">{overviewQuery.error.message}</div>}
           {joinClass.error && <div className="auth-error">{joinClass.error.message}</div>}
           {notice && <div className="auth-success">{notice}</div>}
         </div>
@@ -108,7 +120,7 @@ export default function Family() {
           <div className="card-head"><div><h3>ملفات الأطفال</h3><p>اختر الطفل الذي تريد أن تعمل المنصة على تقدمه الآن.</p></div><BookOpen size={19} /></div>
           {childrenQuery.isLoading ? <div className="loading-note">تحميل ملفات الأطفال...</div> : children.length ? <div className="family-child-list">
             {children.map(child => {
-              const selected = getActiveChildId() === child.id;
+              const selected = activeChildId === child.id;
               return <article key={child.id} className={`family-child-card ${selected ? "selected" : ""}`}>
                 <div className="family-child-main">
                   <div className="family-avatar">{child.avatar || "🧒🏻"}</div>
