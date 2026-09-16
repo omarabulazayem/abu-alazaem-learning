@@ -288,6 +288,93 @@ export async function listAchievements(actor: Actor, childId?: string) {
   );
 }
 
+export type DailyChallenge = {
+  id: "memorize" | "review" | "memory";
+  title: string;
+  description: string;
+  href: string;
+  completed: boolean;
+};
+
+export async function getDailyChallenges(actor: Actor, childId?: string) {
+  if (actor.user.accountType !== "parent" && actor.user.accountType !== "admin") {
+    throw new Error("Parent account required");
+  }
+  const child = await getChildProfileRowForUser(actor, childId);
+  if (!child) throw new Error("Child profile was not found");
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await userRest<Array<{ source_type: string; source_key: string }>>(
+    actor.accessToken,
+    `/reward_ledger?child_id=eq.${encode(child.id)}&source_key=like.*${today}&select=source_type,source_key`,
+  );
+  const completedTypes = new Set(rows.map(row => row.source_type));
+  const challenges: DailyChallenge[] = [
+    { id: "memorize", title: "جلسة حفظ", description: "سجّل تقدمًا حقيقيًا في سورة واحدة اليوم.", href: "/memorize", completed: completedTypes.has("memorize_session") },
+    { id: "review", title: "مراجعة سورة", description: "أكمل مراجعة واحدة من خطة اليوم.", href: "/review", completed: completedTypes.has("review_session") },
+    { id: "memory", title: "لعبة الذاكرة", description: "أكمل لعبة الذاكرة السريعة مرة واحدة.", href: "/games", completed: completedTypes.has("memory_game") },
+  ];
+  return { childId: child.id, date: today, challenges, completedCount: challenges.filter(item => item.completed).length, total: challenges.length };
+}
+
+export async function getFamilyOverview(actor: Actor) {
+  if (actor.user.accountType !== "parent" && actor.user.accountType !== "admin") {
+    throw new Error("Parent account required");
+  }
+  const children = await listChildProfiles(actor);
+  if (!children.length) return { childCount: 0, children: [] };
+
+  const ids = children.map(child => child.id);
+  const childFilter = ids.map(id => `child_id.eq.${id}`).join(",");
+  const progress = await userRest<Array<{ child_id: string; memorized_percent: number; review_percent: number; status: string; last_activity_at: string }>>(
+    actor.accessToken,
+    `/learning_progress?or=(${childFilter})&select=child_id,memorized_percent,review_percent,status,last_activity_at`,
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  const rewards = await userRest<Array<{ child_id: string; source_type: string; source_key: string }>>(
+    actor.accessToken,
+    `/reward_ledger?or=(${childFilter})&source_key=like.*${today}&select=child_id,source_type,source_key`,
+  );
+
+  const progressByChild = new Map<string, typeof progress>();
+  for (const row of progress) {
+    const list = progressByChild.get(row.child_id) ?? [];
+    list.push(row);
+    progressByChild.set(row.child_id, list);
+  }
+  const rewardTypesByChild = new Map<string, Set<string>>();
+  for (const row of rewards) {
+    const set = rewardTypesByChild.get(row.child_id) ?? new Set<string>();
+    set.add(row.source_type);
+    rewardTypesByChild.set(row.child_id, set);
+  }
+
+  return {
+    childCount: children.length,
+    children: children.map(child => {
+      const rows = progressByChild.get(child.id) ?? [];
+      const rewardTypes = rewardTypesByChild.get(child.id) ?? new Set<string>();
+      const memorizedAverage = rows.length ? Math.round(rows.reduce((sum, row) => sum + Number(row.memorized_percent || 0), 0) / rows.length) : 0;
+      const reviewAverage = rows.length ? Math.round(rows.reduce((sum, row) => sum + Number(row.review_percent || 0), 0) / rows.length) : 0;
+      const lastActivityAt = rows.map(row => row.last_activity_at).filter(Boolean).sort().at(-1) ?? null;
+      return {
+        id: child.id,
+        displayName: child.display_name,
+        avatar: child.avatar,
+        ageBand: child.age_band,
+        points: child.points,
+        stars: child.stars,
+        streak: child.streak,
+        surahCount: rows.length,
+        masteredCount: rows.filter(row => row.status === "mastered").length,
+        memorizedAverage,
+        reviewAverage,
+        lastActivityAt,
+        dailyChallengesCompleted: ["memorize_session", "review_session", "memory_game"].filter(type => rewardTypes.has(type)).length,
+      };
+    }),
+  };
+}
+
 export async function listTeacherClasses(actor: Actor) {
   if (actor.user.accountType !== "teacher" && actor.user.accountType !== "admin") {
     throw new Error("Teacher account required");
