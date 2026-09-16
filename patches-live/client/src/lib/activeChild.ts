@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 const ACTIVE_CHILD_KEY = "abu-alazaem-active-child";
 const ACTIVE_CHILD_EVENT = "abu-alazaem-active-child-change";
 
@@ -25,4 +27,8 @@ export function onActiveChildChange(callback: () => void) {
     window.removeEventListener("storage", storage);
     window.removeEventListener(ACTIVE_CHILD_EVENT, custom);
   };
+}
+
+export function useActiveChildId() {
+  return useSyncExternalStore(onActiveChildChange, getActiveChildId, () => null);
 }

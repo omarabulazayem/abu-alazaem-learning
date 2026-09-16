@@ -8,6 +8,12 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Teacher from "./pages/Teacher";
 import Family from "./pages/Family";
+import Quran from "./pages/Quran";
+import Memorize from "./pages/Memorize";
+import Review from "./pages/Review";
+import Games from "./pages/Games";
+import Room from "./pages/Room";
+import Achievements from "./pages/Achievements";
 
 function Router() {
   return (
@@ -16,12 +22,12 @@ function Router() {
       <Route path="/teacher" component={Teacher} />
       <Route path="/family" component={Family} />
       <Route path="/" component={Home} />
-      <Route path="/quran" component={Home} />
-      <Route path="/memorize" component={Home} />
-      <Route path="/review" component={Home} />
-      <Route path="/games" component={Home} />
-      <Route path="/achievements" component={Home} />
-      <Route path="/room" component={Home} />
+      <Route path="/quran" component={Quran} />
+      <Route path="/memorize" component={Memorize} />
+      <Route path="/review" component={Review} />
+      <Route path="/games" component={Games} />
+      <Route path="/achievements" component={Achievements} />
+      <Route path="/room" component={Room} />
       <Route path="/board" component={Home} />
       <Route path="/challenges" component={Home} />
       <Route path="/leaderboard" component={Home} />
