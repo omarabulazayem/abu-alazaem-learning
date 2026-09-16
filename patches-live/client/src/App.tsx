@@ -7,12 +7,14 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Teacher from "./pages/Teacher";
+import Family from "./pages/Family";
 
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/teacher" component={Teacher} />
+      <Route path="/family" component={Family} />
       <Route path="/" component={Home} />
       <Route path="/quran" component={Home} />
       <Route path="/memorize" component={Home} />
