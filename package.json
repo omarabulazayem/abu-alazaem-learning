@@ -1,0 +1,10 @@
+{
+  "name": "abu-alazaem-learning-bootstrap",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node railway-bootstrap.mjs && corepack enable && corepack prepare pnpm@10.15.1 --activate && pnpm install --no-frozen-lockfile && pnpm build",
+    "start": "node scripts/start.mjs"
+  }
+}
