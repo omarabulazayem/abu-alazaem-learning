@@ -25,11 +25,11 @@ export type AppAuthUser = {
 
 function getConfig() {
   const url = import.meta.env.VITE_SUPABASE_URL?.replace(/\/+$/, "");
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
-    throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !publishableKey) {
+    throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.");
   }
-  return { url, anonKey };
+  return { url, publishableKey };
 }
 
 function readSession(): StoredSession | null {
@@ -50,7 +50,6 @@ function writeSession(payload: any): StoredSession | null {
   const refreshToken = payload?.refresh_token;
   const expiresIn = Number(payload?.expires_in ?? 3600);
   const user = payload?.user as SupabaseUser | undefined;
-
   if (!accessToken || !refreshToken || !user?.id) return null;
 
   const session: StoredSession = {
@@ -70,16 +69,15 @@ function clearSession() {
 }
 
 async function authRequest(path: string, init: RequestInit = {}) {
-  const { url, anonKey } = getConfig();
+  const { url, publishableKey } = getConfig();
   const response = await fetch(`${url}/auth/v1${path}`, {
     ...init,
     headers: {
-      apikey: anonKey,
+      apikey: publishableKey,
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
   });
-
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data?.msg || data?.message || data?.error_description || "Supabase authentication request failed");
@@ -88,15 +86,14 @@ async function authRequest(path: string, init: RequestInit = {}) {
 }
 
 async function restRequest(path: string, accessToken: string) {
-  const { url, anonKey } = getConfig();
+  const { url, publishableKey } = getConfig();
   const response = await fetch(`${url}/rest/v1${path}`, {
     headers: {
-      apikey: anonKey,
+      apikey: publishableKey,
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/json",
     },
   });
-
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new Error(data?.message || "Supabase data request failed");
@@ -120,10 +117,7 @@ async function refreshSession(session: StoredSession): Promise<StoredSession | n
 export async function getAccessToken(): Promise<string | null> {
   let session = readSession();
   if (!session) return null;
-
-  if (session.expiresAt - Date.now() < 60_000) {
-    session = await refreshSession(session);
-  }
+  if (session.expiresAt - Date.now() < 60_000) session = await refreshSession(session);
   return session?.accessToken ?? null;
 }
 
@@ -158,7 +152,6 @@ export async function signUpWithPassword(input: {
       },
     }),
   });
-
   const session = writeSession(data);
   return { session, user: data?.user as SupabaseUser | undefined };
 }
@@ -167,10 +160,7 @@ export async function signOut() {
   const token = await getAccessToken();
   if (token) {
     try {
-      await authRequest("/logout", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await authRequest("/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     } catch {
       // Local logout should still succeed even if the remote session expired.
     }
@@ -181,19 +171,14 @@ export async function signOut() {
 export async function getCurrentUser(): Promise<AppAuthUser | null> {
   const token = await getAccessToken();
   if (!token) return null;
-
   try {
-    const authUser = (await authRequest("/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    })) as SupabaseUser;
-
+    const authUser = (await authRequest("/user", { headers: { Authorization: `Bearer ${token}` } })) as SupabaseUser;
     const profiles = await restRequest(
       `/profiles?id=eq.${encodeURIComponent(authUser.id)}&select=id,display_name,account_type&limit=1`,
       token,
     );
     const profile = Array.isArray(profiles) ? profiles[0] : null;
     const metadata = authUser.user_metadata ?? {};
-
     return {
       id: authUser.id,
       email: authUser.email ?? null,
