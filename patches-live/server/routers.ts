@@ -6,6 +6,8 @@ import {
   createTeacherClass,
   getChildProfileForUser,
   getLearningProgress,
+  getDailyChallenges,
+  getFamilyOverview,
   getTeacherOverview,
   listReviewEvents,
   recordReviewEvent,
@@ -46,6 +48,12 @@ export const appRouter = router({
         .input(z.object({ childId: z.string().uuid(), joinCode: z.string().min(4).max(32) }))
         .mutation(({ ctx, input }) => joinChildToClass(actor(ctx), input.childId, input.joinCode)),
     }),
+    overview: protectedProcedure.query(({ ctx }) => getFamilyOverview(actor(ctx))),
+  }),
+  challenges: router({
+    today: protectedProcedure
+      .input(z.object({ childId: optionalChildId }).optional())
+      .query(({ ctx, input }) => getDailyChallenges(actor(ctx), input?.childId)),
   }),
   profile: router({
     get: protectedProcedure
