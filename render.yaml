@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: abu-alazaem-learning-staging
+    runtime: docker
+    plan: free
+    region: frankfurt
+    repo: https://github.com/omarabulazayem/abu-alazaem-learning
+    branch: supabase-integration
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: VITE_ANALYTICS_ENDPOINT
+        value: ""
+      - key: VITE_ANALYTICS_WEBSITE_ID
+        value: ""
