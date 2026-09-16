@@ -24,6 +24,40 @@ export type ChildProfile = {
   updated_at: string;
 };
 
+export type ChildProfileView = {
+  id: string;
+  displayName: string;
+  ageBand: AgeBand;
+  avatar: string;
+  level: string;
+  points: number;
+  stars: number;
+  streak: number;
+};
+
+export type ReviewEvent = {
+  id: string;
+  child_id: string;
+  surah_number: number;
+  score: number | null;
+  notes: string | null;
+  reviewed_at: string;
+  created_by: string | null;
+};
+
+function toChildProfileView(child: ChildProfile): ChildProfileView {
+  return {
+    id: child.id,
+    displayName: child.display_name,
+    ageBand: child.age_band,
+    avatar: child.avatar,
+    level: child.level,
+    points: child.points,
+    stars: child.stars,
+    streak: child.streak,
+  };
+}
+
 function encode(value: string) {
   return encodeURIComponent(value);
 }
@@ -60,7 +94,7 @@ export async function listChildProfiles(actor: Actor) {
   );
 }
 
-export async function getChildProfileForUser(actor: Actor, childId?: string) {
+export async function getChildProfileRowForUser(actor: Actor, childId?: string) {
   if (childId) {
     return selectOne<ChildProfile>(
       actor,
@@ -73,6 +107,11 @@ export async function getChildProfileForUser(actor: Actor, childId?: string) {
     actor,
     `/child_profiles?parent_id=eq.${encode(actor.user.id)}&is_active=eq.true&select=*&order=created_at.asc&limit=1`,
   );
+}
+
+export async function getChildProfileForUser(actor: Actor, childId?: string) {
+  const child = await getChildProfileRowForUser(actor, childId);
+  return child ? toChildProfileView(child) : undefined;
 }
 
 export async function createChildProfile(
@@ -98,7 +137,7 @@ export async function updateChildProfile(
   input: { childId?: string; displayName: string; avatar: string; ageBand: AgeBand },
 ) {
   if (actor.user.accountType === "teacher") throw new Error("Teachers cannot edit a child's family profile");
-  const child = await getChildProfileForUser(actor, input.childId);
+  const child = await getChildProfileRowForUser(actor, input.childId);
   if (!child) throw new Error("Child profile was not found");
 
   const rows = await userRest<ChildProfile[]>(actor.accessToken, `/child_profiles?id=eq.${encode(child.id)}`, {
@@ -106,7 +145,7 @@ export async function updateChildProfile(
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({ display_name: input.displayName, avatar: input.avatar, age_band: input.ageBand }),
   });
-  return rows[0];
+  return rows[0] ? toChildProfileView(rows[0]) : undefined;
 }
 
 export async function joinChildToClass(actor: Actor, childId: string, joinCode: string) {
@@ -120,7 +159,7 @@ export async function joinChildToClass(actor: Actor, childId: string, joinCode: 
 }
 
 export async function getLearningProgress(actor: Actor, childId?: string) {
-  const child = await getChildProfileForUser(actor, childId);
+  const child = await getChildProfileRowForUser(actor, childId);
   if (!child) return [];
   return userRest<Array<Record<string, unknown>>>(
     actor.accessToken,
@@ -139,7 +178,7 @@ export async function upsertLearningProgress(
     status: ProgressStatus;
   },
 ) {
-  const child = await getChildProfileForUser(actor, input.childId);
+  const child = await getChildProfileRowForUser(actor, input.childId);
   if (!child) throw new Error("Child profile was not found or is not linked to this account");
 
   const rows = await userRest<Array<Record<string, unknown>>>(
@@ -169,7 +208,7 @@ export async function claimReward(
   actor: Actor,
   input: { childId?: string; event: RewardEvent; sourceKey: string },
 ) {
-  const child = await getChildProfileForUser(actor, input.childId);
+  const child = await getChildProfileRowForUser(actor, input.childId);
   if (!child) throw new Error("Child profile was not found");
 
   await userRest<unknown>(actor.accessToken, "/rpc/claim_learning_reward", {
@@ -181,6 +220,72 @@ export async function claimReward(
     }),
   });
   return getChildProfileForUser(actor, child.id);
+}
+
+export async function listReviewEvents(actor: Actor, childId?: string, limit = 20) {
+  const child = await getChildProfileRowForUser(actor, childId);
+  if (!child) return [];
+  const safeLimit = Math.max(1, Math.min(limit, 100));
+  return userRest<ReviewEvent[]>(
+    actor.accessToken,
+    `/review_events?child_id=eq.${encode(child.id)}&select=*&order=reviewed_at.desc&limit=${safeLimit}`,
+  );
+}
+
+export async function recordReviewEvent(
+  actor: Actor,
+  input: { childId?: string; surahNumber: number; score?: number; notes?: string },
+) {
+  const child = await getChildProfileRowForUser(actor, input.childId);
+  if (!child) throw new Error("Child profile was not found or is not linked to this account");
+
+  const rows = await userRest<ReviewEvent[]>(actor.accessToken, "/review_events", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      child_id: child.id,
+      surah_number: input.surahNumber,
+      score: input.score ?? null,
+      notes: input.notes?.trim() || null,
+      reviewed_at: new Date().toISOString(),
+      created_by: actor.user.id,
+    }),
+  });
+
+  const score = input.score ?? 70;
+  const progress = await selectOne<Record<string, unknown>>(
+    actor,
+    `/learning_progress?child_id=eq.${encode(child.id)}&surah_number=eq.${input.surahNumber}&select=*&limit=1`,
+  );
+  if (progress) {
+    const memorized = Number(progress.memorized_percent ?? 0);
+    await userRest<unknown>(actor.accessToken, `/learning_progress?child_id=eq.${encode(child.id)}&surah_number=eq.${input.surahNumber}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        review_percent: score,
+        status: memorized >= 100 && score >= 85 ? "mastered" : "review",
+        last_activity_at: new Date().toISOString(),
+      }),
+    });
+  }
+
+  return rows[0];
+}
+
+export type AchievementRow = {
+  id: string;
+  child_id: string;
+  slug: string;
+  unlocked_at: string;
+};
+
+export async function listAchievements(actor: Actor, childId?: string) {
+  const child = await getChildProfileRowForUser(actor, childId);
+  if (!child) return [];
+  return userRest<AchievementRow[]>(
+    actor.accessToken,
+    `/achievements?child_id=eq.${encode(child.id)}&select=id,child_id,slug,unlocked_at&order=unlocked_at.asc`,
+  );
 }
 
 export async function listTeacherClasses(actor: Actor) {
@@ -212,14 +317,75 @@ export async function getTeacherOverview(actor: Actor) {
   }
   const classes = await listTeacherClasses(actor);
   const classIds = classes.map(item => item.id).filter((id): id is string => typeof id === "string");
-  let studentCount = 0;
-  if (classIds.length) {
-    const classFilter = classIds.map(id => `class_id.eq.${id}`).join(",");
-    const links = await userRest<Array<{ child_id: string }>>(
-      actor.accessToken,
-      `/class_students?or=(${classFilter})&select=child_id`,
-    );
-    studentCount = new Set(links.map(link => link.child_id)).size;
+  if (!classIds.length) return { classes, classCount: 0, studentCount: 0, sessionsToday: 0, students: [] };
+
+  const classFilter = classIds.map(id => `class_id.eq.${id}`).join(",");
+  const links = await userRest<Array<{ class_id: string; child_id: string }>>(
+    actor.accessToken,
+    `/class_students?or=(${classFilter})&select=class_id,child_id`,
+  );
+  const childIds = [...new Set(links.map(link => link.child_id))];
+  if (!childIds.length) return { classes, classCount: classes.length, studentCount: 0, sessionsToday: 0, students: [] };
+
+  const childFilter = childIds.map(id => `id.eq.${id}`).join(",");
+  const children = await userRest<ChildProfile[]>(
+    actor.accessToken,
+    `/child_profiles?or=(${childFilter})&is_active=eq.true&select=*&order=display_name.asc`,
+  );
+  const progressFilter = childIds.map(id => `child_id.eq.${id}`).join(",");
+  const progress = await userRest<Array<{ child_id: string; memorized_percent: number; review_percent: number; status: string; last_activity_at: string }>>(
+    actor.accessToken,
+    `/learning_progress?or=(${progressFilter})&select=child_id,memorized_percent,review_percent,status,last_activity_at`,
+  );
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const reviews = await userRest<Array<{ child_id: string; reviewed_at: string }>>(
+    actor.accessToken,
+    `/review_events?or=(${progressFilter})&reviewed_at=gte.${encode(todayStart.toISOString())}&select=child_id,reviewed_at`,
+  );
+
+  const classNameById = new Map(classes.map(item => [String(item.id ?? ""), String(item.name ?? "فصل")]));
+  const classesByChild = new Map<string, string[]>();
+  for (const link of links) {
+    const names = classesByChild.get(link.child_id) ?? [];
+    const name = classNameById.get(link.class_id);
+    if (name && !names.includes(name)) names.push(name);
+    classesByChild.set(link.child_id, names);
   }
-  return { classes, classCount: classes.length, studentCount };
+  const progressByChild = new Map<string, typeof progress>();
+  for (const item of progress) {
+    const rows = progressByChild.get(item.child_id) ?? [];
+    rows.push(item);
+    progressByChild.set(item.child_id, rows);
+  }
+
+  const students = children.map(child => {
+    const rows = progressByChild.get(child.id) ?? [];
+    const memorizedAverage = rows.length ? Math.round(rows.reduce((sum, row) => sum + Number(row.memorized_percent || 0), 0) / rows.length) : 0;
+    const reviewAverage = rows.length ? Math.round(rows.reduce((sum, row) => sum + Number(row.review_percent || 0), 0) / rows.length) : 0;
+    const masteredCount = rows.filter(row => row.status === "mastered").length;
+    const lastActivityAt = rows.map(row => row.last_activity_at).filter(Boolean).sort().at(-1) ?? null;
+    return {
+      id: child.id,
+      displayName: child.display_name,
+      avatar: child.avatar,
+      ageBand: child.age_band,
+      points: child.points,
+      stars: child.stars,
+      classes: classesByChild.get(child.id) ?? [],
+      surahCount: rows.length,
+      masteredCount,
+      memorizedAverage,
+      reviewAverage,
+      lastActivityAt,
+    };
+  });
+
+  return {
+    classes,
+    classCount: classes.length,
+    studentCount: children.length,
+    sessionsToday: reviews.length,
+    students,
+  };
 }

@@ -7,7 +7,10 @@ import {
   getChildProfileForUser,
   getLearningProgress,
   getTeacherOverview,
+  listReviewEvents,
+  recordReviewEvent,
   joinChildToClass,
+  listAchievements,
   listChildProfiles,
   listTeacherClasses,
   updateChildProfile,
@@ -77,6 +80,26 @@ export const appRouter = router({
         }),
       )
       .mutation(({ ctx, input }) => claimReward(actor(ctx), input)),
+  }),
+  review: router({
+    list: protectedProcedure
+      .input(z.object({ childId: optionalChildId, limit: z.number().int().min(1).max(100).optional() }).optional())
+      .query(({ ctx, input }) => listReviewEvents(actor(ctx), input?.childId, input?.limit ?? 20)),
+    record: protectedProcedure
+      .input(
+        z.object({
+          childId: optionalChildId,
+          surahNumber: z.number().int().min(1).max(114),
+          score: z.number().int().min(0).max(100).optional(),
+          notes: z.string().max(500).optional(),
+        }),
+      )
+      .mutation(({ ctx, input }) => recordReviewEvent(actor(ctx), input)),
+  }),
+  achievements: router({
+    list: protectedProcedure
+      .input(z.object({ childId: optionalChildId }).optional())
+      .query(({ ctx, input }) => listAchievements(actor(ctx), input?.childId)),
   }),
   teacher: router({
     overview: protectedProcedure.query(({ ctx }) => getTeacherOverview(actor(ctx))),
