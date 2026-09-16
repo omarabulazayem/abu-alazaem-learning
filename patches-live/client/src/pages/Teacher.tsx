@@ -1,6 +1,7 @@
+import "./Teacher.css";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Copy, GraduationCap, LogOut, Plus, School, Users } from "lucide-react";
+import { BookOpen, CheckCircle2, Copy, GraduationCap, LogOut, Plus, School, Star, Users } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -42,6 +43,10 @@ export default function Teacher() {
 
   const data = overview.data;
   const classes = (data?.classes ?? []) as Array<Record<string, unknown>>;
+  const students = (data?.students ?? []) as Array<{
+    id: string; displayName: string; avatar: string; ageBand: string; points: number; stars: number; classes: string[];
+    surahCount: number; masteredCount: number; memorizedAverage: number; reviewAverage: number; lastActivityAt: string | null;
+  }>;
 
   return <main className="teacher-page" dir="rtl">
     <div className="teacher-shell">
@@ -58,7 +63,7 @@ export default function Teacher() {
       <section className="teacher-stats">
         <div className="stat-card"><div className="stat-icon"><School size={18} /></div><div><b>{data?.classCount ?? 0}</b><span>فصل</span></div></div>
         <div className="stat-card"><div className="stat-icon"><Users size={18} /></div><div><b>{data?.studentCount ?? 0}</b><span>طفل مرتبط</span></div></div>
-        <div className="stat-card"><div className="stat-icon"><BookOpen size={18} /></div><div><b>—</b><span>جلسات اليوم</span></div></div>
+        <div className="stat-card"><div className="stat-icon"><BookOpen size={18} /></div><div><b>{data?.sessionsToday ?? 0}</b><span>مراجعات اليوم</span></div></div>
       </section>
 
       <section className="teacher-grid">
@@ -78,6 +83,17 @@ export default function Teacher() {
             return <div className="teacher-class-item" key={id}><div><strong>{name}</strong><span>كود الربط: {joinCode}</span></div><button className="icon-button" title="نسخ الكود" onClick={() => { void navigator.clipboard.writeText(joinCode); setNotice("تم نسخ كود الربط."); }}><Copy size={15} /></button></div>;
           })}</div> : <div className="empty-state teacher-empty"><School size={22} /><strong>لا توجد فصول بعد</strong><span>أنشئ أول فصل من النموذج المجاور.</span></div>}
         </div>
+      </section>
+
+      <section className="card teacher-students-card">
+        <div className="card-head"><div><h3>تقدم الأطفال المرتبطين</h3><p>ملخص حي للحفظ والمراجعة من Supabase لكل طفل في فصولك.</p></div><Users size={19} /></div>
+        {overview.isLoading ? <div className="loading-note">تحميل تقدم الأطفال...</div> : students.length ? <div className="teacher-student-list">{students.map(student => <article className="teacher-student-item" key={student.id}>
+          <div className="teacher-student-head"><div className="teacher-student-identity"><span className="teacher-student-avatar">{student.avatar || "🧒🏻"}</span><div><strong>{student.displayName}</strong><span>{student.classes.length ? student.classes.join(" • ") : "بدون فصل"}</span></div></div><div className="teacher-student-points"><Star size={14} /> {student.points} نقطة</div></div>
+          <div className="teacher-student-metrics"><span><b>{student.surahCount}</b> سورة مسجلة</span><span><b>{student.masteredCount}</b> متقنة</span><span><b>{student.memorizedAverage}%</b> متوسط الحفظ</span><span><b>{student.reviewAverage}%</b> متوسط المراجعة</span></div>
+          <div className="teacher-progress-row"><div><span>الحفظ</span><b>{student.memorizedAverage}%</b></div><div className="mini-track"><i style={{ width: `${student.memorizedAverage}%` }} /></div></div>
+          <div className="teacher-progress-row"><div><span>المراجعة</span><b>{student.reviewAverage}%</b></div><div className="mini-track"><i style={{ width: `${student.reviewAverage}%` }} /></div></div>
+          <div className="teacher-student-foot"><span>{student.lastActivityAt ? `آخر نشاط ${new Date(student.lastActivityAt).toLocaleDateString("ar-EG")}` : "لا يوجد نشاط بعد"}</span>{student.masteredCount > 0 && <span className="status-pill"><CheckCircle2 size={12} /> بدأ الإتقان</span>}</div>
+        </article>)}</div> : <div className="empty-state teacher-empty"><Users size={22} /><strong>لا يوجد أطفال مرتبطون بعد</strong><span>شارك كود الفصل مع ولي الأمر، وسيظهر الطفل هنا بعد الربط.</span></div>}
       </section>
     </div>
   </main>;
