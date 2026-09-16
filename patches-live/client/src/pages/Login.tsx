@@ -19,8 +19,6 @@ export default function Login() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const next = new URLSearchParams(window.location.search).get("next") || "/";
-
   async function submit(event: FormEvent) {
     event.preventDefault();
     setPending(true);
@@ -30,7 +28,7 @@ export default function Login() {
       if (mode === "login") {
         await signInWithPassword(email.trim(), password);
         const currentUser = await getCurrentUser();
-        navigate(currentUser?.accountType === "teacher" ? "/teacher" : next);
+        navigate(currentUser?.accountType === "teacher" ? "/teacher" : "/family");
       } else {
         const result = await signUpWithPassword({
           email: email.trim(),
@@ -41,7 +39,7 @@ export default function Login() {
           childAgeBand: accountType === "parent" ? childAgeBand : undefined,
         });
         if (result.session) {
-          navigate(accountType === "teacher" ? "/teacher" : next);
+          navigate(accountType === "teacher" ? "/teacher" : "/family");
         } else {
           setMessage("تم إنشاء الحساب. افتح رسالة التأكيد في بريدك الإلكتروني ثم سجّل الدخول.");
           setMode("login");
