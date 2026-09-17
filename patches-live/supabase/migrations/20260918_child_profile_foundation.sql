@@ -18,17 +18,22 @@ security definer
 set search_path = public
 as $$
 declare
+  v_row jsonb;
   v_child_id uuid;
   v_activity timestamptz;
 begin
-  v_child_id := new.child_id;
+  v_row := to_jsonb(new);
+  v_child_id := nullif(v_row->>'child_id', '')::uuid;
   v_activity := coalesce(
-    case when tg_table_name = 'learning_progress' then new.last_activity_at else null end,
-    case when tg_table_name = 'review_events' then new.reviewed_at else null end,
-    case when tg_table_name = 'reward_ledger' then new.created_at else null end,
-    case when tg_table_name = 'game_ayah_events' then new.created_at else null end,
+    nullif(v_row->>'last_activity_at', '')::timestamptz,
+    nullif(v_row->>'reviewed_at', '')::timestamptz,
+    nullif(v_row->>'created_at', '')::timestamptz,
     now()
   );
+
+  if v_child_id is null then
+    return new;
+  end if;
 
   update public.child_profiles
      set last_activity_at = greatest(coalesce(last_activity_at, v_activity), v_activity),
