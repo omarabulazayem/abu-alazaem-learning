@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import App from "./App.jsx";
 import HomePage from "./HomePage.jsx";
+import FamilyPage from "./FamilyPage.jsx";
+import ReviewPage from "./ReviewPage.jsx";
+import ChallengesPage from "./ChallengesPage.jsx";
+import RoomPage from "./RoomPage.jsx";
 import AchievementsPage from "./AchievementsPage.jsx";
 import ChildHub, { isChildModeActive } from "./ChildHub.jsx";
 import GamesHub from "./GamesHub.jsx";
@@ -106,15 +110,17 @@ export default function RootRouter() {
 
   let page;
   if (path === "/") page = <HomePage />;
+  else if (path === "/family") page = <FamilyPage />;
   else if (path === "/quran") page = teacher ? <TeacherQuranPreview /> : <QuranPage />;
   else if (path === "/memorize") page = teacher ? <TeacherLearningPreview type="memorize" /> : <MemorizePage />;
-  else if (path === "/review") page = teacher ? <TeacherLearningPreview type="review" /> : <App />;
+  else if (path === "/review") page = teacher ? <TeacherLearningPreview type="review" /> : <ReviewPage />;
   else if (path === "/games") page = <GamesHub />;
   else if (path === "/games/memory") page = <MemoryGame />;
   else if (path === "/games/order") page = <SurahOrderGame />;
   else if (path === "/games/quiz") page = <SurahQuizGame />;
   else if (path === "/achievements") page = teacher ? <TeacherLearningPreview type="achievements" /> : <AchievementsPage />;
-  else if (path === "/challenges") page = teacher ? <TeacherLearningPreview type="challenges" /> : <App />;
+  else if (path === "/challenges") page = teacher ? <TeacherLearningPreview type="challenges" /> : <ChallengesPage />;
+  else if (path === "/room") page = <RoomPage />;
   else page = <App />;
 
   return teacher ? <TeacherAccessBar>{page}</TeacherAccessBar> : page;
