@@ -35,6 +35,7 @@ export default function Icon({ name, size = 28, className = "", title }) {
     bolt: <path {...common} d="M13.5 2 5 13h6l-.5 9L19 10h-6z"/>,
     flame: <path {...common} d="M12 22c4 0 7-2.8 7-6.7 0-3.3-2.1-5.2-4.1-7.2-.3 2.4-1.7 3.5-2.9 4.2.1-4-2.3-6.8-4.2-8.3.1 3.6-2.8 5.7-2.8 9.5C5 18.4 8 22 12 22Z"/>,
     lock: <><rect {...common} x="5" y="10" width="14" height="11" rx="2"/><path {...common} d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></>,
+    unlock: <><rect {...common} x="5" y="10" width="14" height="11" rx="2"/><path {...common} d="M8 10V7a4 4 0 0 1 7.5-2"/><path {...common} d="M12 14v3"/></>,
     medal: <><circle {...common} cx="12" cy="14" r="5"/><path {...common} d="m8.5 10-3-7h4L12 8l2.5-5h4l-3 7M10 14l1.3 1.2L14 12.5"/></>,
     check: <path {...common} d="m5 12.5 4.3 4.3L19 7"/>,
     circleCheck: <><circle {...common} cx="12" cy="12" r="9"/><path {...common} d="m7.5 12.5 3 3 6-7"/></>,
