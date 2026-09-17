@@ -1,0 +1,38 @@
+name: Architecture Stabilization One Shot
+
+on:
+  push:
+    branches: [chore/unify-platform-architecture]
+    paths:
+      - "scripts/architecture-stabilize-once.mjs"
+      - ".github/workflows/architecture-stabilize-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  stabilize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/unify-platform-architecture
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply architecture stabilization
+        run: node scripts/architecture-stabilize-once.mjs
+      - name: Commit generated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Stabilize platform architecture"
+          git push origin HEAD:chore/unify-platform-architecture
