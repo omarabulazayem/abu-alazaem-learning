@@ -6,24 +6,28 @@ import {
   listChildren,
   signOut,
 } from "./api.js";
+import Icon from "./Icon.jsx";
 
 const badgeDefinitions = [
-  ["first_steps", "🌱", "البداية الجميلة", "ابدأ أول نشاط في الرحلة"],
-  ["first_memorization", "📖", "أول حفظ", "أكمل أول جلسة حفظ"],
-  ["first_surah", "🌙", "أول سورة", "أتم حفظ سورة كاملة"],
-  ["five_surahs", "🕌", "خمس سور", "أتم حفظ خمس سور كاملة"],
-  ["first_review", "🔁", "مراجع صغير", "أكمل أول مراجعة"],
-  ["memory_player", "🧠", "بطل الذاكرة", "أكمل لعبة الذاكرة"],
-  ["surah_order_master", "🧩", "خبير ترتيب السور", "أكمل لعبة ترتيب السور"],
-  ["surah_quiz_star", "⚡", "نجم اختبار السور", "اجتز اختبار السور بنجاح"],
-  ["hundred_points", "⭐", "١٠٠ نقطة", "اجمع ١٠٠ نقطة"],
-  ["five_hundred_points", "🏅", "٥٠٠ نقطة", "اجمع ٥٠٠ نقطة"],
-  ["three_day_streak", "🔥", "٣ أيام متواصلة", "حافظ على نشاطك ٣ أيام"],
-  ["seven_day_streak", "🏆", "أسبوع كامل", "حافظ على نشاطك ٧ أيام"],
+  ["first_steps", "sparkle", "البداية الجميلة", "ابدأ أول نشاط في الرحلة", "mint"],
+  ["first_memorization", "quran", "أول حفظ", "أكمل أول جلسة حفظ", "sky"],
+  ["first_surah", "star", "أول سورة", "أتم حفظ سورة كاملة", "sun"],
+  ["five_surahs", "mosque", "خمس سور", "أتم حفظ خمس سور كاملة", "mint"],
+  ["first_review", "review", "مراجع صغير", "أكمل أول مراجعة", "sky"],
+  ["memory_player", "brain", "بطل الذاكرة", "أكمل لعبة الذاكرة", "lavender"],
+  ["surah_order_master", "puzzle", "خبير ترتيب السور", "أكمل لعبة ترتيب السور", "sun"],
+  ["surah_quiz_star", "bolt", "نجم اختبار السور", "اجتز اختبار السور بنجاح", "lavender"],
+  ["hundred_points", "star", "١٠٠ نقطة", "اجمع ١٠٠ نقطة", "sun"],
+  ["five_hundred_points", "medal", "٥٠٠ نقطة", "اجمع ٥٠٠ نقطة", "rose"],
+  ["three_day_streak", "flame", "٣ أيام متواصلة", "حافظ على نشاطك ٣ أيام", "rose"],
+  ["seven_day_streak", "trophy", "أسبوع كامل", "حافظ على نشاطك ٧ أيام", "sun"],
 ];
 
+function routePath() {
+  return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
+}
 function navigate(path) {
-  if (window.location.pathname !== path) {
+  if (routePath() !== path) {
     history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
@@ -71,44 +75,48 @@ export default function AchievementsPage() {
 
   const unlockedSlugs = new Set(items.map(i => i.slug));
   const unlockedCount = badgeDefinitions.filter(([slug]) => unlockedSlugs.has(slug)).length;
+  const completion = badgeDefinitions.length ? Math.round((unlockedCount / badgeDefinitions.length) * 100) : 0;
 
   return (
-    <div className="app" dir="rtl">
-      <header>
+    <div className="app achievements-v2" dir="rtl">
+      <header className="achievement-topbar">
         <div className="wrap nav">
           <button className="brand" onClick={() => navigate("/")}>
-            <span className="logo">ع</span>
-            <span><b>أبو العزايم</b><small>للحفظ الممتع</small></span>
+            <span className="logo"><Icon name="trophy" size={24} /></span>
+            <span><b>أبو العزايم</b><small>الإنجازات والجوائز</small></span>
           </button>
           <div className="actions">
-            <button className="pill" onClick={() => navigate("/child")}>وضع الطفل</button>
-            <button className="secondary" onClick={logout}>خروج</button>
+            <button className="pill" onClick={() => navigate("/child")}><Icon name="child" size={17} /> وضع الطفل</button>
+            <button className="secondary" onClick={logout}><Icon name="logout" size={17} /> خروج</button>
           </div>
         </div>
       </header>
 
       <main className="wrap page">
-        <div className="title">
-          <span>الإنجازات</span>
-          <h1>ميداليات {child?.display_name || "الرحلة"}</h1>
-          <p>كل ميدالية هنا مرتبطة بنشاط حقيقي محفوظ في الحساب.</p>
-        </div>
+        <section className="achievement-hero">
+          <div>
+            <span className="achievement-kicker"><Icon name="medal" size={18} /> سجل الإنجازات</span>
+            <h1>ميداليات {child?.display_name || "الرحلة"}</h1>
+            <p>كل ميدالية هنا مرتبطة بنشاط حقيقي محفوظ في الحساب، وتفتح تلقائيًا مع التقدم.</p>
+          </div>
+          <div className="achievement-progress-ring" style={{ "--progress": `${completion * 3.6}deg` }}><div><strong>{completion}%</strong><span>مكتمل</span></div></div>
+        </section>
 
         {error && <div className="msg error">{error}</div>}
 
-        <div className="stats" style={{ marginBottom: 24 }}>
-          <div><b>{unlockedCount}</b><span>ميدالية مفتوحة</span></div>
-          <div><b>{badgeDefinitions.length - unlockedCount}</b><span>متبقية</span></div>
-          <div><b>{badgeDefinitions.length ? Math.round((unlockedCount / badgeDefinitions.length) * 100) : 0}%</b><span>اكتمال الإنجازات</span></div>
+        <div className="stats achievement-stats" style={{ marginBottom: 24 }}>
+          <div><span className="stat-icon mint"><Icon name="circleCheck" size={24} /></span><b>{unlockedCount}</b><span>ميدالية مفتوحة</span></div>
+          <div><span className="stat-icon lavender"><Icon name="lock" size={24} /></span><b>{badgeDefinitions.length - unlockedCount}</b><span>متبقية</span></div>
+          <div><span className="stat-icon sun"><Icon name="target" size={24} /></span><b>{completion}%</b><span>اكتمال الإنجازات</span></div>
         </div>
 
-        <div className="badges">
-          {badgeDefinitions.map(([slug, icon, title, description]) => {
+        <div className="badges badges-v2">
+          {badgeDefinitions.map(([slug, icon, title, description, tone]) => {
             const unlocked = unlockedSlugs.has(slug);
             const record = items.find(i => i.slug === slug);
             return (
-              <article className={unlocked ? "won" : ""} key={slug}>
-                <div>{unlocked ? icon : "🔒"}</div>
+              <article className={`${unlocked ? "won" : "locked"} badge-${tone}`} key={slug}>
+                <div className="badge-icon"><Icon name={unlocked ? icon : "lock"} size={34} /></div>
                 <h3>{title}</h3>
                 <p>{description}</p>
                 <small>
@@ -124,8 +132,8 @@ export default function AchievementsPage() {
         </div>
 
         <div className="row" style={{ justifyContent: "center", marginTop: 24 }}>
-          <button className="secondary" onClick={() => navigate("/games")}>الألعاب</button>
-          <button className="primary" onClick={() => navigate("/challenges")}>تحديات اليوم</button>
+          <button className="secondary" onClick={() => navigate("/games")}><Icon name="game" size={18} /> الألعاب</button>
+          <button className="primary" onClick={() => navigate("/challenges")}><Icon name="target" size={18} /> تحديات اليوم</button>
         </div>
       </main>
 
