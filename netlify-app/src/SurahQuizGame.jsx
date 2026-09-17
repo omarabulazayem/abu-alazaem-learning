@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { claimReward, dayKey } from "./api.js";
 import { SURAHS } from "./quranData.js";
 import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
+import Icon from "./Icon.jsx";
 
 function routePath() {
   return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
@@ -95,10 +96,10 @@ export default function SurahQuizGame() {
   if (viewer === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز الاختبار...</p></div>;
 
   return (
-    <div className="app game-shell" dir="rtl">
-      <header><div className="wrap nav"><button className="brand" onClick={() => navigate("/games")}><span className="logo">ع</span><span><b>اختبار السور</b><small>{teacherPreview ? "معاينة المعلم" : "أسئلة سريعة"}</small></span></button><div className="actions"><span className="reward-chip">{teacherPreview ? "👨‍🏫 معاينة بلا نقاط" : `⭐ ${viewer?.child?.stars || 0}`}</span><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button></div></div></header>
+    <div className="app game-shell game-shell-v2" dir="rtl">
+      <header className="game-topbar"><div className="wrap nav"><button className="brand" onClick={() => navigate("/games")}><span className="logo"><Icon name="bolt" size={24} /></span><span><b>اختبار السور</b><small>{teacherPreview ? "معاينة المعلم" : "أسئلة سريعة"}</small></span></button><div className="actions"><span className="reward-chip">{teacherPreview ? <><Icon name="teacher" size={17} /> معاينة بلا نقاط</> : <><Icon name="star" size={17} /> {viewer?.child?.stars || 0}</>}</span><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button></div></div></header>
       <main className="wrap page narrow game-page">
-        <div className="game-title-block"><span>⚡ خمس أسئلة</span><h1>ماذا تعرف عن السور؟</h1><p>{teacherPreview ? "جرّب الاختبار كما يراه الطالب. النتيجة تظهر بالكامل من غير تسجيل مكافأة." : "اختر الإجابة الصحيحة. تحتاج ٤ من ٥ للحصول على مكافأة اليوم."}</p></div>
+        <div className="game-title-block"><span><Icon name="bolt" size={18} /> خمس أسئلة</span><h1>ماذا تعرف عن السور؟</h1><p>{teacherPreview ? "جرّب الاختبار كما يراه الطالب. النتيجة تظهر بالكامل من غير تسجيل مكافأة." : "اختر الإجابة الصحيحة. تحتاج ٤ من ٥ للحصول على مكافأة اليوم."}</p></div>
         {error && <div className="msg error">{error}</div>}{message && <div className="msg ok">{message}</div>}
         {!finished ? (
           <section className="game-stage quiz-stage">
@@ -113,13 +114,14 @@ export default function SurahQuizGame() {
               else if (selected !== null && isSelected && !isCorrect) state = "wrong";
               return <button key={value} disabled={selected !== null || !learningActorReady(viewer)} className={`choice ${state}`} onClick={() => answer(value)}>{value}</button>;
             })}</div>
-            {selected !== null && <div className={`answer-feedback ${answerState}`}><b>{answerState === "correct" ? "إجابة صحيحة! 🎉" : "ليست الإجابة الصحيحة"}</b><span>الإجابة: {question.answer}</span></div>}
-            <button className="primary game-cta" disabled={selected === null} onClick={next}>{index === questions.length - 1 ? "اعرض النتيجة" : "السؤال التالي ←"}</button>
+            {selected !== null && <div className={`answer-feedback ${answerState}`}><b>{answerState === "correct" ? <><Icon name="circleCheck" size={17} /> إجابة صحيحة</> : <><Icon name="close" size={17} /> ليست الإجابة الصحيحة</>}</b><span>الإجابة: {question.answer}</span></div>}
+            <button className="primary game-cta" disabled={selected === null} onClick={next}>{index === questions.length - 1 ? "اعرض النتيجة" : <>السؤال التالي <Icon name="arrow" size={18} /></>}</button>
           </section>
         ) : (
           <section className="game-stage result-stage">
             <div className="result-ring"><strong>{finalScore}/5</strong><span>{finalScore >= 4 ? "ممتاز" : "جرّب مرة أخرى"}</span></div>
-            <h2>{finalScore === 5 ? "إجابات كاملة!" : finalScore >= 4 ? "أداء رائع" : "أنت قريب"}</h2>
+            <div className="result-medal"><Icon name={finalScore >= 4 ? "medal" : "review"} size={38} /></div>
+            <h2>{finalScore === 5 ? "إجابات كاملة" : finalScore >= 4 ? "أداء رائع" : "أنت قريب"}</h2>
             <p>{teacherPreview ? "هذه نتيجة المعاينة فقط ولم تُسجل على أي طالب." : finalScore >= 4 ? "أثبت أنك تعرف السور جيدًا." : "أعد المحاولة وستتذكر الأرقام أسرع."}</p>
             <div className="row" style={{ justifyContent: "center" }}><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button><button className="primary" disabled={busy} onClick={restart}>اختبار جديد</button></div>
           </section>
