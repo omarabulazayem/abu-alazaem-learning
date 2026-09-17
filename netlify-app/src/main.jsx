@@ -16,10 +16,11 @@ import "./new-quran-game-pack.css";
 import "./adaptive-games.css";
 import "./tafsir-world.css";
 
-/* Clean-sheet interface. UI v4 is the final visual authority. */
+/* Clean-sheet interface. UI v4 owns structure; brand identity owns color and tone. */
 import "./ui-v4-support.css";
 import "./ui-v4-preview.css";
 import "./ui-v4.css";
+import "./brand-identity.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");
 const basePath=configuredBase==="/"?"":configuredBase;
