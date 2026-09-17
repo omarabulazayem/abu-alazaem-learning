@@ -33,14 +33,34 @@ export function isChildModeActive() {
   return localStorage.getItem(CHILD_MODE_KEY) === "1";
 }
 
-const actions = [
-  ["quran", "نحفظ سوا", "احفظ جزءًا صغيرًا وخد نجمة", "/memorize", "mint"],
-  ["review", "نفتكر سوا", "راجع اللي حفظته بطريقة سهلة", "/review", "sky"],
-  ["game", "يلا نلعب", "ألعاب قصيرة فيها حركة ومكافآت", "/games", "featured"],
-  ["trophy", "جوائزي", "شوف النجوم والميداليات اللي كسبتها", "/achievements", "lavender"],
-  ["target", "مهمتي اليوم", "مهمة صغيرة تقدر تخلصها بسرعة", "/challenges", "sun"],
-  ["room", "غرفتي", "شوف حاجاتك وتقدمك ومكافآتك", "/room", "rose"],
+const primaryWorlds = [
+  { icon: "quran", title: "نحفظ", description: "آيات صغيرة خطوة خطوة", path: "/memorize", tone: "memorize", companion: "star" },
+  { icon: "game", title: "نلعب", description: "مغامرات قصيرة ومكافآت", path: "/games", tone: "play", companion: "gift" },
+  { icon: "review", title: "نراجع", description: "نفتكر اللي حفظناه سوا", path: "/review", tone: "review", companion: "sparkle" },
 ];
+
+const smallWorlds = [
+  { icon: "trophy", title: "جوائزي", path: "/achievements", tone: "rewards" },
+  { icon: "target", title: "مهمتي", path: "/challenges", tone: "mission" },
+  { icon: "room", title: "غرفتي", path: "/room", tone: "room" },
+];
+
+function WorldArt({ world }) {
+  return (
+    <span className={`child-world-art ${world.tone}`} aria-hidden="true">
+      <span className="world-sun" />
+      <span className="world-cloud one" />
+      <span className="world-cloud two" />
+      <span className="world-hill back" />
+      <span className="world-hill front" />
+      <span className="world-path" />
+      <span className="world-main-icon"><Icon name={world.icon} size={52} /></span>
+      <span className="world-companion"><Icon name={world.companion} size={24} /></span>
+      <span className="world-star star-one"><Icon name="star" size={16} /></span>
+      <span className="world-star star-two"><Icon name="star" size={13} /></span>
+    </span>
+  );
+}
 
 export default function ChildHub() {
   const [user, setUser] = useState(undefined);
@@ -92,7 +112,7 @@ export default function ChildHub() {
     const keys = new Set();
     for (const reward of todayRewards) {
       if (reward.source_type === "game_session") keys.add(reward.source_key || `game-${keys.size}`);
-      else if (["memory_game","surah_order_game","surah_quiz_game"].includes(reward.source_type)) keys.add(reward.source_type);
+      else if (["memory_game", "surah_order_game", "surah_quiz_game"].includes(reward.source_type)) keys.add(reward.source_type);
     }
     return keys;
   }, [todayRewards]);
@@ -119,7 +139,7 @@ export default function ChildHub() {
   if (user === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز عالمك...</p></div>;
 
   return (
-    <div className="app child-dashboard child-dashboard-v2" dir="rtl">
+    <div className="app child-dashboard child-dashboard-v2 child-world-home" dir="rtl">
       <header className="child-topbar">
         <div className="wrap nav">
           <button className="brand" onClick={() => navigate("/child")}>
@@ -127,47 +147,61 @@ export default function ChildHub() {
             <span><b>أبو العزايم</b><small>عالمي الصغير</small></span>
           </button>
           <div className="actions child-rewards">
-            <span className="reward-chip"><Icon name="trophy" size={17} /> {child?.points || 0} نقطة</span>
-            <span className="reward-chip"><Icon name="star" size={17} /> {child?.stars || 0} نجمة</span>
-            <button className="secondary" onClick={() => { setShowExit(true); setError(""); }}><Icon name="lock" size={17} /> ولي الأمر</button>
+            <span className="reward-chip"><Icon name="star" size={17} /> {child?.stars || 0}</span>
+            <span className="reward-chip"><Icon name="trophy" size={17} /> {child?.points || 0}</span>
+            <button className="secondary parent-zone-button" onClick={() => { setShowExit(true); setError(""); }} aria-label="فتح منطقة ولي الأمر"><Icon name="lock" size={18} /><span>ولي الأمر</span></button>
           </div>
         </div>
       </header>
 
       <main className="wrap page">
-        <section className="childHero childHeroPlus childHeroIllustrated">
-          <div className="child-avatar-art"><Icon name="child" size={58} /></div>
-          <div className="grow"><span>جاهز نبدأ؟</span><h1>أهلًا {child?.display_name || "بطلنا الصغير"}</h1><p>اختار مكان تحبه، والعب أو احفظ خطوة صغيرة كل مرة.</p></div>
-          <div className="child-level"><span><Icon name="flame" size={16} /> أيام متواصلة</span><b>{child?.streak || 0}</b><small>استمر يا بطل</small></div>
+        <section className="child-world-welcome">
+          <div className="child-guide" aria-hidden="true">
+            <span className="guide-head"><Icon name="child" size={54} /></span>
+            <span className="guide-bubble"><Icon name="sparkle" size={20} /></span>
+          </div>
+          <div className="grow"><span>جاهز لمغامرة جديدة؟</span><h1>أهلًا {child?.display_name || "يا بطل"}</h1><p>اختار عالم واحد ونبدأ.</p></div>
+          <div className="child-streak-pill"><Icon name="flame" size={19} /><strong>{child?.streak || 0}</strong><span>يوم</span></div>
         </section>
 
         {!showExit && child && (
-          <div className="child-summary">
-            <div className="child-stat"><span className="stat-icon gold"><Icon name="trophy" size={25} /></span><div><b>{child.points || 0}</b><small>نقطة</small></div></div>
-            <div className="child-stat"><span className="stat-icon sun"><Icon name="star" size={25} /></span><div><b>{child.stars || 0}</b><small>نجمة</small></div></div>
-            <div className="child-stat"><span className="stat-icon sky"><Icon name="game" size={25} /></span><div><b>{gameProgress}/٣</b><small>ألعاب اليوم</small></div></div>
-            <button className="daily-game-cta" onClick={() => navigate("/games")}>
+          <>
+            <section className="child-world-section" aria-labelledby="child-main-worlds">
+              <div className="child-world-heading"><span>هنعمل إيه دلوقتي؟</span><h2 id="child-main-worlds">اختار عالمك</h2></div>
+              <div className="child-world-grid">
+                {primaryWorlds.map(world => (
+                  <button key={world.path} className={`child-world-card ${world.tone}`} onClick={() => navigate(world.path)}>
+                    <WorldArt world={world} />
+                    <span className="child-world-copy"><b>{world.title}</b><small>{world.path === "/games" && gameProgress ? `${gameProgress}/٣ اليوم • ${world.description}` : world.description}</small></span>
+                    <span className="child-world-start">يلا <Icon name="arrow" size={18} /></span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="child-small-worlds" aria-labelledby="child-more-worlds">
+              <div className="child-world-heading compact"><span>أماكن تانية</span><h2 id="child-more-worlds">حاجاتي</h2></div>
+              <div className="child-small-grid">
+                {smallWorlds.map(item => (
+                  <button key={item.path} className={`child-small-card ${item.tone}`} onClick={() => navigate(item.path)}>
+                    <span className="child-small-icon"><Icon name={item.icon} size={32} /></span>
+                    <b>{item.title}</b>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <button className="child-daily-quest" onClick={() => navigate("/games")}>
               <span className="daily-game-icon"><Icon name={gameProgress === 3 ? "circleCheck" : "rocket"} size={30} /></span>
-              <div><b>{gameProgress === 3 ? "برافو! خلصت ألعاب اليوم" : "نلعب لعبة كمان؟"}</b><small>{gameProgress === 3 ? "تقدر تلعب تاني لو حابب" : `باقي ${3 - gameProgress} لعبة`}</small></div>
-              <Icon name="arrow" size={22} />
+              <div><small>مغامرة اليوم</small><b>{gameProgress === 3 ? "برافو! خلصت ألعاب اليوم" : "نكمل لعبة كمان؟"}</b></div>
+              <span className="daily-progress-dots" aria-label={`${gameProgress} من 3 ألعاب`}>
+                {[0, 1, 2].map(i => <i key={i} className={i < gameProgress ? "done" : ""} />)}
+              </span>
             </button>
-          </div>
+          </>
         )}
 
         {error && <div className="msg error">{error}</div>}
-
-        {!showExit && (
-          <div className="kidgrid kidgrid-v2">
-            {actions.map(([icon, title, description, path, className]) => (
-              <button className={`kid-action ${className}`} key={path} onClick={() => child && navigate(path)} disabled={!child}>
-                <span className="kid-action-icon"><Icon name={icon} size={42} /></span>
-                <b>{title}</b>
-                <small>{path === "/games" ? `${gameProgress}/٣ ألعاب اليوم • ${description}` : description}</small>
-                <span className="kid-action-arrow"><Icon name="arrow" size={18} /></span>
-              </button>
-            ))}
-          </div>
-        )}
 
         {showExit && (
           <section className="panel authbox child-exit-card" style={{ margin: "28px auto 0" }}>
@@ -180,7 +214,7 @@ export default function ChildHub() {
         )}
       </main>
 
-      <footer><div className="wrap">أبو العزايم للحفظ الممتع • نتعلم خطوة صغيرة كل مرة.</div></footer>
+      <footer className="child-world-footer"><div className="wrap">أبو العزايم للحفظ الممتع</div></footer>
     </div>
   );
 }

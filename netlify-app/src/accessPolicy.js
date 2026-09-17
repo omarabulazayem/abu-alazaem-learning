@@ -19,7 +19,14 @@ export function canTeacherPreview(user) {
   return isTeacher(user);
 }
 
-export const TEACHER_NAV_ITEMS = [
+export const TEACHER_MANAGE_NAV_ITEMS = [
+  ["لوحة المعلم", "/teacher"],
+  ["تقارير الألعاب", "/teacher/game-reports"],
+  ["الفصول", "/teacher/classes"],
+  ["الطلاب", "/teacher/students"],
+];
+
+export const TEACHER_PREVIEW_NAV_ITEMS = [
   ["الرئيسية", "/"],
   ["القرآن", "/quran"],
   ["الحفظ", "/memorize"],
@@ -27,8 +34,7 @@ export const TEACHER_NAV_ITEMS = [
   ["الألعاب", "/games"],
   ["الإنجازات", "/achievements"],
   ["التحديات", "/challenges"],
-  ["لوحة المعلم", "/teacher"],
-  ["تقارير الألعاب", "/teacher/game-reports"],
-  ["الفصول", "/teacher/classes"],
-  ["الطلاب", "/teacher/students"],
 ];
+
+// Kept for existing imports and compatibility checks.
+export const TEACHER_NAV_ITEMS = [...TEACHER_PREVIEW_NAV_ITEMS, ...TEACHER_MANAGE_NAV_ITEMS];
