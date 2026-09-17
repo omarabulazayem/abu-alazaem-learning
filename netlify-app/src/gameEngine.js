@@ -1,14 +1,14 @@
 import { rest, rpc } from "./api.js";
 import { gameDefinition } from "./gameDefinitions.js";
-import { newGameDefinition } from "./newGameDefinitions.js";
 
 export class GameEngine {
   constructor({ childId, gameId, teacherPreview = false }) {
     this.childId = childId || null;
     this.gameId = gameId;
     this.teacherPreview = Boolean(teacherPreview);
-    this.definition = gameDefinition(gameId) || newGameDefinition(gameId);
+    this.definition = gameDefinition(gameId);
     if (!this.definition) throw new Error(`Unknown game definition: ${gameId}`);
+    if (this.definition.status !== "implemented") throw new Error(`Game is not implemented yet: ${gameId}`);
     this.session = null;
     this.local = {
       score: 0,
