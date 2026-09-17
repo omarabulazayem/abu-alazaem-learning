@@ -1,86 +1,129 @@
-/* Final visibility fix for verified child artwork.
-   site-design.css stays last; these rules use scoped important values only where older layers conflict. */
+/* Balanced child artwork layer.
+   The real images are mounted as DOM <img> elements; pseudo artwork is disabled to avoid duplicate/cropped layers. */
 
-/* Homepage hero: real artwork is the visible layer, inline SVG remains underneath as a safety fallback. */
-body .homeV2 .homeHeroVisual::before{
-  content:""!important;
-  position:absolute!important;
-  inset:0!important;
-  z-index:8!important;
-  display:block!important;
-  opacity:1!important;
-  visibility:visible!important;
-  pointer-events:none!important;
-  background-image:var(--child-hero-art)!important;
-  background-repeat:no-repeat!important;
-  background-size:cover!important;
-  background-position:center center!important;
-  filter:none!important;
+body .homeV2 .homeHeroVisual::before,
+body .homeV2 .home-world-art::after,
+body .child-world-home .child-world-art::after{
+  display:none!important;
+  content:none!important;
+}
+
+body .homeV2 .homeHeroVisual{
+  background:
+    radial-gradient(circle at 18% 18%,rgba(255,232,245,.72),transparent 30%),
+    radial-gradient(circle at 82% 16%,rgba(220,244,255,.88),transparent 31%),
+    linear-gradient(180deg,#f7fcff,#fff8fc)!important;
+  border:3px solid rgba(255,255,255,.94)!important;
+  box-shadow:0 20px 46px rgba(47,104,132,.12)!important;
 }
 body .homeV2 .homeHeroVisual .kidsHeroScene{
   z-index:1!important;
-  opacity:1!important;
+  opacity:.18!important;
   visibility:visible!important;
+  filter:saturate(.75)!important;
+}
+body .homeV2 .homeHeroVisual .real-child-hero-img{
+  box-shadow:0 14px 30px rgba(63,105,128,.13)!important;
+  border:2px solid rgba(255,255,255,.95)!important;
 }
 
-/* Use the verified image as real card photography/illustration, then keep the semantic icon above it. */
-body .homeV2 .home-world-art::after,
-body .child-world-home .child-world-art::after{
-  content:""!important;
-  position:absolute!important;
-  inset:0!important;
-  z-index:2!important;
-  display:block!important;
-  opacity:.92!important;
-  visibility:visible!important;
-  background-image:var(--child-card-art)!important;
+/* Quiet page background: no giant faces or duplicated artwork behind the content. */
+body .homeV2::before,
+body .child-world-home::before{
+  background-image:
+    radial-gradient(circle at 12% 10%,rgba(255,227,242,.54),transparent 28%),
+    radial-gradient(circle at 88% 9%,rgba(215,244,255,.62),transparent 30%),
+    radial-gradient(circle at 50% 52%,rgba(232,247,238,.42),transparent 34%)!important;
   background-repeat:no-repeat!important;
-  background-size:cover!important;
-  filter:saturate(1.08) contrast(1.02)!important;
+  background-size:100% 100%!important;
+  background-position:center top!important;
+  opacity:1!important;
 }
-body .homeV2 .home-world-art.memorize::after,
-body .child-world-home .child-world-art.memorize::after{background-position:50% 52%!important}
-body .homeV2 .home-world-art.play::after,
-body .child-world-home .child-world-art.play::after{background-position:18% 50%!important}
-body .homeV2 .home-world-art.review::after,
-body .child-world-home .child-world-art.review::after{background-position:82% 50%!important}
+
+/* Card artwork uses one clean illustration per card; keep the semantic icon small and readable. */
+body .homeV2 .homeWorldGrid .home-world-card,
+body .child-world-home .child-world-card{
+  overflow:hidden!important;
+  border:3px solid #fff!important;
+  box-shadow:0 16px 36px rgba(47,104,132,.13)!important;
+  background:rgba(255,255,255,.94)!important;
+}
+body .homeV2 .home-world-art,
+body .child-world-home .child-world-art{
+  min-height:154px!important;
+  max-height:170px!important;
+  overflow:hidden!important;
+  background:#f7fbfd!important;
+}
+body .homeV2 .real-world-art,
+body .child-world-home .real-world-art{
+  border-bottom:1px solid rgba(214,231,238,.85)!important;
+}
 
 body .homeV2 .home-world-main,
 body .homeV2 .home-world-friend,
 body .child-world-home .world-main-icon,
 body .child-world-home .world-companion{
   z-index:9!important;
-  background:rgba(255,255,255,.9)!important;
-  backdrop-filter:blur(8px)!important;
-  -webkit-backdrop-filter:blur(8px)!important;
-  border:3px solid rgba(255,255,255,.95)!important;
-  box-shadow:0 12px 28px rgba(37,82,105,.18)!important;
+  background:rgba(255,255,255,.93)!important;
+  backdrop-filter:blur(6px)!important;
+  -webkit-backdrop-filter:blur(6px)!important;
+  border:2px solid rgba(255,255,255,.98)!important;
+  box-shadow:0 10px 22px rgba(37,82,105,.13)!important;
+}
+body .homeV2 .home-world-main,
+body .child-world-home .world-main-icon{
+  transform:scale(.9)!important;
+}
+body .homeV2 .home-world-friend,
+body .child-world-home .world-companion{
+  transform:scale(.82)!important;
 }
 
-/* The page environment gets actual child artwork too, but softened so it never fights the controls. */
-body .homeV2::before,
-body .child-world-home::before{
-  background-image:linear-gradient(180deg,rgba(229,248,255,.78),rgba(255,255,255,.92) 47%,rgba(255,247,252,.94)),var(--child-world-bg)!important;
-  background-repeat:no-repeat!important;
-  background-size:cover!important;
-  background-position:center top!important;
+/* Medium-density composition: clear hierarchy without feeling empty or crowded. */
+body .homeV2 .homeWorldGrid,
+body .child-world-home .child-world-grid{
+  gap:18px!important;
+}
+body .homeV2 .home-world-copy,
+body .child-world-home .child-world-copy{
+  padding-top:15px!important;
+}
+body .homeV2 .home-world-copy b,
+body .child-world-home .child-world-copy b{
+  font-size:clamp(23px,2vw,29px)!important;
+}
+body .homeV2 .home-world-copy small,
+body .child-world-home .child-world-copy small{
+  max-width:26ch!important;
+  line-height:1.65!important;
+}
+body .homeV2 .home-secondary-grid,
+body .child-world-home .child-secondary-grid{
+  gap:12px!important;
 }
 
-/* Stronger child-world cards: larger visual area, less dashboard feel. */
-body .homeV2 .homeWorldGrid .home-world-card,
-body .child-world-home .child-world-card{
-  overflow:hidden!important;
-  border:4px solid #fff!important;
-  box-shadow:0 22px 52px rgba(47,104,132,.16)!important;
-}
-body .homeV2 .home-world-art,
-body .child-world-home .child-world-art{
-  min-height:190px!important;
-  overflow:hidden!important;
+@media(max-width:900px){
+  body .homeV2 .homeHeroVisual .real-child-hero-img{
+    inset:10px!important;
+    width:calc(100% - 20px)!important;
+    height:calc(100% - 20px)!important;
+    border-radius:22px!important;
+  }
+  body .homeV2 .home-world-art,
+  body .child-world-home .child-world-art{
+    min-height:145px!important;
+  }
 }
 
 @media(max-width:700px){
-  body .homeV2 .homeHeroVisual::before{background-position:center!important}
   body .homeV2 .home-world-art,
-  body .child-world-home .child-world-art{min-height:165px!important}
+  body .child-world-home .child-world-art{
+    min-height:132px!important;
+    max-height:145px!important;
+  }
+  body .homeV2 .homeWorldGrid,
+  body .child-world-home .child-world-grid{
+    gap:14px!important;
+  }
 }
