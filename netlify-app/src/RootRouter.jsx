@@ -1,7 +1,19 @@
 import React, { useEffect, useState } from "react";
 import App from "./App.jsx";
 import AchievementsPage from "./AchievementsPage.jsx";
+import ChildHub, { isChildModeActive } from "./ChildHub.jsx";
 import MemoryGame from "./MemoryGame.jsx";
+
+const childSafeRoutes = new Set([
+  "/child",
+  "/quran",
+  "/memorize",
+  "/review",
+  "/games",
+  "/achievements",
+  "/challenges",
+  "/room",
+]);
 
 function usePath() {
   const [path, setPath] = useState(window.location.pathname);
@@ -13,8 +25,26 @@ function usePath() {
   return path;
 }
 
+function useChildMode() {
+  const [active, setActive] = useState(() => isChildModeActive());
+  useEffect(() => {
+    const sync = () => setActive(isChildModeActive());
+    window.addEventListener("abu-child-mode", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("abu-child-mode", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  return active;
+}
+
 export default function RootRouter() {
   const path = usePath();
+  const childMode = useChildMode();
+
+  if (path === "/child") return <ChildHub />;
+  if (childMode && !childSafeRoutes.has(path)) return <ChildHub />;
   if (path === "/games") return <MemoryGame />;
   if (path === "/achievements") return <AchievementsPage />;
   return <App />;
