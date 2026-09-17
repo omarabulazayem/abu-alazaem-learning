@@ -40,7 +40,9 @@ function saveSession(payload) {
 
 export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(ACTIVE_CHILD_KEY);
   window.dispatchEvent(new Event("abu-auth"));
+  window.dispatchEvent(new Event("abu-child"));
 }
 
 async function authRequest(path, init = {}) {
@@ -77,8 +79,9 @@ async function consumeAuthRedirect() {
     expires_in: Number(params.get("expires_in") || 3600),
     user,
   });
+  const type = params.get("type") || "auth";
   history.replaceState({}, "", `${location.pathname}${location.search}`);
-  return { session, type: params.get("type") || "auth" };
+  return { session, type };
 }
 
 async function refreshSession(session) {
@@ -180,7 +183,8 @@ export async function rpc(name, body) {
 }
 
 export async function getCurrentUser() {
-  if (!getStoredSession()) await consumeAuthRedirect().catch(() => null);
+  let redirectInfo = null;
+  if (!getStoredSession()) redirectInfo = await consumeAuthRedirect().catch(() => null);
   const token = await accessToken();
   if (!token) return null;
   let authUser;
@@ -192,12 +196,18 @@ export async function getCurrentUser() {
     clearSession();
     throw new Error("ملف الحساب غير مكتمل. أعد تسجيل الدخول أو تواصل مع الإدارة.");
   }
-  return {
+  const result = {
     id: authUser.id,
     email: authUser.email || null,
     name: profile.display_name || authUser?.user_metadata?.display_name || null,
     accountType: profile.account_type,
   };
+  if (redirectInfo && redirectInfo.type !== "recovery" && typeof location !== "undefined" && location.pathname === "/login") {
+    const target = result.accountType === "teacher" ? "/teacher" : "/family";
+    history.replaceState({}, "", target);
+    queueMicrotask(() => window.dispatchEvent(new PopStateEvent("popstate")));
+  }
+  return result;
 }
 
 export function getActiveChildId() { return localStorage.getItem(ACTIVE_CHILD_KEY); }
