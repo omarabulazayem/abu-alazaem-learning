@@ -8,6 +8,7 @@ import RoomPage from "./RoomPage.jsx";
 import AchievementsPage from "./AchievementsPage.jsx";
 import ChildHub, { isChildModeActive } from "./ChildHub.jsx";
 import GamesHub from "./GamesHub.jsx";
+import NewGamePackHub,{NewPackLauncher} from "./NewGamePackHub.jsx";
 import MemoryGame from "./MemoryGame.jsx";
 import SurahOrderGame from "./SurahOrderGame.jsx";
 import SurahQuizGame from "./SurahQuizGame.jsx";
@@ -50,7 +51,8 @@ export default function RootRouter(){
   else if(path==="/quran")page=teacher?<TeacherQuranPreview/>:<QuranPage/>;
   else if(path==="/memorize")page=teacher?<TeacherLearningPreview type="memorize"/>:<MemorizePage/>;
   else if(path==="/review")page=teacher?<TeacherLearningPreview type="review"/>:<ReviewPage/>;
-  else if(path==="/games")page=<GamesHub/>;
+  else if(path==="/games")page=<><GamesHub/><NewPackLauncher/></>;
+  else if(path==="/games/new-pack")page=<NewGamePackHub/>;
   else if(path==="/games/quran-wheel")page=<QuranWheelGame/>;
   else if(path==="/games/ayah-order")page=<AyahOrderGame/>;
   else if(path==="/games/complete-ayah")page=<CompleteAyahGame/>;
