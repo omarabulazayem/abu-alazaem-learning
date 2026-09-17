@@ -1,13 +1,13 @@
 import React from "react";
-import Icon from "./Icon.jsx";
-import { gamesBy, GAME_STATUS } from "./gameRegistry.js";
-
-function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
-function go(p){if(routePath()!==p){history.pushState({},"",p);window.dispatchEvent(new PopStateEvent("popstate"));}}
-const toneByScene={"star-forest":"sky","lavender-tower":"lavender","three-roads":"mint","puzzle-table":"rose","memory-race":"sky","treasure-map":"sun","mirror-room":"lavender","surah-gates":"sky","mystery-boxes":"rose","word-field":"mint","word-box":"sun"};
+import {gamesBy,GAME_STATUS} from "./gameRegistry.js";
+import {AppShell,Button,Card,CHILD_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
+import {isChildModeActive} from "./ChildHub.jsx";
 
 export default function NewGamePackHub(){
-  const games=gamesBy({pack:"quran-expansion",status:GAME_STATUS.LIVE});
-  const unavailable=gamesBy({pack:"quran-expansion"}).filter(game=>game.status!==GAME_STATUS.LIVE);
-  return <div className="app game-shell game-shell-v2 game-world" dir="rtl"><header className="game-topbar"><div className="wrap nav"><button className="brand" onClick={()=>go("/games")}><span className="logo"><Icon name="game" size={24}/></span><span><b>الحزمة الجديدة</b><small>مغامرات الحفظ والاستدعاء</small></span></button><button className="secondary" onClick={()=>go("/games")}>كل الألعاب</button></div></header><main className="wrap page"><section className="game-world-hero"><div><span className="game-kicker"><Icon name="sparkle" size={18}/> توسعة عالم أبو العزايم</span><h1>ألعاب قصيرة تتحول فيها المراجعة إلى مغامرة</h1><p>هذه الصفحة تعرض فقط الألعاب المصنفة live في Game Registry. الألعاب التي تحتاج استكمالًا أو محتوى موثق تبقى خارج واجهة الطفل.</p><div className="game-world-stats"><span><b>{games.length}</b> ألعاب متاحة الآن</span><span><b>{unavailable.length}</b> قيد الاستكمال</span><span><b>RTL</b> هاتف وكمبيوتر</span></div></div><div className="world-orbit" aria-hidden="true"><span><Icon name="quran" size={34}/></span><span><Icon name="unlock" size={32}/></span><span><Icon name="gift" size={32}/></span><span><Icon name="search" size={30}/></span></div></section><section className="world-section"><div className="world-heading"><div><span>المتاح الآن</span><h2>الحفظ والاستدعاء + الكلمات</h2><p>كل بطاقة هنا لها Route وتنفيذ فعلي وحالة live في المصدر الموحد.</p></div></div>{games.length?<div className="world-map-grid">{games.map((g,i)=><button key={g.id} className={`world-zone ${toneByScene[g.scene]||"sky"}`} onClick={()=>go(g.route)}><span className="zone-number">{String(i+1).padStart(2,"0")}</span><span className="zone-icon"><Icon name={g.icon||"game"} size={40}/></span><span className="zone-copy"><small>{g.categoryLabel}</small><b>{g.title}</b><p>{g.description}</p></span><span className="zone-progress">ابدأ اللعب <Icon name="arrow" size={18}/></span></button>)}</div>:<div className="msg">لا توجد ألعاب live في هذه الحزمة حاليًا.</div>}</section></main><footer><div className="wrap">أبو العزايم للحفظ الممتع • توفر الألعاب يأتي من Game Registry الموحد.</div></footer></div>;
+  const games=gamesBy({pack:"quran-expansion",status:GAME_STATUS.LIVE});const unavailable=gamesBy({pack:"quran-expansion"}).filter(g=>g.status!==GAME_STATUS.LIVE);const childMode=isChildModeActive();
+  return <AppShell mode={childMode?"child":"family"} subtitle="مغامرات إضافية" nav={childMode?CHILD_NAV:[]} actions={<Button kind="secondary" icon="game" onClick={()=>go("/games")}>كل الألعاب</Button>} footer="أبو العزايم • الألعاب المتاحة تأتي من Game Registry الموحد.">
+    <Hero eyebrow="مغامرات إضافية" title="طرق جديدة للحفظ والاستدعاء" description="الألعاب الظاهرة هنا live ومربوطة فعليًا بالمحرك؛ غير المكتمل لا يظهر للطفل." icon="sparkle" tone="lavender"/>
+    <div className="aa-metrics"><Metric icon="game" label="متاحة الآن" value={games.length} tone="lavender"/><Metric icon="lock" label="قيد الاستكمال" value={unavailable.length} tone="sky"/><Metric icon="target" label="هدفها" value="حفظ ومراجعة" tone="mint"/><Metric icon="star" label="جولات قصيرة" value="نعم" tone="gold"/></div>
+    <Section eyebrow="المتاح الآن" title="اختار مغامرة"><div className="aa-game-grid">{games.map(g=><Card key={g.id} className="aa-game-card" icon={g.icon||"game"} title={g.title} text={g.description} tone="sky" badge={g.categoryLabel} action="ابدأ اللعب" onClick={()=>go(g.route)}/>)}</div></Section>
+  </AppShell>;
 }
