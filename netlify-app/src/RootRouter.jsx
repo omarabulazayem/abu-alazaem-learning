@@ -13,6 +13,7 @@ import SurahOrderGame from "./SurahOrderGame.jsx";
 import SurahQuizGame from "./SurahQuizGame.jsx";
 import { QuranWheelGame, AyahOrderGame, CompleteAyahGame, QuickMemoryGame } from "./QuranGameSystem.jsx";
 import { WordTrainGame, AyahBurgerGame, KnowledgeBridgeGame, FlipCardsGame } from "./QuranGameBatch2.jsx";
+import { GuessSurahGame, WordHunterGame, AyahMatchingGame, SurahCardsGame } from "./QuranGameBatch3.jsx";
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
@@ -54,6 +55,10 @@ export default function RootRouter(){
   else if(path==="/games/burger")page=<AyahBurgerGame/>;
   else if(path==="/games/bridge")page=<KnowledgeBridgeGame/>;
   else if(path==="/games/flip-cards")page=<FlipCardsGame/>;
+  else if(path==="/games/guess-surah")page=<GuessSurahGame/>;
+  else if(path==="/games/word-hunter")page=<WordHunterGame/>;
+  else if(path==="/games/ayah-matching")page=<AyahMatchingGame/>;
+  else if(path==="/games/surah-cards")page=<SurahCardsGame/>;
   else if(path==="/games/memory")page=<MemoryGame/>;
   else if(path==="/games/order")page=<SurahOrderGame/>;
   else if(path==="/games/quiz")page=<SurahQuizGame/>;
