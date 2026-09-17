@@ -9,6 +9,7 @@ import SurahQuizGame from "./SurahQuizGame.jsx";
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
+import { getCurrentUser } from "./api.js";
 
 const childSafeRoutes = new Set([
   "/child",
@@ -21,15 +22,24 @@ const childSafeRoutes = new Set([
   "/room",
 ]);
 
+function readPath() {
+  return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
+}
+
+function navigate(path, replace = false) {
+  if (readPath() === path) return;
+  if (replace) history.replaceState({}, "", path); else history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
 function isChildSafeRoute(path) {
   return childSafeRoutes.has(path) || path.startsWith("/games/");
 }
 
 function usePath() {
-  const read = () => typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
-  const [path, setPath] = useState(read);
+  const [path, setPath] = useState(readPath);
   useEffect(() => {
-    const sync = () => setPath(read());
+    const sync = () => setPath(readPath());
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, []);
@@ -50,10 +60,36 @@ function useChildMode() {
   return active;
 }
 
+function useAccountType() {
+  const [role, setRole] = useState(undefined);
+  useEffect(() => {
+    let alive = true;
+    const sync = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (alive) setRole(user?.accountType || null);
+      } catch {
+        if (alive) setRole(null);
+      }
+    };
+    sync();
+    window.addEventListener("abu-auth", sync);
+    return () => { alive = false; window.removeEventListener("abu-auth", sync); };
+  }, []);
+  return role;
+}
+
 export default function RootRouter() {
   const path = usePath();
   const childMode = useChildMode();
+  const accountType = useAccountType();
 
+  const teacherAllowed = path === "/" || path === "/login" || path === "/teacher" || path.startsWith("/teacher/");
+  useEffect(() => {
+    if (accountType === "teacher" && !teacherAllowed) navigate("/teacher", true);
+  }, [accountType, path, teacherAllowed]);
+
+  if (accountType === "teacher" && !teacherAllowed) return <TeacherPortal />;
   if (path === "/child") return <ChildHub />;
   if (childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
