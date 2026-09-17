@@ -1,0 +1,6 @@
+/* Transitional visual cleanup for legacy game markers.
+   Source literals are scheduled for data-model refactoring; no emoji is rendered as primary UI. */
+.adaptive-options button>span:first-child{font-size:0!important;width:28px;height:28px;border-radius:9px;background:#f0eee7;display:grid;place-items:center;flex:none;color:#2d7fa7}
+.adaptive-options button>span:first-child:before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor;opacity:.55}
+.adaptive-track>span{font-size:0!important;width:28px!important;height:28px!important;border-radius:50%;background:#fff!important;border:3px solid #2d7fa7!important;box-shadow:0 4px 10px rgba(31,52,68,.15);transform:translateY(-3px)}
+.drag-handle{font-size:0!important;width:24px;height:30px;display:inline-block;border-radius:7px;background-image:radial-gradient(circle,#7c8993 1.4px,transparent 1.6px);background-size:7px 7px;background-position:center}

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "check": "node scripts/validate-game-registry.mjs && node scripts/validate-site-foundation.mjs && node scripts/check-teacher-access.mjs",
+    "check": "node scripts/validate-game-registry.mjs && node scripts/validate-site-foundation.mjs && node scripts/validate-no-decorative-emoji.mjs && node scripts/check-teacher-access.mjs",
     "test": "node --test tests/*.test.mjs",
     "build": "npm run check && node scripts/build-quran-data.mjs && vite build",
     "dev": "vite"
