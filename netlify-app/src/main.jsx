@@ -17,6 +17,7 @@ import "./adaptive-games.css";
 import "./tafsir-world.css";
 
 /* Clean-sheet interface. UI v4 is the final visual authority. */
+import "./ui-v4-support.css";
 import "./ui-v4-preview.css";
 import "./ui-v4.css";
 
