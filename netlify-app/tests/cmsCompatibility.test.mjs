@@ -22,12 +22,12 @@ test("WordPress migration guide keeps telemetry in dedicated domain tables",asyn
   assert.match(doc,/custom WordPress tables/i);
 });
 
-test("site visual system is loaded after feature styles",async()=>{
+test("clean-sheet UI v4 is loaded after game-mechanics styles",async()=>{
   const main=await fs.readFile(path.join(root,"src/main.jsx"),"utf8");
   const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
-  assert.equal(imports.at(-1),"./design-system.css");
-  for(const legacy of ["./site-design.css","./kids-light-ui.css","./child-worlds.css","./illustrated-child-world.css","./real-child-art-fix.css"]){
-    assert.equal(imports.includes(legacy),false,`legacy visual import: ${legacy}`);
+  assert.equal(imports.at(-1),"./ui-v4.css");
+  for(const legacy of ["./design-system.css","./learning-layout.css","./site-design.css","./home-v2.css","./child-dashboard.css","./teacher.css","./teacher-access.css","./login-page.css","./kids-light-ui.css","./child-worlds.css","./illustrated-child-world.css","./real-child-art-fix.css"]){
+    assert.equal(imports.includes(legacy),false,`legacy page visual import: ${legacy}`);
   }
 });
 
