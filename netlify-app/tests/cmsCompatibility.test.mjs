@@ -22,10 +22,13 @@ test("WordPress migration guide keeps telemetry in dedicated domain tables",asyn
   assert.match(doc,/custom WordPress tables/i);
 });
 
-test("clean-sheet UI v4 is loaded after game-mechanics styles",async()=>{
+test("UI v4 structure is followed by the official brand identity layer",async()=>{
   const main=await fs.readFile(path.join(root,"src/main.jsx"),"utf8");
   const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
-  assert.equal(imports.at(-1),"./ui-v4.css");
+  assert.equal(imports.at(-2),"./ui-v4.css");
+  assert.equal(imports.at(-1),"./brand-identity.css");
+  const brand=await fs.readFile(path.join(root,"src/brand-identity.css"),"utf8");
+  for(const color of ["#1E6F5C","#4EA8DE","#E9C46A","#F7F6F0","#2B2D42"])assert.ok(brand.includes(color),color);
   for(const legacy of ["./design-system.css","./learning-layout.css","./site-design.css","./home-v2.css","./child-dashboard.css","./teacher.css","./teacher-access.css","./login-page.css","./kids-light-ui.css","./child-worlds.css","./illustrated-child-world.css","./real-child-art-fix.css"]){
     assert.equal(imports.includes(legacy),false,`legacy page visual import: ${legacy}`);
   }

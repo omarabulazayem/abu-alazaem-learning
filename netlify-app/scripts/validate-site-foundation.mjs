@@ -7,9 +7,10 @@ const root=path.resolve(here,"..");
 const repo=path.resolve(root,"..");
 function fail(message){console.error(`SITE FOUNDATION VALIDATION FAILED: ${message}`);process.exitCode=1;}
 
-const [main,ui,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=await Promise.all([
+const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=await Promise.all([
   fs.readFile(path.join(root,"src/main.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/ui-v4.css"),"utf8"),
+  fs.readFile(path.join(root,"src/brand-identity.css"),"utf8"),
   fs.readFile(path.join(repo,"docs/VISUAL_ASSETS.md"),"utf8"),
   fs.readFile(path.join(repo,"docs/WORDPRESS_MIGRATION.md"),"utf8"),
   fs.readFile(path.join(repo,"patches-live/supabase/migrations/20260918_cms_compatibility_layer.sql"),"utf8"),
@@ -21,7 +22,8 @@ const [main,ui,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=await 
 ]);
 
 const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
-if(imports.at(-1)!=="./ui-v4.css")fail("ui-v4.css must be the final CSS import and the clean-sheet visual authority");
+if(imports.at(-1)!=="./brand-identity.css")fail("brand-identity.css must be the final CSS import and the single brand color authority");
+if(imports.at(-2)!=="./ui-v4.css")fail("ui-v4.css must remain the final structural UI layer before brand identity");
 for(const legacy of [
   "./design-system.css","./learning-layout.css","./child-dashboard.css","./teacher.css","./teacher-access.css",
   "./home-v2.css","./internal-v2.css","./preview-v2.css","./family-learning-v2.css","./teacher-game-reports.css",
@@ -29,6 +31,8 @@ for(const legacy of [
   "./real-child-art-fix.css","./site-design.css"
 ])if(imports.includes(legacy))fail(`legacy page visual layer is still imported: ${legacy}`);
 for(const token of ["--aa-ink","--aa-blue",".aa-app",".aa-home-hero",".aa-world-grid",".aa-login-shell",".aa-surah-grid",".aa-game-grid"])if(!ui.includes(token))fail(`UI v4 is missing ${token}`);
+for(const color of ["#1E6F5C","#4EA8DE","#E9C46A","#F7F6F0","#2B2D42"])if(!brand.includes(color))fail(`brand identity is missing official palette color ${color}`);
+for(const forbidden of ["#EE91BC","#A38BE0","#D4649D"]){if(brand.toUpperCase().includes(forbidden))fail(`brand identity reintroduced an off-palette hue ${forbidden}`);}
 for(const component of [home,child]){
   if(!component.includes("AppShell"))fail("core rebuilt pages must use the UI v4 shell");
   if(/homeV2|child-world-home|kidsHeroScene|real-child-hero-img/.test(component))fail("legacy homepage/child markup leaked into UI v4");
@@ -43,4 +47,4 @@ for(const emoji of ["🍃","🚪","🎁","🪞","✨"])if(newHub.includes(emoji)
 if(family.includes('avatar:child.avatar||"🧒🏻"')||family.includes('avatar: child.avatar || "🧒🏻"'))fail("Family child editing still uses an emoji avatar fallback");
 
 if(process.exitCode)process.exit(process.exitCode);
-console.log("Site foundation OK: clean-sheet UI v4, media attribution, WordPress portability and Tafsir safety gates validated.");
+console.log("Site foundation OK: UI v4 structure, official 5-color brand identity, media attribution, WordPress portability and Tafsir safety gates validated.");
