@@ -22,6 +22,13 @@ export class GameEngine {
     };
   }
 
+  attach(session) {
+    if (!session || session.game_id !== this.gameId) throw new Error("جلسة الاستكمال لا تخص هذه اللعبة.");
+    if (session.completed) throw new Error("لا يمكن استكمال جلسة منتهية.");
+    this.session = session;
+    return this.session;
+  }
+
   async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [] } = {}) {
     if (this.teacherPreview) {
       this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: surahNumber, selected_ayahs: ayahNumbers, preview: true };
@@ -88,6 +95,18 @@ export class GameEngine {
     });
     this.session = Array.isArray(result) ? result[0] : result;
     return this.session;
+  }
+
+  static async abandonSession(sessionId) {
+    if (!sessionId) return null;
+    const result = await rpc("abandon_game_session", { p_session_id: sessionId });
+    return Array.isArray(result) ? result[0] : result;
+  }
+
+  static async recentEvents(childId, gameId, limit = 40) {
+    if (!childId || !gameId) return [];
+    const bounded = Math.max(1, Math.min(100, Number(limit) || 40));
+    return rest(`/game_ayah_events?child_id=eq.${encodeURIComponent(childId)}&game_id=eq.${encodeURIComponent(gameId)}&select=surah_number,ayah_number,question_type,is_correct,metadata,created_at&order=created_at.desc&limit=${bounded}`);
   }
 
   static async latestIncomplete(childId, gameId) {

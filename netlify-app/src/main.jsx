@@ -18,6 +18,7 @@ import "./quran-game-batch2.css";
 import "./quran-game-batch3.css";
 import "./quran-game-batch4.css";
 import "./new-quran-game-pack.css";
+import "./adaptive-games.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");const basePath=configuredBase==="/"?"":configuredBase;
 window.__ABU_ROUTE_PATH__=()=>{const pathname=window.location.pathname||"/";if(!basePath)return pathname;if(pathname===basePath||pathname===`${basePath}/`)return "/";if(pathname.startsWith(`${basePath}/`))return pathname.slice(basePath.length)||"/";return pathname;};

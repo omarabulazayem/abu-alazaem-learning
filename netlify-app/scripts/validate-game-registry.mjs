@@ -37,6 +37,19 @@ if(/newGameDefinitions|gameDefinitions/.test(hub+newHub))fail("hub still referen
 const files=await walk(src);const lower=new Map();
 for(const file of files){const rel=path.relative(src,file).replaceAll(path.sep,"/");const key=rel.toLowerCase();if(lower.has(key)&&lower.get(key)!==rel)fail(`case-insensitive filename collision: ${lower.get(key)} vs ${rel}`);else lower.set(key,rel);if(/\.(?:js|jsx|mjs)$/.test(file)){const text=await fs.readFile(file,"utf8");if(text.includes("./QuranData.js")||text.includes("./quranData.js"))fail(`legacy QuranData import remains in ${rel}`);}}
 for(const retired of ["QuranData.js","quranData.js","gameDefinitions.js","newGameDefinitions.js"]){try{await fs.access(path.join(src,retired));fail(`retired source still exists: ${retired}`);}catch{}}
+const adaptiveSource=await fs.readFile(path.join(src,"adaptiveGameSession.js"),"utf8");
+const adaptiveLearningSource=await fs.readFile(path.join(src,"adaptiveLearning.js"),"utf8");
+const adaptiveCss=await fs.readFile(path.join(src,"adaptive-games.css"),"utf8");
+const mainSource=await fs.readFile(path.join(src,"main.jsx"),"utf8");
+const engineSource=await fs.readFile(path.join(src,"gameEngine.js"),"utf8");
+for(const token of ["GameEngine.dueReview","GameEngine.latestIncomplete","GameEngine.recentEvents","nextEngine.save","nextEngine.attach","GameEngine.abandonSession"])if(!adaptiveSource.includes(token))fail(`adaptive session missing ${token}`);
+if(adaptiveLearningSource.includes("Math.random"))fail("adaptive question selection must not use Math.random");
+for(const token of ["onPointerDown","onPointerMove","onPointerUp","onKeyDown"])if(!expansion.includes(token))fail(`Build Ayah missing ${token}`);
+if(!adaptiveCss.includes("touch-action:none"))fail("adaptive puzzle CSS is not touch-safe");
+if(!mainSource.includes("./adaptive-games.css"))fail("adaptive game CSS is not loaded");
+for(const token of ["attach(session)","recentEvents(childId, gameId","abandonSession(sessionId)","if (this.teacherPreview) return { ...this.local }"])if(!engineSource.includes(token))fail(`GameEngine missing ${token}`);
+const migration=await fs.readFile(path.resolve(root,"..","patches-live/supabase/migrations/20260918_adaptive_game_abandon.sql"),"utf8");
+if(!migration.includes("abandon_game_session")||!migration.includes("reward_awarded = false"))fail("adaptive abandon migration is incomplete");
 if(!router.includes("<NotFoundPage/>"))fail("RootRouter has no explicit NotFound page");
 if(process.exitCode)process.exit(process.exitCode);
 console.log(`Game registry OK: ${GAME_REGISTRY.length} total, ${LIVE_GAME_DEFINITIONS.length} live. Routes, statuses and case-safe Quran modules validated.`);

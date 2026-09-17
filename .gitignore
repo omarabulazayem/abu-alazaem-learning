@@ -1,0 +1,11 @@
+# Dependency/install artifacts
+**/node_modules/
+netlify-app/package-lock.json
+
+# Build output
+netlify-app/dist/
+
+# Tool caches and local logs
+.netlify/
+*.log
+.DS_Store

@@ -1,44 +1,400 @@
-import React,{useEffect,useMemo,useRef,useState}from"react";
-import Icon from"./Icon.jsx";
-import{loadLearningViewer,learningActorReady}from"./learningViewer.js";
-import{getProgress}from"./api.js";
-import{getSurahAyahs,loadQuranData}from"./quranCorpus.js";
-import{GameEngine,gameResultSummary}from"./gameEngine.js";
-import{SoundEngine}from"./soundEngine.js";
+import React, { useEffect, useRef, useState } from "react";
+import Icon from "./Icon.jsx";
+import { useAdaptiveGameSession } from "./adaptiveGameSession.js";
 
-const SAFE=[112,113,114,108,109,110,111,103,104,105,106,107,67];
-const shuffle=a=>[...a].sort(()=>Math.random()-.5);const pick=a=>a[Math.floor(Math.random()*a.length)];
-function path(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():location.pathname}function go(p){if(path()!==p){history.pushState({},"",p);window.dispatchEvent(new PopStateEvent("popstate"))}}
-function usePack(gameId){const[viewer,setViewer]=useState();const[quran,setQuran]=useState();const[surahs,setSurahs]=useState([]);const[error,setError]=useState("");useEffect(()=>{let live=true;(async()=>{try{const v=await loadLearningViewer();if(!live)return;if(!v.user)return go("/login");const q=await loadQuranData();let choices=SAFE;if(!v.teacherPreview&&v.child?.id){const p=await getProgress(v.child.id);const learned=(p||[]).filter(x=>Number(x.memorized_percent||0)>0).map(x=>Number(x.surah_number));if(learned.length)choices=[...new Set(learned)]}if(live){setViewer(v);setQuran(q);setSurahs(choices.filter(n=>q.surahs.some(s=>s.number===n)))}}catch(e){if(live)setError(e.message||"تعذر تجهيز اللعبة")}})();return()=>{live=false}},[gameId]);return{viewer,quran,surahs,error,setError,engine:()=>new GameEngine({childId:viewer?.child?.id,gameId,teacherPreview:Boolean(viewer?.teacherPreview)})}}
-function Shell({title,subtitle,children}){return <div className="app adventure-pack" dir="rtl"><header className="game-topbar"><div className="wrap nav"><button className="brand" onClick={()=>go("/games")}><span className="logo"><Icon name="game" size={22}/></span><span><b>{title}</b><small>{subtitle}</small></span></button><button className="secondary" onClick={()=>go("/games")}>عالم الألعاب</button></div></header><main className="wrap page adventure-page">{children}</main><footer><div className="wrap">أبو العزايم للحفظ الممتع • النص القرآني يأتي من QuranData الموحد.</div></footer></div>}
-function Loading(){return <div className="center"><i className="spinner"/><p>جارٍ تجهيز المغامرة...</p></div>}
-function Result({session,again}){const r=gameResultSummary(session);return <section className="adventure-result"><span className="reward-burst">✨</span><h2>ممتاز! المهمة خلصت</h2><div className="result-stars">{[1,2,3].map(n=><span key={n} className={n<=Number(r?.stars||0)?"earned":""}>★</span>)}</div><p>{r?.correct||0} إجابة صحيحة • {r?.accuracy||0}% دقة</p><button className="primary" onClick={again}>العب جولة جديدة</button></section>}
-function Intro({kicker,title,text}){return <section className="adventure-intro"><span>{kicker}</span><h1>{title}</h1><p>{text}</p></section>}
-async function nextQuestion(runtime,kind="next_ayah",count=3){const surah=pick(runtime.surahs);const verses=await getSurahAyahs(surah);if(verses.length<3)throw new Error("هذه السورة قصيرة لهذا التحدي");const i=Math.floor(Math.random()*(verses.length-1));const current=verses[i],answer=verses[i+1];const opts=shuffle([answer,...shuffle(verses.filter(v=>v.key!==answer.key)).slice(0,count-1)]);return{surah,verses,current,answer,opts,kind}}
-function useRound(runtime,gameId){const[question,setQuestion]=useState();const[engine,setEngine]=useState();const[result,setResult]=useState();const[start,setStart]=useState(0);async function begin(factory){setResult(null);runtime.setError("");const q=await factory();const eng=runtime.engine();await eng.start({difficulty:"medium",surahNumber:q.surah,ayahNumbers:[q.current?.ayahNumber,q.answer?.ayahNumber].filter(Boolean)});setQuestion(q);setEngine(eng);setStart(performance.now())}async function answer(correct,meta={}){if(!engine||!question)return;if(correct)SoundEngine.correct();else SoundEngine.wrong();await engine.recordAnswer({surahNumber:question.surah,ayahNumber:question.answer?.ayahNumber||question.current?.ayahNumber||1,questionType:question.kind||gameId,correct,responseTimeMs:Math.round(performance.now()-start),metadata:meta});if(correct){const done=await engine.complete({elapsedSeconds:Math.round((performance.now()-start)/1000)});SoundEngine.win();setResult(done)}return correct}return{question,engine,result,begin,answer,setQuestion}}
+function routePath() {
+  return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
+}
 
-export function AyahHunterGame(){const r=usePack("ayah-hunter");const round=useRound(r,"ayah-hunter");const[misses,setMisses]=useState(0);useEffect(()=>{if(r.viewer&&r.surahs.length&&!round.question&&!round.result)round.begin(()=>nextQuestion(r,"next_ayah",4)).catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length]);if(r.viewer===undefined)return <Loading/>;return <Shell title="صائد الآية" subtitle="التقط الآية الصحيحة قبل أن تهرب"><Intro kicker="غابة النجوم" title="التقط الآية الصحيحة" text="الأوراق تتحرك. اضغط الورقة التي تكمل التسلسل، وكل نجاح يحولها إلى نجمة."/>{r.error&&<div className="msg error">{r.error}</div>}{round.result?<Result session={round.result} again={()=>{round.setQuestion(null);setMisses(0)}}/>:round.question&&<section className="hunter-stage"><div className="hunter-prompt"><small>بعد هذه الآية</small><p className="quran-text">{round.question.current.text}</p></div><div className="floating-leaves">{round.question.opts.map((o,i)=><button key={o.key} className="floating-leaf" style={{animationDelay:`${i*.18}s`}} onClick={async()=>{const ok=o.key===round.question.answer.key;const done=await round.answer(ok,{misses});if(!done)setMisses(x=>x+1)}}><span>🍃</span><b>{o.text}</b></button>)}</div></section>}</Shell>}
+function go(path) {
+  if (routePath() === path) return;
+  history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 
-export function WhereStartGame(){const r=usePack("where-start");const round=useRound(r,"where-start");const[floor,setFloor]=useState(1);async function factory(){const s=pick(r.surahs),v=await getSurahAyahs(s),a=pick(v.filter(x=>x.words.length>5));const split=Math.max(2,Math.floor(a.words.length/2));const start=a.words.slice(0,split).map(x=>x.text).join(" "),end=a.words.slice(split).map(x=>x.text).join(" ");const other=shuffle(v.filter(x=>x.key!==a.key)).slice(0,2).map(x=>x.words.slice(0,split).map(w=>w.text).join(" "));return{surah:s,current:a,answer:a,kind:"ayah_beginning",end,opts:shuffle([start,...other]),correct:start}}useEffect(()=>{if(r.viewer&&r.surahs.length&&!round.question&&!round.result)round.begin(factory).catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length,round.question,round.result]);if(r.viewer===undefined)return <Loading/>;return <Shell title="من أين أبدأ؟" subtitle="اصعد البرج باختيار البداية الصحيحة"><Intro kicker={`الطابق ${floor}`} title="أي بوابة تبدأ منها الآية؟" text="كل بوابة تحمل بداية مختلفة. افتح الصحيحة لتصعد في البرج."/>{round.result?<Result session={round.result} again={()=>{setFloor(x=>x+1);round.setQuestion(null)}}/>:round.question&&<><div className="tower-end quran-text">… {round.question.end}</div><div className="tower-gates">{round.question.opts.map((t,i)=><button key={i} onClick={()=>round.answer(t===round.question.correct,{floor})}><span>🚪</span><b>{t}</b></button>)}</div></>}</Shell>}
+const THEMES = {
+  "ayah-hunter": {
+    title: "صائد الآية",
+    subtitle: "جولة صيد متعددة الأهداف",
+    kicker: "غابة النجوم",
+    intro: "التقط الآية الصحيحة في عدة نقاط، وليس سؤالًا واحدًا.",
+    kinds: ["next_ayah"],
+    icon: "target",
+    optionIcon: "🍃",
+    scene: "hunter",
+  },
+  "where-start": {
+    title: "من أين أبدأ؟",
+    subtitle: "اصعد البرج طابقًا بعد طابق",
+    kicker: "برج البدايات",
+    intro: "كل طابق يعيد اختبار بداية آية مختلفة.",
+    kinds: ["ayah_beginning"],
+    icon: "quran",
+    optionIcon: "🚪",
+    scene: "tower",
+  },
+  "what-next": {
+    title: "ماذا يأتي بعد؟",
+    subtitle: "اختر الطريق الصحيح",
+    kicker: "ثلاثة مسارات",
+    intro: "كل اختيار صحيح يحركك خطوة جديدة على الطريق.",
+    kinds: ["next_ayah"],
+    icon: "order",
+    optionIcon: "🛤️",
+    scene: "road",
+  },
+  "build-ayah": {
+    title: "ابنِ الآية",
+    subtitle: "سحب وإفلات حقيقي",
+    kicker: "طاولة التركيب",
+    intro: "اسحب القطع باللمس أو الماوس، واستخدم لوحة المفاتيح كبديل.",
+    kinds: ["word_order"],
+    icon: "puzzle",
+    scene: "puzzle",
+  },
+  "memory-race": {
+    title: "سباق الذاكرة",
+    subtitle: "5–7 نقاط على الطريق",
+    kicker: "طريق المغامرة",
+    intro: "تتغير المهمة بين التتابع والكلمة الناقصة حتى تصل للنهاية.",
+    kinds: ["next_ayah", "missing_word"],
+    icon: "memory",
+    optionIcon: "☁️",
+    scene: "race",
+  },
+  "surah-treasure": {
+    title: "كنز السورة",
+    subtitle: "محطات قبل الكنز",
+    kicker: "خريطة الكنز",
+    intro: "مر بعدة محطات: تتابع، بداية، وكلمة ناقصة.",
+    kinds: ["next_ayah", "ayah_beginning", "missing_word"],
+    icon: "gift",
+    optionIcon: "🗝️",
+    scene: "treasure",
+  },
+  "where-mentioned": {
+    title: "أين وردت؟",
+    subtitle: "اختر بوابة السورة",
+    kicker: "بوابات السور",
+    intro: "اقرأ الآية وافتح بوابة السورة التي وردت فيها.",
+    kinds: ["surah_name"],
+    icon: "search",
+    optionIcon: "🏛️",
+    scene: "gates",
+  },
+  "missing-word-adventure": {
+    title: "كلمة ضائعة",
+    subtitle: "استعد الكلمات في عدة مراحل",
+    kicker: "ممر الكلمات",
+    intro: "أعد كل كلمة إلى مكانها وتقدم للمحطة التالية.",
+    kinds: ["missing_word"],
+    icon: "edit",
+    optionIcon: "💎",
+    scene: "missing",
+  },
+  "word-box": {
+    title: "صندوق الكلمات",
+    subtitle: "افتح الصناديق بالترتيب",
+    kicker: "صناديق الكلمات",
+    intro: "الجولة تمزج الكلمات الناقصة وترتيب أجزاء الآية.",
+    kinds: ["missing_word", "word_order"],
+    icon: "gift",
+    optionIcon: "🎁",
+    scene: "boxes",
+  },
+};
 
-export function WhatNextGame(){const r=usePack("what-next");const round=useRound(r,"what-next");const[pos,setPos]=useState(0);useEffect(()=>{if(r.viewer&&r.surahs.length&&!round.question&&!round.result)round.begin(()=>nextQuestion(r,"next_ayah",3)).catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length,round.question,round.result]);if(r.viewer===undefined)return <Loading/>;return <Shell title="ماذا يأتي بعد؟" subtitle="اختر الطريق الصحيح"><Intro kicker="ثلاثة مسارات" title="حرّك الشخصية في الطريق الصحيح" text="اختيار الآية الصحيحة يحركك للأمام نحو النجمة التالية."/><div className="road-progress"><span style={{transform:`translateX(${-pos*28}px)`}}>🧒</span>{[0,1,2,3].map(i=><i key={i}>⭐</i>)}</div>{round.result?<Result session={round.result} again={()=>{setPos(x=>Math.min(3,x+1));round.setQuestion(null)}}/>:round.question&&<><p className="quran-text road-prompt">{round.question.current.text}</p><div className="road-lanes">{round.question.opts.map((o,i)=><button key={o.key} onClick={()=>round.answer(o.key===round.question.answer.key,{lane:i})}><span>🛤️</span><b>{o.text}</b></button>)}</div></>}</Shell>}
+function Header({ theme, teacherPreview }) {
+  return (
+    <header className="game-topbar">
+      <div className="wrap nav">
+        <button className="brand" onClick={() => go("/games")}>
+          <span className="logo"><Icon name={theme.icon || "game"} size={22} /></span>
+          <span><b>{theme.title}</b><small>{teacherPreview ? "معاينة المعلم — بلا كتابة بيانات" : theme.subtitle}</small></span>
+        </button>
+        <button className="secondary" onClick={() => go("/games")}><Icon name="arrow" size={17} /> عالم الألعاب</button>
+      </div>
+    </header>
+  );
+}
 
-function sortableMove(list,setList,from,to){if(to<0||to>=list.length)return;setList(x=>{const n=[...x],[m]=n.splice(from,1);n.splice(to,0,m);return n})}
-export function BuildAyahGame(){const r=usePack("build-ayah");const[pieces,setPieces]=useState([]);const[ayah,setAyah]=useState();const[eng,setEng]=useState();const[result,setResult]=useState();async function begin(){const s=pick(r.surahs),v=await getSurahAyahs(s),a=pick(v.filter(x=>x.words.length>=4&&x.words.length<=14)),e=r.engine();await e.start({difficulty:"medium",surahNumber:s,ayahNumbers:[a.ayahNumber]});setAyah(a);setPieces(shuffle(a.words.map((w,i)=>({id:i,text:w.text}))));setEng(e);setResult(null)}useEffect(()=>{if(r.viewer&&r.surahs.length&&!ayah&&!result)begin().catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length,ayah,result]);async function verify(){const ok=pieces.map(x=>x.text).join(" ")===ayah.words.map(x=>x.text).join(" ");await eng.recordAnswer({surahNumber:ayah.surahNumber,ayahNumber:ayah.ayahNumber,questionType:"word_order",correct:ok});if(!ok){SoundEngine.wrong();r.setError("قريبة! حرّك القطع مرة ثانية.");return}SoundEngine.correct();setResult(await eng.complete({}))}if(r.viewer===undefined)return <Loading/>;return <Shell title="ابنِ الآية" subtitle="Puzzle قرآني"><Intro kicker="طاولة التركيب" title="رتّب قطع الآية" text="حرّك كل قطعة يمينًا أو يسارًا حتى تتكوّن الآية كاملة."/>{r.error&&<div className="msg error">{r.error}</div>}{result?<Result session={result} again={()=>{setAyah(null);setResult(null)}}/>:<><div className="ayah-puzzle">{pieces.map((p,i)=><article key={p.id}><b>{p.text}</b><div><button onClick={()=>sortableMove(pieces,setPieces,i,i-1)}>←</button><button onClick={()=>sortableMove(pieces,setPieces,i,i+1)}>→</button></div></article>)}</div><button className="primary full" onClick={verify}>ركّب الآية</button></>}</Shell>}
+function Stars({ count = 0 }) {
+  return <div className="result-stars">{[1, 2, 3].map(n => <span key={n} className={n <= count ? "earned" : ""}>★</span>)}</div>;
+}
 
-export function MemoryRaceGame(){const r=usePack("memory-race");const round=useRound(r,"memory-race");const[step,setStep]=useState(0);const scenes=["🌿","☁️","🏰","🌙","🌈"];useEffect(()=>{if(r.viewer&&r.surahs.length&&!round.question&&!round.result)round.begin(()=>nextQuestion(r,"next_ayah",3)).catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length,round.question,round.result]);if(r.viewer===undefined)return <Loading/>;return <Shell title="سباق الذاكرة" subtitle="طريق قصير مليء بالمفاجآت"><Intro kicker="طريق المغامرة" title="وصل للكنز قبل نهاية الجولة" text="كل إجابة صحيحة تفتح جزءًا جديدًا من الطريق."/><div className="race-scene"><div className="race-bg">{scenes[step%scenes.length]}<span className="racer" style={{right:`${8+step*18}%`}}>🏃</span><span className="race-goal">🎁</span></div></div>{round.result?<Result session={round.result} again={()=>{setStep(x=>Math.min(4,x+1));round.setQuestion(null)}}/>:round.question&&<div className="race-question"><p className="quran-text">{round.question.current.text}</p><div className="choice-clouds">{round.question.opts.map(o=><button key={o.key} onClick={()=>round.answer(o.key===round.question.answer.key,{step})}>{o.text}</button>)}</div></div>}</Shell>}
+function difficultyLabel(value) {
+  if (value === "easy") return "سهل";
+  if (value === "hard") return "متقدم";
+  return "متوسط";
+}
 
-export function SurahTreasureGame(){const r=usePack("surah-treasure");const[station,setStation]=useState(0);const round=useRound(r,"surah-treasure");useEffect(()=>{if(r.viewer&&r.surahs.length&&!round.question&&!round.result&&station<4)round.begin(()=>nextQuestion(r,station%2?"ayah_beginning":"next_ayah",3)).catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length,round.question,round.result,station]);if(r.viewer===undefined)return <Loading/>;const labels=["البداية","الجسر","بوابة النجوم","الكنز"];return <Shell title="كنز السورة" subtitle="رحلة قصيرة داخل السورة"><Intro kicker="خريطة السورة" title="افتح المحطات حتى تصل للكنز" text="كل محطة تقدم مهمة قصيرة مختلفة من الحفظ."/><div className="treasure-map">{labels.map((x,i)=><div key={x} className={i<station?"done":i===station?"active":""}><span>{i===3?"🎁":i===1?"🌉":"⭐"}</span><b>{x}</b></div>)}</div>{station>=4?<section className="treasure-open"><div>🎁✨</div><h2>الكنز بقى معاك!</h2><button className="primary" onClick={()=>setStation(0)}>رحلة جديدة</button></section>:round.result?<Result session={round.result} again={()=>{setStation(x=>x+1);round.setQuestion(null)}}/>:round.question&&<div className="treasure-task"><p className="quran-text">{round.question.current.text}</p>{round.question.opts.map(o=><button key={o.key} onClick={()=>round.answer(o.key===round.question.answer.key,{station})}>{o.text}</button>)}</div>}</Shell>}
+function DifficultyPicker({ value, onChange, auto }) {
+  return (
+    <div className="adaptive-difficulty">
+      <button className={value === "auto" ? "active" : ""} onClick={() => onChange("auto")}>ذكي <small>{difficultyLabel(auto)}</small></button>
+      <button className={value === "easy" ? "active" : ""} onClick={() => onChange("easy")}>سهل</button>
+      <button className={value === "medium" ? "active" : ""} onClick={() => onChange("medium")}>متوسط</button>
+      <button className={value === "hard" ? "active" : ""} onClick={() => onChange("hard")}>متقدم</button>
+    </div>
+  );
+}
 
-export function SimilarityMirrorGame(){const r=usePack("similarity-mirror");const[focus,setFocus]=useState();const[done,setDone]=useState(false);useEffect(()=>{if(!r.quran||focus)return;const verses=r.quran.verses.filter(v=>v.words.length>=4&&v.words.length<=10);const a=pick(verses),b=pick(verses.filter(v=>v.surahNumber!==a.surahNumber&&v.words.some(w=>a.words.some(x=>x.text===w.text))));setFocus({a,b})},[r.quran,focus]);if(r.viewer===undefined)return <Loading/>;if(!focus)return <Loading/>;const common=new Set(focus.a.words.map(w=>w.text).filter(t=>focus.b.words.some(w=>w.text===t)));return <Shell title="مرآة المتشابهات" subtitle="اكتشف الفرق بنفسك"><Intro kicker="غرفة المرآتين" title="المس الكلمات المختلفة" text="الكلمات المشتركة هادئة، والمطلوب اكتشاف الكلمات التي صنعت الفرق بين المقطعين."/><div className="mirror-room"><article><span>🪞</span><p>{focus.a.words.map((w,i)=><button key={i} className={common.has(w.text)?"common":"different"} onClick={()=>!common.has(w.text)&&setDone(true)}>{w.text}</button>)}</p></article><article><span>🪞</span><p>{focus.b.words.map((w,i)=><button key={i} className={common.has(w.text)?"common":"different"} onClick={()=>!common.has(w.text)&&setDone(true)}>{w.text}</button>)}</p></article></div>{done&&<div className="success-toast">✨ أحسنت! وجدت كلمة مختلفة. <button onClick={()=>{setDone(false);setFocus(null)}}>مرآة جديدة</button></div>}</Shell>}
+function StartPanel({ session }) {
+  return (
+    <section className="adaptive-start panel">
+      <div>
+        <span className="game-kicker"><Icon name="sparkle" size={18} /> مستوى الجولة</span>
+        <h2>جولة من 5–7 تحديات</h2>
+        <p>الوضع الذكي يختار المستوى حسب العمر وأداء الجولات السابقة، ويمكن تغييره يدويًا قبل البداية.</p>
+      </div>
+      <DifficultyPicker value={session.manualDifficulty} onChange={session.setManualDifficulty} auto={session.autoDifficulty} />
+      {session.resumeCandidate ? (
+        <div className="resume-card">
+          <b>لديك جولة لم تكتمل</b>
+          <p>تقدر تكمل من مكانك أو تبدأ جولة جديدة.</p>
+          <div className="row">
+            <button className="primary" disabled={session.busy} onClick={session.resume}>تكمل من مكانك؟</button>
+            <button className="secondary" disabled={session.busy} onClick={session.startNew}>بدء جولة جديدة</button>
+          </div>
+        </div>
+      ) : (
+        <button className="primary adaptive-start-button" disabled={session.busy || !session.actorReady} onClick={session.startNew}>
+          {session.busy ? "جارٍ تجهيز الجولة..." : "ابدأ الجولة"}
+        </button>
+      )}
+    </section>
+  );
+}
 
-export function WhereMentionedGame(){const r=usePack("where-mentioned");const[question,setQuestion]=useState();const[status,setStatus]=useState("");useEffect(()=>{if(!r.quran||question)return;const studied=r.surahs;const s=pick(studied),verses=r.quran.verses.filter(v=>v.surahNumber===s),a=pick(verses),others=shuffle(r.quran.surahs.filter(x=>studied.includes(x.number)&&x.number!==s)).slice(0,3);const correct=r.quran.surahs.find(x=>x.number===s);setQuestion({a,correct,opts:shuffle([correct,...others])})},[r.quran,r.surahs.length,question]);if(r.viewer===undefined||!question)return <Loading/>;return <Shell title="أين وردت؟" subtitle="اربط الآية بالسورة التي درستها"><Intro kicker="من محفوظك فقط" title="في أي سورة ورد هذا المقطع؟" text="الاختيارات تأتي من السور التي بدأ الطفل دراستها، وليست من محتوى عشوائي."/><blockquote className="quran-text mention-card">{question.a.text}</blockquote><div className="surah-doors">{question.opts.map(o=><button key={o.number} onClick={()=>{const ok=o.number===question.correct.number;setStatus(ok?"✨ أحسنت!":"قريبة! جرّب سورة أخرى.");ok&&SoundEngine.correct()}}>{o.name}</button>)}</div>{status&&<div className="success-toast">{status} {status.startsWith("✨")&&<button onClick={()=>{setStatus("");setQuestion(null)}}>سؤال جديد</button>}</div>}</Shell>}
+function ProgressScene({ theme, index, total }) {
+  const progress = total ? Math.round((index / total) * 100) : 0;
+  const marker = theme.scene === "race" ? "🏃" : theme.scene === "treasure" ? "🗺️" : theme.scene === "tower" ? "🧒" : "⭐";
+  return (
+    <div className={`adaptive-scene ${theme.scene}`}>
+      <div className="adaptive-scene-copy"><span>{theme.kicker}</span><b>المهمة {Math.min(index + 1, total)} من {total}</b></div>
+      <div className="adaptive-track"><i style={{ width: `${progress}%` }} /><span style={{ insetInlineStart: `calc(${progress}% - 16px)` }}>{marker}</span></div>
+    </div>
+  );
+}
 
-export function SimilarityBoxesGame(){const r=usePack("similarity-boxes");const round=useRound(r,"similarity-boxes");const[opened,setOpened]=useState(null);useEffect(()=>{if(r.viewer&&r.surahs.length&&!round.question&&!round.result)round.begin(()=>nextQuestion(r,"next_ayah",3)).catch(e=>r.setError(e.message))},[r.viewer,r.surahs.length,round.question,round.result]);if(r.viewer===undefined)return <Loading/>;return <Shell title="صندوق المتشابهات" subtitle="كل صندوق يخفي تحديًا"><Intro kicker="غرفة الصناديق" title="اختر صندوقًا ثم حل التحدي" text="مكان التحدي يتغير كل مرة حتى لا تصبح الجولة متوقعة."/>{opened===null?<div className="mystery-boxes">{[0,1,2,3].map(i=><button key={i} onClick={()=>setOpened(i)}><span>🎁</span><b>صندوق {i+1}</b></button>)}</div>:round.result?<Result session={round.result} again={()=>{setOpened(null);round.setQuestion(null)}}/>:round.question&&<div className="box-challenge"><p className="quran-text">{round.question.current.text}</p>{round.question.opts.map(o=><button key={o.key} onClick={()=>round.answer(o.key===round.question.answer.key,{box:opened})}>{o.text}</button>)}</div>}</Shell>}
+function Prompt({ challenge }) {
+  if (challenge.kind === "missing_word") {
+    return <><span className="question-label">أعد الكلمة الضائعة</span><blockquote className="quran-text">{challenge.promptText}</blockquote></>;
+  }
+  if (challenge.kind === "ayah_beginning") {
+    return <><span className="question-label">أي بداية تكمل هذه الآية؟</span><blockquote className="quran-text">{challenge.promptText}</blockquote></>;
+  }
+  if (challenge.kind === "surah_name") {
+    return <><span className="question-label">في أي سورة وردت هذه الآية؟</span><blockquote className="quran-text">{challenge.promptText}</blockquote></>;
+  }
+  return <><span className="question-label">ما الآية التالية؟</span><blockquote className="quran-text">{challenge.promptText}</blockquote></>;
+}
 
-export function MissingWordAdventureGame(){const r=usePack("missing-word-adventure");const[q,setQ]=useState();const[eng,setEng]=useState();const[result,setResult]=useState();async function begin(){const s=pick(r.surahs),v=await getSurahAyahs(s),a=pick(v.filter(x=>x.words.length>4));const idx=1+Math.floor(Math.random()*(a.words.length-2)),target=a.words[idx].text,masked=a.words.map((w,i)=>i===idx?"____":w.text).join(" "),pool=shuffle(r.quran.verses.flatMap(x=>x.words).filter(w=>w.text!==target)).slice(0,3).map(x=>x.text),e=r.engine();await e.start({difficulty:"medium",surahNumber:s,ayahNumbers:[a.ayahNumber]});setQ({surah:s,a,target,masked,opts:shuffle([target,...pool]),kind:"missing_word"});setEng(e);setResult(null)}useEffect(()=>{if(r.viewer&&r.quran&&r.surahs.length&&!q&&!result)begin().catch(e=>r.setError(e.message))},[r.viewer,r.quran,r.surahs.length,q,result]);async function choose(t){const ok=t===q.target;await eng.recordAnswer({surahNumber:q.surah,ayahNumber:q.a.ayahNumber,questionType:"missing_word",correct:ok});if(!ok){SoundEngine.wrong();r.setError("هممم... دي مش هي. نجرّب واحدة تانية؟");return}SoundEngine.correct();setResult(await eng.complete({}))}if(r.viewer===undefined||!r.quran)return <Loading/>;return <Shell title="كلمة ضائعة" subtitle="ابحث عن الكلمة المفقودة"><Intro kicker="رحلة الكلمات" title="أي كلمة تعيد الآية كما كانت؟" text="الكلمات تتحرك أمامك، واختيار الصحيحة يعيد القطعة المفقودة."/>{r.error&&<div className="msg error">{r.error}</div>}{result?<Result session={result} again={()=>{setQ(null);setResult(null)}}/>:q&&<><blockquote className="quran-text missing-card">{q.masked}</blockquote><div className="moving-words">{q.opts.map((x,i)=><button style={{animationDelay:`${i*.12}s`}} key={`${x}-${i}`} onClick={()=>choose(x)}>{x}</button>)}</div></>}</Shell>}
+function WordPuzzle({ challenge, onSubmit, busy, revealed }) {
+  const [pieces, setPieces] = useState(challenge.pieces);
+  const dragIndex = useRef(null);
 
-export function WordBoxGame(){const r=usePack("word-box");const[q,setQ]=useState();const[score,setScore]=useState(0);useEffect(()=>{if(!r.quran||q)return;const s=pick(r.surahs),a=pick(r.quran.verses.filter(v=>v.surahNumber===s&&v.words.length>3)),target=pick(a.words).text,letters=shuffle([target,...shuffle(r.quran.verses.flatMap(v=>v.words).filter(w=>w.text!==target)).slice(0,5).map(w=>w.text)]);setQ({a,target,letters})},[r.quran,r.surahs.length,q]);if(r.viewer===undefined||!q)return <Loading/>;return <Shell title="صندوق الكلمات" subtitle="فتّش داخل الصندوق"><Intro kicker={`النقاط ${score}`} title="أين الكلمة الموجودة في الآية؟" text="افتح الكلمات المتحركة حتى تجد الكلمة المطلوبة من نفس الآية."/><blockquote className="quran-text wordbox-source">{q.a.text}</blockquote><div className="word-box"><div className="box-lid">📦</div>{q.letters.map((x,i)=><button key={`${x}-${i}`} onClick={()=>{if(x===q.target){SoundEngine.correct();setScore(s=>s+1);setQ(null)}else SoundEngine.wrong()}}>{x}</button>)}</div></Shell>}
+  useEffect(() => {
+    if (revealed) {
+      setPieces(challenge.answerOrder.map(id => challenge.pieces.find(piece => piece.id === id)).filter(Boolean));
+    } else {
+      setPieces(challenge.pieces);
+    }
+  }, [challenge.id, challenge.pieces, challenge.answerOrder, revealed]);
 
-export const NEW_GAME_ROUTES={
-"/games/ayah-hunter":AyahHunterGame,"/games/where-start":WhereStartGame,"/games/what-next":WhatNextGame,"/games/build-ayah":BuildAyahGame,"/games/memory-race":MemoryRaceGame,"/games/surah-treasure":SurahTreasureGame,"/games/similarity-mirror":SimilarityMirrorGame,"/games/where-mentioned":WhereMentionedGame,"/games/similarity-boxes":SimilarityBoxesGame,"/games/missing-word-adventure":MissingWordAdventureGame,"/games/word-box":WordBoxGame};
+  function move(from, to) {
+    if (to < 0 || to >= pieces.length || from === to) return;
+    setPieces(previous => {
+      const next = [...previous];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }
+
+  function pointerDown(event, index) {
+    if (busy || revealed) return;
+    dragIndex.current = index;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function pointerMove(event) {
+    if (dragIndex.current == null || busy || revealed) return;
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-piece-index]");
+    if (!target) return;
+    const to = Number(target.dataset.pieceIndex);
+    if (Number.isFinite(to) && to !== dragIndex.current) {
+      move(dragIndex.current, to);
+      dragIndex.current = to;
+    }
+  }
+
+  function pointerUp() {
+    dragIndex.current = null;
+  }
+
+  function keyboardMove(event, index) {
+    if (busy || revealed) return;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      move(index, index + 1);
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      move(index, index - 1);
+    }
+  }
+
+  return (
+    <div className="adaptive-puzzle">
+      <div className="adaptive-pieces">
+        {pieces.map((piece, index) => (
+          <article
+            key={piece.id}
+            data-piece-index={index}
+            tabIndex="0"
+            onPointerDown={event => pointerDown(event, index)}
+            onPointerMove={pointerMove}
+            onPointerUp={pointerUp}
+            onPointerCancel={pointerUp}
+            onKeyDown={event => keyboardMove(event, index)}
+          >
+            <span className="drag-handle">↕</span><b>{piece.label}</b><small>{index + 1}</small>
+          </article>
+        ))}
+      </div>
+      <button className="primary full" disabled={busy || revealed} onClick={() => onSubmit(pieces.map(piece => piece.id))}>تحقق من الترتيب</button>
+      <small className="keyboard-note">اسحب باللمس أو الماوس، أو استخدم الأسهم من لوحة المفاتيح.</small>
+    </div>
+  );
+}
+
+function Feedback({ session, challenge }) {
+  return (
+    <>
+      {session.hintVisible && <div className="adaptive-hint"><Icon name="lightbulb" size={18} />{challenge.hint}</div>}
+      {session.feedback && <div className={session.revealed ? "msg error" : "msg ok"}>{session.feedback}</div>}
+      <div className="attempt-dots"><span className={session.attempt >= 1 ? "used" : ""} /><span className={session.attempt >= 2 ? "used" : ""} /><span className={session.attempt >= 3 ? "used" : ""} /></div>
+    </>
+  );
+}
+
+function ChallengeView({ theme, session }) {
+  const challenge = session.challenge;
+  if (!challenge) return null;
+  if (challenge.kind === "word_order") {
+    return (
+      <section className="adaptive-challenge puzzle">
+        <div className="challenge-heading"><span>رتّب الآية</span><h2>{challenge.promptText}</h2></div>
+        <WordPuzzle challenge={challenge} onSubmit={session.submitOrder} busy={session.busy} revealed={session.revealed} />
+        <Feedback session={session} challenge={challenge} />
+      </section>
+    );
+  }
+  return (
+    <section className={`adaptive-challenge ${theme.scene}`}>
+      <Prompt challenge={challenge} />
+      <div className="adaptive-options">
+        {challenge.options.map(option => (
+          <button
+            key={option.id}
+            disabled={session.busy || session.revealed}
+            className={session.revealed && String(option.id) === String(challenge.answerId) ? "revealed-correct" : ""}
+            onClick={() => session.choose(option)}
+          >
+            <span>{theme.optionIcon || "✨"}</span><b>{option.label}</b>
+          </button>
+        ))}
+      </div>
+      <Feedback session={session} challenge={challenge} />
+    </section>
+  );
+}
+
+function ResultPanel({ theme, session }) {
+  const result = session.result;
+  const summary = result?.summary;
+  if (!result || !summary) return null;
+  return (
+    <section className="adaptive-result panel">
+      <span className="adaptive-trophy"><Icon name="trophy" size={45} /></span>
+      <h2>اكتملت رحلة {theme.title}</h2>
+      <Stars count={summary.stars} />
+      <div className="adaptive-result-grid">
+        <div><b>{summary.score}</b><small>Score</small></div>
+        <div><b>{summary.accuracy}%</b><small>دقة</small></div>
+        <div><b>{summary.correct}</b><small>إجابات صحيحة</small></div>
+        <div><b>{summary.wrong}</b><small>محاولات خاطئة</small></div>
+        <div><b>{result.reviewKeys.length}</b><small>آيات تحتاج مراجعة</small></div>
+        <div><b>{result.bestScore}</b><small>أفضل نتيجة</small></div>
+      </div>
+      <p>{session.viewer?.teacherPreview ? "هذه معاينة فقط ولم تُكتب جلسة أو مكافآت أو Review Queue." : result.improved ? "نتيجتك تحسنت عن أفضل نتيجة سابقة." : result.previousBest ? "حافظ على الاستمرار لتحسين أفضل نتيجة." : "هذه أول نتيجة محفوظة لهذه اللعبة."}</p>
+      {!session.viewer?.teacherPreview && result.reviewKeys.length > 0 && <div className="adaptive-review-list"><b>آيات نرجع لها في المراجعة</b><div>{result.reviewKeys.map(key => { const [surah, ayah] = key.split(":"); return <span key={key}>سورة {surah} • آية {ayah}</span>; })}</div></div>}
+      {result.suggestedDifficulty !== session.difficulty && <div className="adaptive-suggestion">الجولة القادمة مناسبة على مستوى <b>{difficultyLabel(result.suggestedDifficulty)}</b>.</div>}
+      <div className="row"><button className="secondary" onClick={() => go("/games")}>عالم الألعاب</button><button className="primary" onClick={session.reset}>جولة جديدة</button></div>
+    </section>
+  );
+}
+
+function AdaptiveGame({ gameId }) {
+  const theme = THEMES[gameId];
+  const session = useAdaptiveGameSession(gameId, theme.kinds);
+  if (session.viewer === undefined || session.loading) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز الجولة الذكية...</p></div>;
+  return (
+    <div className="app adventure-pack adaptive-pack" dir="rtl">
+      <Header theme={theme} teacherPreview={Boolean(session.viewer?.teacherPreview)} />
+      <main className="wrap page adventure-page">
+        <section className="adventure-intro"><span>{theme.kicker}</span><h1>{theme.title}</h1><p>{theme.intro}</p></section>
+        {session.error && <div className="msg error">{session.error}</div>}
+        {session.result ? (
+          <ResultPanel theme={theme} session={session} />
+        ) : !session.active ? (
+          <StartPanel session={session} />
+        ) : (
+          <><ProgressScene theme={theme} index={session.index} total={session.total} /><ChallengeView theme={theme} session={session} /></>
+        )}
+      </main>
+      <footer><div className="wrap">أبو العزايم للحفظ الممتع • الجولة تمزج المراجعة المستحقة مع المحتوى الذي درسه الطفل.</div></footer>
+    </div>
+  );
+}
+
+function BlockedGame({ title }) {
+  return (
+    <div className="app adventure-pack" dir="rtl">
+      <main className="wrap page narrow">
+        <section className="panel focus">
+          <h1>{title}</h1>
+          <p>هذه اللعبة لا تصبح live حتى يتوفر Dataset متشابهات قرآنية مُراجع، بدل الاعتماد على تشابه لفظي عشوائي.</p>
+          <button className="primary" onClick={() => go("/games")}>العودة للألعاب</button>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export const AyahHunterGame = () => <AdaptiveGame gameId="ayah-hunter" />;
+export const WhereStartGame = () => <AdaptiveGame gameId="where-start" />;
+export const WhatNextGame = () => <AdaptiveGame gameId="what-next" />;
+export const BuildAyahGame = () => <AdaptiveGame gameId="build-ayah" />;
+export const MemoryRaceGame = () => <AdaptiveGame gameId="memory-race" />;
+export const SurahTreasureGame = () => <AdaptiveGame gameId="surah-treasure" />;
+export const SimilarityMirrorGame = () => <BlockedGame title="مرآة المتشابهات" />;
+export const WhereMentionedGame = () => <AdaptiveGame gameId="where-mentioned" />;
+export const SimilarityBoxesGame = () => <BlockedGame title="صندوق المتشابهات" />;
+export const MissingWordAdventureGame = () => <AdaptiveGame gameId="missing-word-adventure" />;
+export const WordBoxGame = () => <AdaptiveGame gameId="word-box" />;
+
+export const NEW_GAME_ROUTES = {
+  "/games/ayah-hunter": AyahHunterGame,
+  "/games/where-start": WhereStartGame,
+  "/games/what-next": WhatNextGame,
+  "/games/build-ayah": BuildAyahGame,
+  "/games/memory-race": MemoryRaceGame,
+  "/games/surah-treasure": SurahTreasureGame,
+  "/games/similarity-mirror": SimilarityMirrorGame,
+  "/games/where-mentioned": WhereMentionedGame,
+  "/games/similarity-boxes": SimilarityBoxesGame,
+  "/games/missing-word-adventure": MissingWordAdventureGame,
+  "/games/word-box": WordBoxGame,
+};
