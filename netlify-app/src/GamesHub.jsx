@@ -13,6 +13,10 @@ const quranWorld=[
   {id:"ayah-order",icon:"order",title:"مكتبة الترتيب",subtitle:"ترتيب الآيات",description:"اسحب الآيات باللمس حتى تعود إلى ترتيبها في QuranData.",route:"/games/ayah-order",tone:"mint"},
   {id:"complete-ayah",icon:"edit",title:"ورشة الآيات",subtitle:"إكمال الآية",description:"استرجع الكلمة الناقصة من النص القرآني المرجعي.",route:"/games/complete-ayah",tone:"rose"},
   {id:"quick-memory",icon:"memory",title:"غرفة الذاكرة",subtitle:"الذاكرة السريعة",description:"شاهد الآية لثوانٍ ثم استرجع الكلمة المفقودة.",route:"/games/quick-memory",tone:"lavender"},
+  {id:"word-train",icon:"order",title:"محطة القطار",subtitle:"قطار الكلمات",description:"رتّب كلمات الآية كعربات متتابعة ثم شغّل القطار.",route:"/games/train",tone:"sun"},
+  {id:"ayah-burger",icon:"order",title:"مطبخ الآيات",subtitle:"صانع البرجر",description:"ابنِ الآية من أجزاء مرتبة كطبقات فوق بعضها.",route:"/games/burger",tone:"rose"},
+  {id:"knowledge-bridge",icon:"target",title:"وادي المعرفة",subtitle:"جسر المعرفة",description:"كل إجابة صحيحة تبني لوحًا جديدًا حتى تعبر الجسر.",route:"/games/bridge",tone:"sky"},
+  {id:"flip-cards",icon:"memory",title:"قاعة البطاقات",subtitle:"البطاقات المقلوبة",description:"طابق بداية الآية بنهايتها الصحيحة من نفس السورة.",route:"/games/flip-cards",tone:"mint"},
 ];
 
 const classicGames=[
@@ -35,7 +39,7 @@ export default function GamesHub(){
       {error&&<div className="msg error">{error}</div>}
       <section className="world-section"><div className="world-heading"><div><span>المناطق المفتوحة الآن</span><h2>ألعاب تعتمد على QuranData</h2><p>كل منطقة أدناه قابلة للدخول واللعب بالكامل، ولا توجد أزرار لصفحات فارغة.</p></div></div><div className="world-map-grid">{quranWorld.map((game,index)=>{const p=progress.find(x=>x.game_id===game.id);return <button key={game.id} className={`world-zone ${game.tone}`} disabled={!learningActorReady(viewer)} onClick={()=>navigate(game.route)}><span className="zone-number">{String(index+1).padStart(2,"0")}</span><span className="zone-icon"><Icon name={game.icon} size={42}/></span><span className="zone-copy"><small>{game.title}</small><b>{game.subtitle}</b><p>{game.description}</p></span><span className="zone-progress">{teacherPreview?"معاينة":p?.best_stars?`${p.best_stars}/3 نجوم` : "ابدأ أول جولة"}<Icon name="arrow" size={18}/></span></button>;})}</div></section>
       <section className="world-section classic-zone"><div className="world-heading"><div><span>ألعاب إضافية</span><h2>الألعاب الحالية</h2><p>تظل قابلة للعب أثناء نقل نظام المكافآت القديم إلى GameEngine الجديد.</p></div></div><div className="game-grid compact-games">{classicGames.map(game=><article className="game-card" key={game.id}><div className="game-card-top"><div className="game-icon"><Icon name={game.icon} size={38}/></div><span className="level-chip">متاحة</span></div><h2>{game.title}</h2><p>{game.description}</p><button className="game-play" disabled={!learningActorReady(viewer)} onClick={()=>navigate(game.route)}>ابدأ اللعبة <Icon name="arrow" size={18}/></button></article>)}</div></section>
-      <section className="mini-tip"><span className="tip-icon"><Icon name="lightbulb" size={25}/></span><div><b>المراجعة الذكية بدأت من الآن</b><p>أي إجابة خاطئة في الألعاب الجديدة تُسجل على مستوى السورة والآية، وتدخل تلقائيًا في طابور المراجعة بدل أن تتحول النتيجة إلى رقم فقط.</p></div></section>
+      <section className="mini-tip"><span className="tip-icon"><Icon name="lightbulb" size={25}/></span><div><b>المراجعة الذكية تعمل داخل الألعاب الجديدة</b><p>أي إجابة خاطئة تُسجل على مستوى السورة والآية، وتدخل تلقائيًا في طابور المراجعة بدل أن تتحول النتيجة إلى رقم فقط.</p></div></section>
     </main><footer><div className="wrap">أبو العزايم للحفظ الممتع • ألعاب القرآن تتعلم من أداء الطفل وتعيد استخدام نقاط الضعف في المراجعة.</div></footer>
   </div>;
 }
