@@ -23,10 +23,13 @@ test("child avatar migration removes emoji defaults at database boundary",async(
   assert.match(sql,/new\.avatar := null/);
 });
 
-test("login page is image and SVG-icon based",async()=>{
+test("login page uses UI v4 components and real child artwork without decorative emoji",async()=>{
   const source=await fs.readFile(path.join(root,"src/LoginPage.jsx"),"utf8");
-  assert.match(source,/Icon/);
+  assert.match(source,/from \"\.\/ui-v4\.jsx\"/);
+  assert.match(source,/aa-login-shell/);
+  assert.match(source,/assets\/hero-kids\.webp/);
   assert.equal(/\p{Extended_Pictographic}/u.test(source),false);
-  const css=await fs.readFile(path.join(root,"src/login-page.css"),"utf8");
-  assert.match(css,/commons\.wikimedia\.org/);
+  const css=await fs.readFile(path.join(root,"src/ui-v4.css"),"utf8");
+  assert.match(css,/\.aa-login-shell/);
+  assert.match(css,/\.aa-login-story/);
 });
