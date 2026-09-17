@@ -11,6 +11,7 @@ import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
 import TeacherAccessBar from "./TeacherAccessBar.jsx";
 import TeacherLearningPreview from "./TeacherLearningPreview.jsx";
+import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
 import { getCurrentUser } from "./api.js";
 import { isTeacherRestrictedRoute } from "./accessPolicy.js";
 
@@ -103,7 +104,7 @@ export default function RootRouter() {
   if (!teacher && childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
   let page;
-  if (path === "/quran") page = <QuranPage />;
+  if (path === "/quran") page = teacher ? <TeacherQuranPreview /> : <QuranPage />;
   else if (path === "/memorize") page = teacher ? <TeacherLearningPreview type="memorize" /> : <MemorizePage />;
   else if (path === "/review") page = teacher ? <TeacherLearningPreview type="review" /> : <App />;
   else if (path === "/games") page = <GamesHub />;
