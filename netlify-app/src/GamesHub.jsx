@@ -21,6 +21,8 @@ const quranWorld=[
   {id:"word-hunter",icon:"target",title:"ساحة الصيد",subtitle:"صائد الكلمات",description:"التقط الكلمة الصحيحة التي تكمل الآية قبل باقي الخيارات.",route:"/games/word-hunter",tone:"sun"},
   {id:"ayah-matching",icon:"review",title:"لوحة الربط",subtitle:"مطابقة الآيات",description:"صل بداية الآية بنهايتها الصحيحة من QuranData.",route:"/games/ayah-matching",tone:"sky"},
   {id:"surah-cards",icon:"order",title:"ممر السور",subtitle:"البطاقات العشوائية",description:"رتّب مجموعة متتالية من السور في ترتيب المصحف الصحيح.",route:"/games/surah-cards",tone:"mint"},
+  {id:"ayah-code",icon:"lock",title:"خزنة الآيات",subtitle:"شفرة الآيات",description:"حل أربع مراحل واجمع أرقام الشفرة حتى تفتح الخزنة.",route:"/games/code",tone:"lavender"},
+  {id:"surah-exam",icon:"trophy",title:"قاعة الاختبار",subtitle:"اختبار حفظ السورة",description:"خمسة أنواع أسئلة تكشف الآيات التي تحتاج مراجعة فعلية.",route:"/games/surah-exam",tone:"rose"},
 ];
 
 const classicGames=[
