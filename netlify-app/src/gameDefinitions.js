@@ -1,3 +1,5 @@
+import { NEW_QURAN_GAME_DEFINITIONS } from "./newGameDefinitions.js";
+
 export const QURAN_GAME_DEFINITIONS = [
   { id:"quran-wheel", title:"العجلة الدوارة", icon:"target", description:"لف العجلة وخذ تحديًا قرآنيًا متجددًا.", ageRange:[4,12], educationalGoal:"الاستدعاء والمراجعة المتنوعة", difficultyLevels:["easy","medium","hard"], supportedQuestionTypes:["next_ayah","complete_ayah","ayah_beginning","ayah_order"], requiredData:["ayah_text","surah","words"], rewards:{completion:true,mastery:true}, scene:"wheel", route:"/games/quran-wheel" },
   { id:"forgetfulness-dungeon", title:"سرداب النسيان", icon:"lock", description:"افتح أبواب السرداب بحل ألغاز الحفظ.", ageRange:[7,12], educationalGoal:"تثبيت الحفظ وكشف نقاط الضعف", difficultyLevels:["easy","medium","hard"], supportedQuestionTypes:["next_ayah","missing_word","ayah_order","surah_name","beginning_ending"], requiredData:["ayah_text","words","review_queue"], rewards:{completion:true,mastery:true}, scene:"dungeon", route:"/games/dungeon" },
@@ -20,6 +22,12 @@ export const QURAN_GAME_DEFINITIONS = [
   { id:"surah-exam", title:"اختبار حفظ السورة", icon:"trophy", description:"اختبار شامل ينتج قائمة آيات تحتاج مراجعة.", ageRange:[7,12], educationalGoal:"قياس إتقان السورة", difficultyLevels:["easy","medium","hard"], supportedQuestionTypes:["next_ayah","complete_ayah","ayah_beginning","ayah_ending","surah_name","ayah_order","missing_word"], requiredData:["ayah_text","words","surah"], rewards:{completion:true,mastery:true}, scene:"exam-hall", route:"/games/surah-exam" },
 ];
 
+export const CLASSIC_GAME_DEFINITIONS = [
+  { id:"classic-memory", title:"لعبة الذاكرة", icon:"brain", description:"طابق البطاقات المتشابهة بأقل عدد من المحاولات.", ageRange:[4,12], educationalGoal:"الذاكرة البصرية", difficultyLevels:["easy"], supportedQuestionTypes:["matching"], requiredData:["symbols"], rewards:{completion:true}, scene:"classic", route:"/games/memory" },
+  { id:"classic-surah-order", title:"رتّب السور", icon:"puzzle", description:"اختبر معرفتك بترتيب السور في المصحف.", ageRange:[6,12], educationalGoal:"ترتيب السور", difficultyLevels:["easy"], supportedQuestionTypes:["surah_order"], requiredData:["surah"], rewards:{completion:true}, scene:"classic", route:"/games/order" },
+  { id:"classic-surah-quiz", title:"اختبار السور", icon:"bolt", description:"خمسة أسئلة سريعة عن السور وأرقامها.", ageRange:[7,12], educationalGoal:"معرفة بيانات السور", difficultyLevels:["easy"], supportedQuestionTypes:["surah_number","ayah_count"], requiredData:["surah"], rewards:{completion:true}, scene:"classic", route:"/games/quiz" },
+];
+
 export const RECREATIONAL_GAME_DEFINITIONS = [
   { id:"xo", title:"XO", icon:"game", description:"استراحة قصيرة ضد الكمبيوتر.", ageRange:[4,12], route:"/games/fun/xo", scene:"playground" },
   { id:"balloon-pop", title:"فرقعة البالونات", icon:"target", description:"اضغط البالونات قبل أن تختفي.", ageRange:[4,12], route:"/games/fun/balloons", scene:"playground" },
@@ -28,5 +36,36 @@ export const RECREATIONAL_GAME_DEFINITIONS = [
   { id:"hidden-picture", title:"الصورة المخفية", icon:"search", description:"اكشف أقل عدد من المربعات وخمّن الصورة.", ageRange:[4,10], route:"/games/fun/hidden-picture", scene:"playground" },
 ];
 
-export const ALL_GAME_DEFINITIONS = [...QURAN_GAME_DEFINITIONS, ...RECREATIONAL_GAME_DEFINITIONS];
-export const gameDefinition = id => ALL_GAME_DEFINITIONS.find(g => g.id === id) || null;
+const CORE_IMPLEMENTED_IDS = new Set([
+  "quran-wheel","knowledge-bridge","ayah-burger","word-train","guess-surah","ayah-code","flip-cards",
+  "word-hunter","ayah-matching","surah-cards","ayah-order","quick-memory","complete-ayah","surah-exam",
+]);
+const ENGINE_INTEGRATED_IDS = new Set([
+  ...CORE_IMPLEMENTED_IDS,
+  "ayah-hunter","where-start","what-next","build-ayah","memory-race","surah-treasure","similarity-boxes","missing-word-adventure",
+]);
+
+function normalize(definition, group, status) {
+  return {
+    ...definition,
+    group,
+    status,
+    engineIntegrated: ENGINE_INTEGRATED_IDS.has(definition.id),
+  };
+}
+
+const core = QURAN_GAME_DEFINITIONS.map(definition => normalize(
+  definition,
+  "quran-core",
+  CORE_IMPLEMENTED_IDS.has(definition.id) ? "implemented" : "planned",
+));
+const expansion = NEW_QURAN_GAME_DEFINITIONS.map(definition => normalize(definition, "quran-expansion", "implemented"));
+const classic = CLASSIC_GAME_DEFINITIONS.map(definition => normalize(definition, "classic", "implemented"));
+const recreational = RECREATIONAL_GAME_DEFINITIONS.map(definition => normalize(definition, "recreational", "planned"));
+
+export const ALL_GAME_DEFINITIONS = [...core, ...expansion, ...classic, ...recreational];
+export const IMPLEMENTED_GAME_DEFINITIONS = ALL_GAME_DEFINITIONS.filter(game => game.status === "implemented");
+export const PLANNED_GAME_DEFINITIONS = ALL_GAME_DEFINITIONS.filter(game => game.status === "planned");
+export const gameDefinition = id => ALL_GAME_DEFINITIONS.find(game => game.id === id) || null;
+export const implementedGamesByGroup = group => IMPLEMENTED_GAME_DEFINITIONS.filter(game => game.group === group);
+export const isGameImplemented = id => gameDefinition(id)?.status === "implemented";
