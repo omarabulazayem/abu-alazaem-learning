@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { isChildModeActive } from "./ChildHub.jsx";
+import React,{useEffect,useState} from "react";
+import {isChildModeActive} from "./ChildHub.jsx";
 
 const credits=[
   {label:"صورة المصحف",creator:"el7bara",source:"https://commons.wikimedia.org/wiki/File:Opened_Qur%27an.jpg",license:"CC BY 2.0",licenseUrl:"https://creativecommons.org/licenses/by/2.0/"},
@@ -9,15 +9,7 @@ const credits=[
 
 export default function SiteCredits(){
   const [childMode,setChildMode]=useState(()=>isChildModeActive());
-  useEffect(()=>{
-    const sync=()=>setChildMode(isChildModeActive());
-    window.addEventListener("abu-child-mode",sync);
-    window.addEventListener("storage",sync);
-    return()=>{window.removeEventListener("abu-child-mode",sync);window.removeEventListener("storage",sync);};
-  },[]);
+  useEffect(()=>{const sync=()=>setChildMode(isChildModeActive());window.addEventListener("abu-child-mode",sync);window.addEventListener("storage",sync);return()=>{window.removeEventListener("abu-child-mode",sync);window.removeEventListener("storage",sync);};},[]);
   if(childMode)return null;
-  return <details className="site-media-credits" dir="rtl">
-    <summary>حقوق الوسائط</summary>
-    <div className="site-media-credit-list">{credits.map(item=><span key={item.source}><a href={item.source} target="_blank" rel="noreferrer">{item.label}</a><small>{item.creator}</small><a href={item.licenseUrl} target="_blank" rel="noreferrer">{item.license}</a></span>)}</div>
-  </details>;
+  return <details className="aa-credits" dir="rtl"><summary>مصادر الوسائط والتراخيص</summary><div className="aa-credit-list">{credits.map(item=><span key={item.source}><a href={item.source} target="_blank" rel="noreferrer">{item.label}</a><small>{item.creator}</small><a href={item.licenseUrl} target="_blank" rel="noreferrer">{item.license}</a></span>)}</div></details>;
 }
