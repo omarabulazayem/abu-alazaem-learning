@@ -22,6 +22,7 @@ import "./new-quran-game-pack.css";
 import "./adaptive-games.css";
 import "./tafsir-world.css";
 import "./login-page.css";
+import "./learning-layout.css";
 import "./design-system.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");
