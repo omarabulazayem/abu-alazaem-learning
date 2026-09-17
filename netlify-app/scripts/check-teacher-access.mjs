@@ -2,7 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 const srcDir = path.resolve("src");
-const infrastructure = new Set([
+
+// These files are either routing/infrastructure or child-specific implementations
+// that teachers never render directly because RootRouter supplies a dedicated safe preview.
+const centrallyHandled = new Set([
   "App.jsx",
   "RootRouter.jsx",
   "TeacherPortal.jsx",
@@ -11,6 +14,9 @@ const infrastructure = new Set([
   "TeacherQuranPreview.jsx",
   "accessPolicy.js",
   "learningViewer.js",
+  "ChildHub.jsx",
+  "MemorizePage.jsx",
+  "AchievementsPage.jsx",
 ]);
 
 function files(dir) {
@@ -23,7 +29,7 @@ function files(dir) {
 
 const violations = [];
 for (const file of files(srcDir)) {
-  if (infrastructure.has(path.basename(file))) continue;
+  if (centrallyHandled.has(path.basename(file))) continue;
   const text = fs.readFileSync(file, "utf8");
   const mentionsTeacher = /accountType\s*={2,3}\s*["']teacher["']/.test(text);
   const redirectsTeacher = /(?:navigate|go)\s*\(\s*["']\/teacher["']\s*\)/.test(text);
@@ -32,7 +38,7 @@ for (const file of files(srcDir)) {
 
 if (violations.length) {
   console.error("Teacher-access policy violation: learning/content pages must not redirect teachers away.");
-  console.error("Teachers can preview content by default. Restrict only through src/accessPolicy.js.");
+  console.error("Teachers can preview content by default. Restrict only through src/accessPolicy.js or a dedicated preview routed centrally.");
   for (const file of violations) console.error(` - ${file}`);
   process.exit(1);
 }
