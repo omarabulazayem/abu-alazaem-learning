@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   getActiveChildId,
   getCurrentUser,
   listChildren,
+  listRewardsToday,
   setActiveChildId,
   signIn,
 } from "./api.js";
@@ -33,6 +34,7 @@ export function isChildModeActive() {
 export default function ChildHub() {
   const [user, setUser] = useState(undefined);
   const [child, setChild] = useState(null);
+  const [todayRewards, setTodayRewards] = useState([]);
   const [password, setPassword] = useState("");
   const [showExit, setShowExit] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -62,13 +64,21 @@ export default function ChildHub() {
         const selected = kids.find(k => k.id === activeId) || kids[0] || null;
         if (selected && selected.id !== activeId) setActiveChildId(selected.id);
         setChild(selected);
-        if (!selected) setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");
+        if (!selected) {
+          setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");
+          return;
+        }
+        const rewards = await listRewardsToday(selected.id);
+        if (alive) setTodayRewards(rewards || []);
       } catch (e) {
         if (alive) setError(e.message || "تعذر فتح وضع الطفل.");
       }
     })();
     return () => { alive = false; };
   }, []);
+
+  const gameEvents = useMemo(() => new Set(todayRewards.filter(r => ["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type)).map(r => r.source_type)), [todayRewards]);
+  const gameProgress = gameEvents.size;
 
   async function verifyParent(e) {
     e.preventDefault();
@@ -77,9 +87,7 @@ export default function ChildHub() {
     setError("");
     try {
       const verified = await signIn(user.email, password);
-      if (verified.accountType !== "parent" && verified.accountType !== "admin") {
-        throw new Error("هذا الحساب ليس حساب ولي أمر.");
-      }
+      if (verified.accountType !== "parent" && verified.accountType !== "admin") throw new Error("هذا الحساب ليس حساب ولي أمر.");
       exitChildMode();
       setPassword("");
       navigate("/family");
@@ -90,54 +98,48 @@ export default function ChildHub() {
     }
   }
 
-  if (user === undefined) {
-    return <div className="center"><i className="spinner" /><p>جارٍ تجهيز وضع الطفل...</p></div>;
-  }
+  if (user === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز وضع الطفل...</p></div>;
 
   const actions = [
-    ["📖", "الحفظ", "أكمل جلسة قصيرة واحفظ تقدمك", "/memorize"],
-    ["🔁", "المراجعة", "راجع ما حفظته وثبّته", "/review"],
-    ["🧠", "لعبة الذاكرة", "طابق البطاقات واكسب نقاط اليوم", "/games"],
-    ["🏆", "إنجازاتي", "شاهد الميداليات التي فتحتها", "/achievements"],
-    ["🔥", "تحديات اليوم", "اعرف ما أكملته اليوم", "/challenges"],
-    ["⭐", "غرفتي", "شاهد نقاطك ونجومك وتقدمك", "/room"],
+    ["📖", "الحفظ", "أكمل جلسة قصيرة واحفظ تقدمك", "/memorize", ""],
+    ["🔁", "المراجعة", "راجع ما حفظته وثبّته", "/review", ""],
+    ["🎮", "الألعاب", `${gameProgress}/٣ ألعاب اليوم • ذاكرة وترتيب واختبار`, "/games", "featured"],
+    ["🏆", "إنجازاتي", "شاهد الميداليات التي فتحتها", "/achievements", ""],
+    ["🔥", "تحديات اليوم", "اعرف ما أكملته اليوم", "/challenges", ""],
+    ["⭐", "غرفتي", "شاهد نقاطك ونجومك وتقدمك", "/room", ""],
   ];
 
   return (
-    <div className="app" dir="rtl">
+    <div className="app child-dashboard" dir="rtl">
       <header>
         <div className="wrap nav">
-          <button className="brand" onClick={() => navigate("/child")}>
-            <span className="logo">ع</span>
-            <span><b>أبو العزايم</b><small>وضع الطفل</small></span>
-          </button>
-          <div className="actions">
-            <span className="pill">{child?.points || 0} نقطة • {child?.stars || 0} ⭐</span>
-            <button className="secondary" onClick={() => { setShowExit(true); setError(""); }}>خروج ولي الأمر</button>
-          </div>
+          <button className="brand" onClick={() => navigate("/child")}><span className="logo">ع</span><span><b>أبو العزايم</b><small>وضع الطفل</small></span></button>
+          <div className="actions"><span className="reward-chip">🏆 {child?.points || 0}</span><span className="reward-chip">⭐ {child?.stars || 0}</span><button className="secondary" onClick={() => { setShowExit(true); setError(""); }}>خروج ولي الأمر</button></div>
         </div>
       </header>
 
       <main className="wrap page">
-        <div className="childHero">
+        <section className="childHero childHeroPlus">
           <div className="avatar big">{child?.avatar || "🧒🏻"}</div>
-          <div>
-            <span>رحلتي اليوم</span>
-            <h1>أهلًا {child?.display_name || "بطلنا الصغير"}!</h1>
-            <p>اختر نشاطًا، وأنجز خطوة صغيرة جديدة.</p>
+          <div className="grow"><span>رحلتي اليوم</span><h1>أهلًا {child?.display_name || "بطلنا الصغير"}!</h1><p>اختر نشاطًا صغيرًا، واجمع نقاطك ونجومك خطوة بخطوة.</p></div>
+          <div className="child-level"><span>🔥 سلسلة النشاط</span><b>{child?.streak || 0}</b><small>يوم متواصل</small></div>
+        </section>
+
+        {!showExit && child && (
+          <div className="child-summary">
+            <div className="child-stat"><span>🏆</span><div><b>{child.points || 0}</b><small>نقطة</small></div></div>
+            <div className="child-stat"><span>⭐</span><div><b>{child.stars || 0}</b><small>نجمة</small></div></div>
+            <div className="child-stat"><span>🎮</span><div><b>{gameProgress}/٣</b><small>ألعاب اليوم</small></div></div>
+            <button className="daily-game-cta" onClick={() => navigate("/games")}><span>{gameProgress === 3 ? "🎉" : "🚀"}</span><div><b>{gameProgress === 3 ? "أكملت ألعاب اليوم!" : "كمّل تحدي الألعاب"}</b><small>{gameProgress === 3 ? "يمكنك اللعب مرة أخرى للتدريب" : `باقي ${3 - gameProgress} لعبة`}</small></div><i>←</i></button>
           </div>
-        </div>
+        )}
 
         {error && <div className="msg error">{error}</div>}
 
         {!showExit && (
           <div className="kidgrid">
-            {actions.map(([icon, title, description, path]) => (
-              <button key={path} onClick={() => child && navigate(path)} disabled={!child}>
-                <span>{icon}</span>
-                <b>{title}</b>
-                <small>{description}</small>
-              </button>
+            {actions.map(([icon, title, description, path, className]) => (
+              <button className={className} key={path} onClick={() => child && navigate(path)} disabled={!child}><span>{icon}</span><b>{title}</b><small>{description}</small></button>
             ))}
           </div>
         )}
@@ -146,19 +148,7 @@ export default function ChildHub() {
           <section className="panel authbox" style={{ margin: "28px auto 0" }}>
             <h2>خروج من وضع الطفل</h2>
             <p>أدخل كلمة مرور ولي الأمر للعودة إلى إدارة الأسرة.</p>
-            <form onSubmit={verifyParent}>
-              <input
-                type="password"
-                minLength="6"
-                autoFocus
-                autoComplete="current-password"
-                placeholder="كلمة مرور ولي الأمر"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-              <button className="primary full" disabled={busy}>{busy ? "جارٍ التحقق..." : "التحقق والخروج"}</button>
-            </form>
+            <form onSubmit={verifyParent}><input type="password" minLength="6" autoFocus autoComplete="current-password" placeholder="كلمة مرور ولي الأمر" value={password} onChange={e => setPassword(e.target.value)} required /><button className="primary full" disabled={busy}>{busy ? "جارٍ التحقق..." : "التحقق والخروج"}</button></form>
             <button className="link" onClick={() => { setShowExit(false); setPassword(""); setError(""); }}>العودة للأنشطة</button>
           </section>
         )}
