@@ -9,7 +9,9 @@ import SurahQuizGame from "./SurahQuizGame.jsx";
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
+import TeacherAccessBar from "./TeacherAccessBar.jsx";
 import { getCurrentUser } from "./api.js";
+import { isTeacherRestrictedRoute } from "./accessPolicy.js";
 
 const childSafeRoutes = new Set([
   "/child",
@@ -83,27 +85,31 @@ export default function RootRouter() {
   const path = usePath();
   const childMode = useChildMode();
   const accountType = useAccountType();
-
+  const teacher = accountType === "teacher";
   const isTeacherRoute = path === "/teacher" || path.startsWith("/teacher/");
-  const teacherAllowed = path === "/" || path === "/login" || isTeacherRoute;
+  const teacherRestricted = teacher && isTeacherRestrictedRoute(path);
 
   useEffect(() => {
-    if (accountType === "teacher" && !teacherAllowed) navigate("/teacher", true);
-  }, [accountType, path, teacherAllowed]);
+    if (teacherRestricted) navigate("/teacher", true);
+  }, [teacherRestricted]);
 
-  if (isTeacherRoute) return <TeacherPortal />;
-  if (accountType === "teacher" && !teacherAllowed) return <TeacherPortal />;
+  if (isTeacherRoute || teacherRestricted) return <TeacherPortal />;
 
-  if (path === "/child") return <ChildHub />;
-  if (accountType !== "teacher" && childMode && !isChildSafeRoute(path)) return <ChildHub />;
+  if (!teacher && path === "/child") return <ChildHub />;
+  if (!teacher && childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
-  if (path === "/quran") return <QuranPage />;
-  if (path === "/memorize") return <MemorizePage />;
-  if (path === "/games") return <GamesHub />;
-  if (path === "/games/memory") return <MemoryGame />;
-  if (path === "/games/order") return <SurahOrderGame />;
-  if (path === "/games/quiz") return <SurahQuizGame />;
-  if (path === "/achievements") return <AchievementsPage />;
+  let page;
+  if (path === "/quran") page = <QuranPage />;
+  else if (path === "/memorize") page = <MemorizePage />;
+  else if (path === "/games") page = <GamesHub />;
+  else if (path === "/games/memory") page = <MemoryGame />;
+  else if (path === "/games/order") page = <SurahOrderGame />;
+  else if (path === "/games/quiz") page = <SurahQuizGame />;
+  else if (path === "/achievements") page = <AchievementsPage />;
+  else page = <App />;
 
-  return <App />;
+  // Teachers get all learning/content pages by default. Only explicit account/child
+  // identity routes are blocked above. The access bar also keeps every current and
+  // future content area reachable from any page.
+  return teacher ? <TeacherAccessBar>{page}</TeacherAccessBar> : page;
 }
