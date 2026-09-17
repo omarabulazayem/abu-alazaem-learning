@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { SURAHS } from "./quranData.js";
+import { SURAHS } from "./surahCatalog.js";
 import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
 import { GameEngine, gameResultSummary } from "./gameEngine.js";
 import Icon from "./Icon.jsx";

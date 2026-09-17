@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Icon from "./Icon.jsx";
 import { claimReward, dayKey, getProgress, getCurrentUser, getActiveChildId, listChildren, recordReview } from "./api.js";
-import { getSurah } from "./quranData.js";
+import { getSurah } from "./surahCatalog.js";
 
 function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path){if(routePath()!==path){history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}}

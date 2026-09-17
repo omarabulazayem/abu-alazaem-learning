@@ -8,7 +8,7 @@ import {
   signOut,
 } from "./api.js";
 import { isChildModeActive } from "./ChildHub.jsx";
-import { SURAHS } from "./quranData.js";
+import { SURAHS } from "./surahCatalog.js";
 
 export const SELECTED_SURAH_KEY = "abu-alazaem-selected-surah";
 

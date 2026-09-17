@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Icon from "./Icon.jsx";
 import { getProgress } from "./api.js";
 import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
-import { getSurahAyahs, loadQuranData, splitAyahIntoChunks } from "./QuranData.js";
+import { getSurahAyahs, loadQuranData, splitAyahIntoChunks } from "./quranCorpus.js";
 import { GameEngine, gameResultSummary } from "./gameEngine.js";
 import { SoundEngine } from "./soundEngine.js";
 
