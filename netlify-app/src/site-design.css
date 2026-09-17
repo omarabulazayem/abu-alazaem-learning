@@ -1,113 +1,52 @@
-/* Site-wide visual layer. Loaded last to normalize the whole product into one professional visual system. */
+/* Site-wide foundation. Loaded last for consistency, but child-facing surfaces keep their own playful visual language. */
 :root{
-  --site-ink:#1d2e3e;
-  --site-muted:#6c7b89;
-  --site-blue:#2d7fa7;
-  --site-blue-deep:#173f58;
-  --site-teal:#4fae9a;
-  --site-gold:#cda85d;
-  --site-paper:#fbfaf6;
+  --site-ink:#31566d;
+  --site-muted:#718b99;
+  --site-blue:#55a9cc;
+  --site-blue-deep:#315d75;
+  --site-teal:#76c7aa;
+  --site-gold:#e2b953;
+  --site-paper:#fbfdff;
   --site-surface:#ffffff;
-  --site-line:#e7e5de;
-  --site-shadow:0 18px 50px rgba(31,52,68,.08);
-  --site-shadow-hover:0 24px 70px rgba(31,52,68,.13);
-  --site-radius:22px;
-  --site-radius-lg:30px;
+  --site-line:#dfecef;
+  --site-shadow:0 14px 34px rgba(58,107,129,.08);
+  --site-shadow-hover:0 20px 46px rgba(58,107,129,.13);
+  --site-radius:24px;
+  --site-radius-lg:32px;
   --site-quran-image:url("https://commons.wikimedia.org/wiki/Special:Redirect/file/Opened%20Qur%27an.jpg");
   --site-learning-image:url("https://commons.wikimedia.org/wiki/Special:Redirect/file/Sundanese%20Muslim%20children%20reading%20the%20Al-Qur%27an%20together%20at%20a%20mosque%20in%20Purwakarta%2C%20West%20Java%2C%20Indonesia.jpg");
   --site-mosque-image:url("https://commons.wikimedia.org/wiki/Special:Redirect/file/Mosque-Madrassa%20of%20Sultan%20Hassan%20-%20Exterior.jpg");
 }
 html{scroll-behavior:smooth}
-body{background:#f7f6f2;color:var(--site-ink)}
+body{background:#f8fcff;color:var(--site-ink)}
 body,.app,.homeV2,.teacherApp,.game-world,.quran-game-system,.family-v2,.review-v2,.challenges-v2,.room-v2,.achievements-v2,.tafsir-world{font-family:"Segoe UI",Tahoma,Arial,sans-serif}
 button,input,select,textarea{font:inherit}
-.app,.family-v2,.review-v2,.challenges-v2,.room-v2,.achievements-v2,.teacherApp,.game-world,.tafsir-world{background:linear-gradient(180deg,#f7f6f2 0,#fff 38%,#faf9f6 100%)!important}
-.wrap{width:min(1240px,calc(100% - 36px))}
-.page{padding-top:34px}
-header,.homeHeader,.family-topbar,.review-topbar,.challenge-topbar,.room-topbar,.achievement-topbar,.teacherHeader,.game-topbar,.tafsir-topbar{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--site-line)!important;box-shadow:0 8px 30px rgba(31,52,68,.04)!important}
-.brand,.homeBrand{color:var(--site-ink)!important}
-.logo,.homeBrandIcon{background:#f0eee7!important;color:var(--site-blue-deep)!important;border:1px solid #dfddd5!important;box-shadow:none!important}
-.primary,.pill,.homePrimary{background:var(--site-blue-deep)!important;color:#fff!important;border:1px solid var(--site-blue-deep)!important;box-shadow:none!important}
-.primary:hover:not(:disabled),.pill:hover:not(:disabled),.homePrimary:hover:not(:disabled){background:#0f344a!important;transform:translateY(-1px)}
-.secondary,.homeGhost,.homeAccount,.homeLogout,.homeMenu{background:#fff!important;color:var(--site-ink)!important;border:1px solid #dedbd2!important;box-shadow:none!important}
-.secondary:hover:not(:disabled),.homeGhost:hover:not(:disabled){background:#f8f7f3!important;border-color:#c9c4b8!important}
-input,select,textarea{border:1px solid #d9d5cb!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}
-input:focus,select:focus,textarea:focus{border-color:#7aa8bf!important;box-shadow:0 0 0 3px rgba(45,127,167,.10)!important}
-.panel,.family-child,.review-card-v2,.challenge-card-v2,.room-stats article,.room-actions button,.teacherStats>button,.teacherStats>div,.teacherClassCard,.teacherStudentCard,.teacher-game-summary article,.world-zone,.tafsir-game-card,.tafsir-world-card,.badges-v2 article,.surahs article{border:1px solid var(--site-line)!important;background:#fff!important;box-shadow:var(--site-shadow)!important;border-radius:var(--site-radius)!important}
-.panel:hover,.family-child:hover,.review-card-v2:hover,.teacherClassCard:hover,.teacherStudentCard:hover,.world-zone:hover:not(:disabled),.tafsir-game-card.ready:hover,.surahs article:hover{box-shadow:var(--site-shadow-hover)!important}
-footer,.homeFooter{background:#f1efe9!important;border-top:1px solid #dedbd2!important;color:#72716d!important}
+.wrap{width:min(1240px,calc(100% - 36px))}.page{padding-top:30px}
+header,.homeHeader,.family-topbar,.review-topbar,.challenge-topbar,.room-topbar,.achievement-topbar,.teacherHeader,.game-topbar,.tafsir-topbar{background:rgba(255,255,255,.96)!important;border-bottom:1px solid var(--site-line)!important;box-shadow:0 8px 24px rgba(47,94,116,.035)!important}
+.brand,.homeBrand{color:var(--site-ink)!important}.logo,.homeBrandIcon{background:#eef8fc!important;color:#3f86a6!important;border:1px solid #d9ebf2!important;box-shadow:none!important}
+.primary,.pill,.homePrimary{background:#4f9fc2!important;color:#fff!important;border:1px solid #4f9fc2!important;box-shadow:none!important}.primary:hover:not(:disabled),.pill:hover:not(:disabled),.homePrimary:hover:not(:disabled){background:#438cae!important;transform:translateY(-1px)}
+.secondary,.homeGhost,.homeAccount,.homeLogout,.homeMenu{background:#fff!important;color:var(--site-ink)!important;border:1px solid #dce9ee!important;box-shadow:none!important}.secondary:hover:not(:disabled),.homeGhost:hover:not(:disabled){background:#f6fbfd!important;border-color:#cfe2e9!important}
+input,select,textarea{border:1px solid #d8e5ea!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important}input:focus,select:focus,textarea:focus{border-color:#7fb8cf!important;box-shadow:0 0 0 3px rgba(85,169,204,.11)!important}
+.panel,.family-child,.review-card-v2,.challenge-card-v2,.room-stats article,.room-actions button,.teacherStats>button,.teacherStats>div,.teacherClassCard,.teacherStudentCard,.teacher-game-summary article,.world-zone,.tafsir-game-card,.tafsir-world-card,.badges-v2 article,.surahs article{border:1px solid var(--site-line)!important;background:#fff!important;box-shadow:var(--site-shadow)!important;border-radius:var(--site-radius)!important}.panel:hover,.family-child:hover,.review-card-v2:hover,.teacherClassCard:hover,.teacherStudentCard:hover,.world-zone:hover:not(:disabled),.tafsir-game-card.ready:hover,.surahs article:hover{box-shadow:var(--site-shadow-hover)!important}
+footer,.homeFooter{background:#f7fbfd!important;border-top:1px solid #e2edf1!important;color:#7c929e!important}
 
-/* Homepage: replace cartoon scene with editorial photography */
-.homeV2{background:#f7f6f2!important;color:var(--site-ink)!important}
-.homeHeader{padding-block:10px!important}
-.homeHeaderInner{width:min(1380px,calc(100% - 32px))!important}
-.homeNav{background:#fff!important;border:1px solid #e2dfd7!important;border-radius:16px!important;box-shadow:none!important;padding:4px!important}
-.homeNav button{border-radius:11px!important;color:#586571!important}
-.homeNav button:hover,.homeNav button.active{background:#f1f0ec!important;color:var(--site-blue-deep)!important;box-shadow:none!important;transform:none!important}
-.homeHeroWrap{padding:46px 22px 32px!important;background:linear-gradient(180deg,#f1efe9 0,#f7f6f2 100%)!important}
-.homeAmbient{display:none!important}
-.homeHero{width:min(1380px,100%)!important;grid-template-columns:minmax(0,.9fr) minmax(460px,1.1fr)!important;gap:54px!important}
-.homeHeroCopy{padding:30px 0!important}
-.homeEyebrow{background:#fff!important;border-color:#ddd9cf!important;color:#566675!important;box-shadow:none!important}
-.homeHero h1{font-size:clamp(44px,5vw,72px)!important;line-height:1.08!important;letter-spacing:-1.7px!important;color:#172b3a!important}
-.homeHero h1 strong{color:var(--site-blue)!important}
-.homeHero p{font-size:18px!important;color:#65727e!important;max-width:670px!important;line-height:1.95!important}
-.homeHeroVisual{min-height:520px!important;border-radius:32px!important;overflow:hidden!important;background-image:linear-gradient(180deg,rgba(15,37,52,.02),rgba(15,37,52,.28)),var(--site-learning-image)!important;background-size:cover!important;background-position:center!important;box-shadow:0 24px 60px rgba(28,44,57,.16)!important;position:relative!important}
-.homeHeroVisual:after{content:"تعلم • حفظ • مراجعة";position:absolute;right:22px;bottom:22px;background:rgba(255,255,255,.92);color:var(--site-blue-deep);padding:10px 14px;border-radius:10px;font-weight:800;font-size:12px;letter-spacing:.2px}
-.homeScene{display:none!important}
-.homeChildStrip{background:#fff!important;border-color:#ddd9cf!important;border-radius:15px!important;box-shadow:none!important}
-.homeSections{width:min(1240px,calc(100% - 36px))!important;margin-top:44px!important}
-.homeSectionHeading{text-align:right!important;margin-inline:0!important;max-width:760px!important}
-.homeSectionHeading>span{color:var(--site-gold)!important}
-.homeSectionHeading h2{color:#172b3a!important;font-size:clamp(31px,4vw,46px)!important}
-.homeCardGrid{grid-template-columns:repeat(4,1fr)!important;gap:18px!important}
-.homeFeatureCard{min-height:235px!important;border-radius:20px!important;border:1px solid var(--site-line)!important;background:#fff!important;box-shadow:var(--site-shadow)!important;text-align:right!important;justify-items:start!important;padding:24px!important}
-.homeFeatureCard:before{display:none!important}
-.homeFeatureCard:hover{transform:translateY(-4px)!important;box-shadow:var(--site-shadow-hover)!important}
-.homeFeatureIcon{width:64px!important;height:64px!important;border-radius:16px!important;margin:0!important;background:#f0eee7!important;color:var(--site-blue-deep)!important;border:1px solid #e1ded5!important;box-shadow:none!important}
-.homeFeatureText{gap:8px!important}.homeFeatureText b{font-size:20px!important}.homeFeatureText small{font-size:12px!important;color:#707c86!important}
-.homeFeatureArrow{margin:0!important;background:#f4f2ed!important;color:var(--site-blue-deep)!important;box-shadow:none!important}
-.homePromise{background:#fff!important;border-color:var(--site-line)!important;border-radius:20px!important;box-shadow:var(--site-shadow)!important}
+/* Homepage keeps a child-first scene instead of adult editorial photography. */
+.homeV2{background:linear-gradient(180deg,#f7fcff 0,#fff 44%,#fff9fc 100%)!important;color:var(--site-ink)!important}.homeHeader{padding-block:7px!important}.homeHeaderInner{width:min(1320px,calc(100% - 28px))!important}.homeNav{background:#f8fcfe!important;border:1px solid #e0edf2!important;border-radius:18px!important;box-shadow:none!important;padding:4px!important}.homeNav button{border-radius:13px!important;color:#607d8d!important}.homeNav button:hover,.homeNav button.active{background:#eaf7fc!important;color:#367f9f!important;box-shadow:none!important;transform:none!important}
+.homeHeroWrap{padding:30px 18px 24px!important;background:linear-gradient(180deg,#eef9ff 0,#fff8fc 100%)!important}.homeAmbient{display:none!important}.homeHero{width:min(1280px,100%)!important;grid-template-columns:minmax(0,1fr) minmax(380px,.9fr)!important;gap:30px!important;align-items:center!important}.homeHeroCopy{padding:22px 0!important}.homeEyebrow{background:#fff!important;border-color:#dcecf2!important;color:#6d79a4!important;box-shadow:none!important}.homeHero h1{font-size:clamp(38px,4.6vw,62px)!important;line-height:1.12!important;letter-spacing:-1px!important;color:#31566d!important}.homeHero h1 strong{color:#6c79bc!important}.homeHero p{font-size:16px!important;color:#718b99!important;max-width:620px!important;line-height:1.85!important}.homeHeroVisual{min-height:400px!important;border-radius:34px!important;overflow:hidden!important;background:none!important;box-shadow:0 18px 42px rgba(72,124,147,.10)!important;position:relative!important;border:1px solid #ddecf2!important}.homeHeroVisual:after{display:none!important}.kidsHeroScene{display:block!important;width:100%!important;height:100%!important;min-height:400px!important}.homeChildStrip{background:#fff!important;border-color:#dceaf0!important;border-radius:18px!important;box-shadow:none!important}.homeSections{width:min(1240px,calc(100% - 36px))!important;margin-top:34px!important}.homeSectionHeading{text-align:center!important;margin-inline:auto!important;max-width:700px!important}.homeSectionHeading>span{color:#a684b9!important}.homeSectionHeading h2{color:#31566d!important;font-size:clamp(28px,3.6vw,42px)!important}.homePromise{background:#fff!important;border-color:var(--site-line)!important;border-radius:24px!important;box-shadow:var(--site-shadow)!important}
 
-/* Shared page hero style with real-image accents */
-.family-hero,.review-hero,.challenge-hero,.room-hero,.teacherHero,.teacher-game-report-hero,.game-world-hero,.achievement-hero,.tafsir-hero{border-radius:26px!important;box-shadow:none!important;border:1px solid rgba(255,255,255,.08)!important;overflow:hidden!important;position:relative!important;background-color:#173f58!important}
-.family-hero,.teacherHero{background-image:linear-gradient(90deg,rgba(20,52,72,.96) 0%,rgba(20,52,72,.83) 55%,rgba(20,52,72,.22) 100%),var(--site-learning-image)!important;background-size:cover!important;background-position:center!important}
-.review-hero,.challenge-hero,.game-world-hero,.achievement-hero,.tafsir-hero{background-image:linear-gradient(90deg,rgba(20,52,72,.97) 0%,rgba(20,52,72,.84) 58%,rgba(20,52,72,.30) 100%),var(--site-quran-image)!important;background-size:cover!important;background-position:center!important}
-.room-hero{background-image:linear-gradient(90deg,rgba(255,255,255,.96),rgba(255,255,255,.78)),var(--site-learning-image)!important;background-size:cover!important;background-position:center!important;color:var(--site-ink)!important;border:1px solid var(--site-line)!important}
-.room-hero p{color:#5e6d79!important}
-.family-hero-art,.review-hero-art,.teacherHeroMark,.teacher-game-report-art,.world-orbit,.tafsir-seal{background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.24)!important;backdrop-filter:blur(8px)}
+/* Preserve scene-based child worlds and large touch targets. */
+.child-world-home{background:linear-gradient(180deg,#f4fbff 0,#fff 52%,#fff8fc 100%)!important}.child-world-home .child-topbar{background:rgba(255,255,255,.96)!important}.child-world-home .child-world-card,.child-world-home .child-small-card,.child-world-home .child-daily-quest{border-color:#dfecef!important;box-shadow:0 14px 34px rgba(61,116,139,.08)!important}.child-world-home .child-world-card:hover{box-shadow:0 20px 46px rgba(61,116,139,.13)!important}.child-world-home .child-world-copy b{color:#31566d!important}.child-world-home .child-world-copy small{color:#738c99!important}.child-world-home .child-world-start{border-radius:14px!important}.child-world-home .child-world-welcome{border-color:#dcecf2!important}
 
-/* Quran catalogue */
-.app:not(.teacherApp):not(.family-v2):not(.review-v2):not(.challenges-v2):not(.room-v2):not(.achievements-v2):not(.game-world):not(.tafsir-world) .title{padding:24px 28px;border:1px solid var(--site-line);border-radius:22px;background:#fff;box-shadow:var(--site-shadow)}
-.surahs{gap:16px!important}.surahs article{padding:22px!important}.surahs .num{background:#f0eee7!important;color:var(--site-blue-deep)!important;border-radius:10px!important}
-.bar{background:#efede8!important}.bar i{background:linear-gradient(90deg,var(--site-blue),var(--site-teal))!important}
+/* Teacher/admin remains compact and professional, without taking over the child visual system. */
+.teacherApp,.family-v2,.teacherPreviewPage{background:linear-gradient(180deg,#f8fbfc 0,#fff 44%,#fafcfd 100%)!important}.teacherPage{padding-top:28px!important}.teacherHero{min-height:250px!important}.teacherStats{gap:14px!important}.teacherStats>button,.teacherStats>div{border-radius:18px!important}.teacher-stat-icon,.teacherClassIcon,.teacher-empty-icon,.game-report-icon{background:#eef5f8!important;color:#3f7189!important;border-radius:13px!important}.teacherFilters,.teacher-report-picker{border-radius:16px!important;border-color:var(--site-line)!important;box-shadow:none!important}
 
-/* Child dashboard: less toy-like */
-.childHeroIllustrated{background-image:linear-gradient(90deg,rgba(255,255,255,.96),rgba(255,255,255,.72)),var(--site-learning-image)!important;background-size:cover!important;background-position:center!important;border-radius:26px!important}
-.child-avatar-art{background:#fff!important;border-color:#dedbd2!important;box-shadow:none!important;color:var(--site-blue-deep)!important}
-.child-avatar-art:after{display:none!important}
-.child-summary{gap:14px!important}.child-stat,.daily-game-cta{border-radius:16px!important;box-shadow:var(--site-shadow)!important}
-.daily-game-cta{background:var(--site-blue-deep)!important}
-.kidgrid-v2{gap:16px!important}.kidgrid-v2 .kid-action{min-height:190px!important;border-radius:20px!important;background:#fff!important;box-shadow:var(--site-shadow)!important}
-.kidgrid-v2 .kid-action:after{display:none!important}.kidgrid-v2 .kid-action.featured{background:#173f58!important}.kid-action-icon{border-radius:14px!important;background:#f1efe9!important;color:var(--site-blue-deep)!important;box-shadow:none!important}.kid-action.featured .kid-action-icon{background:rgba(255,255,255,.12)!important;color:#fff!important}
+/* Learning pages stay light and clear. */
+.family-hero,.review-hero,.challenge-hero,.room-hero,.teacherHero,.teacher-game-report-hero,.game-world-hero,.achievement-hero,.tafsir-hero{border-radius:28px!important;box-shadow:none!important;overflow:hidden!important;position:relative!important}.family-hero,.teacherHero{background-image:linear-gradient(90deg,rgba(58,98,118,.93),rgba(58,98,118,.76)),var(--site-learning-image)!important;background-size:cover!important;background-position:center!important}.review-hero,.challenge-hero,.game-world-hero,.achievement-hero,.tafsir-hero{background:linear-gradient(135deg,#eaf8ff,#f4efff 58%,#eefaf3)!important;color:#31566d!important;border:1px solid #dcecf2!important}.review-hero p,.challenge-hero p,.game-world-hero p,.achievement-hero p,.tafsir-hero p{color:#6d8796!important}.room-hero{background:linear-gradient(135deg,#fff7fb,#eef9ff)!important;color:#31566d!important;border:1px solid #dcecf2!important}.room-hero p{color:#6d8796!important}.family-hero-art,.review-hero-art,.teacherHeroMark,.teacher-game-report-art,.world-orbit,.tafsir-seal{background:rgba(255,255,255,.72)!important;border:1px solid rgba(255,255,255,.9)!important;color:#4e8aa5!important}
 
-/* Games: cleaner cards and remove emoji-first decoration */
-.game-world-hero{min-height:330px!important}.world-orbit{display:none!important}.game-world-hero{grid-template-columns:1fr!important}.world-zone{min-height:170px!important;background:#fff!important}.zone-icon{border-radius:16px!important;background:#f1efe9!important;box-shadow:none!important;color:var(--site-blue-deep)!important}.zone-number{color:#d4d0c6!important}.zone-copy p{color:#6a7782!important}
-.game-card{border-radius:20px!important;background:#fff!important;border:1px solid var(--site-line)!important;box-shadow:var(--site-shadow)!important}.game-card:after{display:none!important}.game-icon{background:#f1efe9!important;box-shadow:none!important;color:var(--site-blue-deep)!important}.game-play{background:var(--site-blue-deep)!important;border-radius:12px!important}
-.qgame-result,.wheel-stage,.wheel-question,.game-stage{border-radius:22px!important;border-color:var(--site-line)!important;box-shadow:var(--site-shadow)!important}
-
-/* Teacher portal */
-.teacherPage{padding-top:32px!important}.teacherHero{min-height:280px!important}.teacherStats{gap:14px!important}.teacherStats>button,.teacherStats>div{border-radius:18px!important}.teacher-stat-icon,.teacherClassIcon,.teacher-empty-icon,.game-report-icon{background:#f1efe9!important;color:var(--site-blue-deep)!important;border-radius:13px!important}.teacherFilters,.teacher-report-picker{border-radius:16px!important;border-color:var(--site-line)!important;box-shadow:none!important}
-
-/* Achievements, room and tafsir */
-.badges-v2 article{min-height:205px!important}.badges-v2 .badge-icon,.room-stat-icon,.room-actions button>span,.tafsir-world-icon,.tafsir-index,.option-art{background:#f1efe9!important;color:var(--site-blue-deep)!important;box-shadow:none!important}.tafsir-world-grid{gap:18px!important}.tafsir-world-card{min-height:200px!important}.tafsir-game-card{border-radius:20px!important}.tafsir-options button{border-color:var(--site-line)!important;border-radius:16px!important}.tafsir-ayah-card{border-radius:22px!important;box-shadow:var(--site-shadow)!important}
-
-/* External photo-backed utility surfaces */
-.site-photo-quran{background-image:linear-gradient(rgba(20,45,60,.20),rgba(20,45,60,.20)),var(--site-quran-image);background-size:cover;background-position:center}
-.site-photo-learning{background-image:linear-gradient(rgba(20,45,60,.18),rgba(20,45,60,.18)),var(--site-learning-image);background-size:cover;background-position:center}
-.site-photo-mosque{background-image:linear-gradient(rgba(20,45,60,.18),rgba(20,45,60,.18)),var(--site-mosque-image);background-size:cover;background-position:center}
-
-@media(max-width:1100px){.homeCardGrid{grid-template-columns:repeat(3,1fr)!important}.homeHero{grid-template-columns:1fr 1fr!important}.homeHeroVisual{min-height:460px!important}}
-@media(max-width:900px){.homeHero{grid-template-columns:1fr!important}.homeHeroCopy{text-align:right!important}.homeHeroActions,.homeChildStrip{justify-content:flex-start!important;margin-inline:0!important}.homeHeroVisual{min-height:430px!important}.homeCardGrid{grid-template-columns:repeat(2,1fr)!important}}
-@media(max-width:620px){.wrap{width:min(100% - 22px,1240px)!important}.homeHeroWrap{padding:24px 11px 18px!important}.homeHero h1{font-size:40px!important}.homeHeroVisual{min-height:330px!important;border-radius:22px!important}.homeCardGrid{grid-template-columns:1fr!important}.homeFeatureCard{min-height:170px!important}.family-hero,.review-hero,.challenge-hero,.room-hero,.teacherHero,.teacher-game-report-hero,.game-world-hero,.achievement-hero,.tafsir-hero{padding:24px!important;border-radius:22px!important}.kidgrid-v2{grid-template-columns:1fr!important}}
-@media(prefers-color-scheme:dark){body,.app,.homeV2,.family-v2,.review-v2,.challenges-v2,.room-v2,.achievements-v2,.teacherApp,.game-world,.tafsir-world{background:#12171d!important;color:#eef2f5!important}.panel,.family-child,.review-card-v2,.challenge-card-v2,.room-stats article,.room-actions button,.teacherStats>button,.teacherStats>div,.teacherClassCard,.teacherStudentCard,.world-zone,.tafsir-game-card,.tafsir-world-card,.badges-v2 article,.surahs article{background:#1c232b!important;border-color:#2b343d!important;color:#eef2f5!important}.secondary,.homeGhost,.homeAccount,.homeLogout,.homeMenu,input,select,textarea{background:#1b2229!important;color:#eef2f5!important;border-color:#343d45!important}.homeV2{background:#12171d!important}.homeHeroWrap{background:#151b21!important}.homeFeatureCard,.homePromise{background:#1c232b!important;border-color:#303840!important;color:#eef2f5!important}.homeSectionHeading h2,.homeHero h1{color:#eef2f5!important}.homeHero p,.homeFeatureText small{color:#b2bcc5!important}}
+.app:not(.teacherApp):not(.family-v2):not(.review-v2):not(.challenges-v2):not(.room-v2):not(.achievements-v2):not(.game-world):not(.tafsir-world) .title{padding:24px 28px;border:1px solid var(--site-line);border-radius:24px;background:#fff;box-shadow:var(--site-shadow)}.surahs{gap:16px!important}.surahs article{padding:22px!important}.surahs .num{background:#eef8fc!important;color:#3f86a6!important;border-radius:12px!important}.bar{background:#edf4f6!important}.bar i{background:linear-gradient(90deg,#6eb6d3,#82c9ae)!important}
+.game-world-hero{min-height:280px!important}.world-zone{min-height:170px!important;background:#fff!important}.zone-icon{border-radius:18px!important;background:#eef8fc!important;box-shadow:none!important;color:#4b92b1!important}.zone-number{color:#d7e3e8!important}.zone-copy p{color:#6f8794!important}.game-card{border-radius:22px!important;background:#fff!important;border:1px solid var(--site-line)!important;box-shadow:var(--site-shadow)!important}.game-card:after{display:none!important}.game-icon{background:#eef8fc!important;box-shadow:none!important;color:#4b92b1!important}.game-play{background:#57a4c5!important;border-radius:14px!important}.qgame-result,.wheel-stage,.wheel-question,.game-stage{border-radius:24px!important;border-color:var(--site-line)!important;box-shadow:var(--site-shadow)!important}
+.badges-v2 article{min-height:205px!important}.badges-v2 .badge-icon,.room-stat-icon,.room-actions button>span,.tafsir-world-icon,.tafsir-index,.option-art{background:#f1f7fa!important;color:#4a86a1!important;box-shadow:none!important}.tafsir-world-grid{gap:18px!important}.tafsir-world-card{min-height:200px!important}.tafsir-game-card{border-radius:22px!important}.tafsir-options button{border-color:var(--site-line)!important;border-radius:18px!important}.tafsir-ayah-card{border-radius:24px!important;box-shadow:var(--site-shadow)!important}
+.site-photo-quran{background-image:linear-gradient(rgba(44,80,98,.14),rgba(44,80,98,.14)),var(--site-quran-image);background-size:cover;background-position:center}.site-photo-learning{background-image:linear-gradient(rgba(44,80,98,.12),rgba(44,80,98,.12)),var(--site-learning-image);background-size:cover;background-position:center}.site-photo-mosque{background-image:linear-gradient(rgba(44,80,98,.12),rgba(44,80,98,.12)),var(--site-mosque-image);background-size:cover;background-position:center}
+@media(max-width:1100px){.homeHero{grid-template-columns:1fr 1fr!important}.homeHeroVisual{min-height:360px!important}.kidsHeroScene{min-height:360px!important}}
+@media(max-width:900px){.homeHero{grid-template-columns:1fr!important}.homeHeroCopy{text-align:center!important}.homeHeroActions,.homeChildStrip{justify-content:center!important;margin-inline:auto!important}.homeHeroVisual{min-height:350px!important}.kidsHeroScene{min-height:350px!important}}
+@media(max-width:620px){.wrap{width:min(100% - 22px,1240px)!important}.homeHeroWrap{padding:18px 11px 14px!important}.homeHero h1{font-size:36px!important}.homeHero p{font-size:14px!important}.homeHeroVisual{min-height:300px!important;border-radius:24px!important}.kidsHeroScene{min-height:300px!important}.family-hero,.review-hero,.challenge-hero,.room-hero,.teacherHero,.teacher-game-report-hero,.game-world-hero,.achievement-hero,.tafsir-hero{padding:22px!important;border-radius:22px!important}}
