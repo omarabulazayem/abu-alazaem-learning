@@ -11,18 +11,17 @@ import {
   teacherOverview,
 } from "./api.js";
 import { getSurah } from "./quranData.js";
+import Icon from "./Icon.jsx";
 
 function routePath() {
   return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
 }
-
 function navigate(path) {
   if (routePath() !== path) {
     history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
 }
-
 function formatDate(value) {
   if (!value) return "لا يوجد نشاط بعد";
   try {
@@ -39,24 +38,24 @@ function TeacherHeader({ user }) {
     navigate("/");
   }
   const links = [
-    ["لوحة المعلم", "/teacher"],
-    ["الفصول", "/teacher/classes"],
-    ["الطلاب", "/teacher/students"],
+    ["teacher", "لوحة المعلم", "/teacher"],
+    ["books", "الفصول", "/teacher/classes"],
+    ["users", "الطلاب", "/teacher/students"],
   ];
   return (
-    <header className="teacherHeader">
+    <header className="teacherHeader teacherHeaderV2">
       <div className="wrap nav">
         <button className="brand" onClick={() => navigate("/teacher")}>
-          <span className="logo">ع</span>
+          <span className="logo"><Icon name="teacher" size={24} /></span>
           <span><b>أبو العزايم</b><small>بوابة المعلم</small></span>
         </button>
-        <nav className={open ? "links open" : "links"}>
-          {links.map(([label, path]) => <button key={path} onClick={() => { navigate(path); setOpen(false); }}>{label}</button>)}
+        <nav className={open ? "links open teacher-nav-links" : "links teacher-nav-links"}>
+          {links.map(([icon, label, path]) => <button key={path} className={routePath() === path ? "active" : ""} onClick={() => { navigate(path); setOpen(false); }}><Icon name={icon} size={17} />{label}</button>)}
         </nav>
         <div className="actions">
-          <span className="teacherName">👨‍🏫 {user?.name || "المعلم"}</span>
-          <button className="secondary" onClick={logout}>خروج</button>
-          <button className="menu" onClick={() => setOpen(v => !v)}>☰</button>
+          <span className="teacherName"><Icon name="teacher" size={18} /> {user?.name || "المعلم"}</span>
+          <button className="secondary" onClick={logout}><Icon name="logout" size={16} /> خروج</button>
+          <button className="menu" onClick={() => setOpen(v => !v)} aria-label="فتح القائمة"><Icon name={open ? "close" : "menu"} size={22} /></button>
         </div>
       </div>
     </header>
@@ -65,26 +64,24 @@ function TeacherHeader({ user }) {
 
 function TeacherShell({ user, children }) {
   return (
-    <div className="app teacherApp" dir="rtl">
+    <div className="app teacherApp teacherAppV2" dir="rtl">
       <TeacherHeader user={user} />
       {children}
       <footer><div className="wrap">أبو العزايم للحفظ الممتع • بوابة المعلم لمتابعة الحفظ والمراجعة.</div></footer>
     </div>
   );
 }
-
 function TeacherLoading() {
   return <div className="center"><i className="spinner" /><p>جارٍ تجهيز بوابة المعلم...</p></div>;
 }
-
 function ErrorBox({ text }) {
   return text ? <div className="msg error teacherMsg">{text}</div> : null;
 }
-
-function EmptyState({ icon, title, text, action, onAction }) {
+function EmptyState({ icon = "sparkle", title, text, action, onAction }) {
   return (
-    <div className="teacherEmpty">
-      <span>{icon}</span><h3>{title}</h3><p>{text}</p>
+    <div className="teacherEmpty teacherEmptyV2">
+      <span className="teacher-empty-icon"><Icon name={icon} size={40} /></span>
+      <h3>{title}</h3><p>{text}</p>
       {action && <button className="primary" onClick={onAction}>{action}</button>}
     </div>
   );
@@ -92,20 +89,21 @@ function EmptyState({ icon, title, text, action, onAction }) {
 
 function Dashboard({ data }) {
   const recent = [...data.students].sort((a, b) => new Date(b.lastActivityAt || 0) - new Date(a.lastActivityAt || 0)).slice(0, 5);
+  const masteredTotal = data.students.reduce((sum, s) => sum + Number(s.masteredCount || 0), 0);
   return (
     <main className="wrap page teacherPage">
-      <section className="teacherHero">
+      <section className="teacherHero teacherHeroV2">
         <div><span className="kicker">لوحة المعلم</span><h1>متابعة واضحة لكل فصل وطالب</h1><p>أنشئ الفصول، شارك كود الربط، تابع الحفظ والمراجعة، وسجل التسميع من مكان واحد.</p></div>
-        <div className="teacherHeroMark">👨‍🏫</div>
+        <div className="teacherHeroMark"><Icon name="teacher" size={58} /></div>
       </section>
-      <section className="teacherStats">
-        <button onClick={() => navigate("/teacher/classes")}><span>📚</span><b>{data.classes.length}</b><small>الفصول</small></button>
-        <button onClick={() => navigate("/teacher/students")}><span>🧒</span><b>{data.students.length}</b><small>الطلاب</small></button>
-        <div><span>🔁</span><b>{data.sessionsToday}</b><small>مراجعات اليوم</small></div>
-        <div><span>✅</span><b>{data.students.reduce((sum, s) => sum + Number(s.masteredCount || 0), 0)}</b><small>سور متقنة</small></div>
+      <section className="teacherStats teacherStatsV2">
+        <button onClick={() => navigate("/teacher/classes")}><span className="teacher-stat-icon sky"><Icon name="books" size={27} /></span><b>{data.classes.length}</b><small>الفصول</small></button>
+        <button onClick={() => navigate("/teacher/students")}><span className="teacher-stat-icon mint"><Icon name="users" size={27} /></span><b>{data.students.length}</b><small>الطلاب</small></button>
+        <div><span className="teacher-stat-icon lavender"><Icon name="review" size={27} /></span><b>{data.sessionsToday}</b><small>مراجعات اليوم</small></div>
+        <div><span className="teacher-stat-icon sun"><Icon name="circleCheck" size={27} /></span><b>{masteredTotal}</b><small>سور متقنة</small></div>
       </section>
-      <section className="teacherSectionHead"><div><span>آخر النشاط</span><h2>الطلاب الأحدث نشاطًا</h2></div><button className="secondary" onClick={() => navigate("/teacher/students")}>كل الطلاب</button></section>
-      {recent.length ? <div className="teacherStudentGrid">{recent.map(student => <StudentCard key={student.id} student={student} />)}</div> : <EmptyState icon="🧒" title="لا يوجد طلاب مرتبطون بعد" text="أنشئ فصلًا وشارك كود الربط مع ولي الأمر، وبعد الربط سيظهر الطالب هنا." action="إدارة الفصول" onAction={() => navigate("/teacher/classes")} />}
+      <section className="teacherSectionHead"><div><span>آخر النشاط</span><h2>الطلاب الأحدث نشاطًا</h2></div><button className="secondary" onClick={() => navigate("/teacher/students")}><Icon name="users" size={17} /> كل الطلاب</button></section>
+      {recent.length ? <div className="teacherStudentGrid">{recent.map(student => <StudentCard key={student.id} student={student} />)}</div> : <EmptyState icon="users" title="لا يوجد طلاب مرتبطون بعد" text="أنشئ فصلًا وشارك كود الربط مع ولي الأمر، وبعد الربط سيظهر الطالب هنا." action="إدارة الفصول" onAction={() => navigate("/teacher/classes")} />}
     </main>
   );
 }
@@ -135,8 +133,19 @@ function Classes({ user, data, reload }) {
     <main className="wrap page teacherPage">
       <div className="title"><span>إدارة الفصول</span><h1>فصولي</h1><p>أنشئ فصلًا لكل مجموعة وشارك كود الربط مع أولياء الأمور.</p></div>
       <div className="teacherSplit">
-        <section className="panel teacherCreateClass"><h3>فصل جديد</h3><form onSubmit={create}><label>اسم الفصل<input value={name} onChange={e => setName(e.target.value)} placeholder="مثال: حلقة جزء عمّ" maxLength="80" required /></label><button className="primary full" disabled={busy}>{busy ? "جارٍ الإنشاء..." : "إنشاء الفصل"}</button></form>{message && <div className="msg ok">{message}</div>}<ErrorBox text={error} /></section>
-        <section><div className="teacherSectionHead"><div><span>{data.classes.length} فصل</span><h2>الفصول الحالية</h2></div></div>{data.classes.length ? <div className="teacherClassGrid">{data.classes.map(c => { const count = data.students.filter(s => s.classes.includes(c.name)).length; return <article className="teacherClassCard" key={c.id}><div className="teacherClassIcon">📚</div><div className="grow"><h3>{c.name}</h3><p>{count} طالب مرتبط</p></div><div className="joinCode"><small>كود الربط</small><b>{c.join_code}</b><button className="link" onClick={() => copy(c.join_code)}>نسخ</button></div></article>; })}</div> : <EmptyState icon="📚" title="أنشئ أول فصل" text="بعد إنشاء الفصل سيظهر كود ربط يمكن لولي الأمر استخدامه لإضافة طفله." />}</section>
+        <section className="panel teacherCreateClass teacherPanelV2">
+          <div className="panel-icon"><Icon name="books" size={28} /></div>
+          <h3>فصل جديد</h3>
+          <form onSubmit={create}><label>اسم الفصل<input value={name} onChange={e => setName(e.target.value)} placeholder="مثال: حلقة جزء عمّ" maxLength="80" required /></label><button className="primary full" disabled={busy}>{busy ? "جارٍ الإنشاء..." : "إنشاء الفصل"}</button></form>
+          {message && <div className="msg ok">{message}</div>}<ErrorBox text={error} />
+        </section>
+        <section>
+          <div className="teacherSectionHead"><div><span>{data.classes.length} فصل</span><h2>الفصول الحالية</h2></div></div>
+          {data.classes.length ? <div className="teacherClassGrid">{data.classes.map(c => {
+            const count = data.students.filter(s => s.classes.includes(c.name)).length;
+            return <article className="teacherClassCard" key={c.id}><div className="teacherClassIcon"><Icon name="books" size={28} /></div><div className="grow"><h3>{c.name}</h3><p>{count} طالب مرتبط</p></div><div className="joinCode"><small>كود الربط</small><b>{c.join_code}</b><button className="link" onClick={() => copy(c.join_code)}><Icon name="copy" size={15} /> نسخ</button></div></article>;
+          })}</div> : <EmptyState icon="books" title="أنشئ أول فصل" text="بعد إنشاء الفصل سيظهر كود ربط يمكن لولي الأمر استخدامه لإضافة طفله." />}
+        </section>
       </div>
     </main>
   );
@@ -145,10 +154,10 @@ function Classes({ user, data, reload }) {
 function StudentCard({ student }) {
   return (
     <button className="teacherStudentCard" onClick={() => navigate(`/teacher/student/${student.id}`)}>
-      <div className="avatar">{student.avatar || "🧒🏻"}</div>
+      <div className="avatar teacher-student-avatar"><Icon name="child" size={27} /></div>
       <div className="grow"><b>{student.display_name}</b><small>{student.classes.join(" • ") || "بدون فصل"}</small></div>
       <div className="teacherMiniProgress"><span><b>{student.memorizedAverage}%</b> حفظ</span><span><b>{student.reviewAverage}%</b> مراجعة</span></div>
-      <span className="teacherArrow">←</span>
+      <span className="teacherArrow"><Icon name="arrow" size={20} /></span>
     </button>
   );
 }
@@ -165,8 +174,8 @@ function Students({ data }) {
   return (
     <main className="wrap page teacherPage">
       <div className="title"><span>الطلاب</span><h1>متابعة الطلاب</h1><p>افتح ملف أي طالب لمشاهدة تفاصيل السور وتسجيل مراجعة جديدة.</p></div>
-      <section className="teacherFilters"><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث باسم الطالب أو الفصل" /><select value={className} onChange={e => setClassName(e.target.value)}><option value="all">كل الفصول</option>{data.classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select><span>{filtered.length} طالب</span></section>
-      {filtered.length ? <div className="teacherStudentGrid">{filtered.map(student => <StudentCard key={student.id} student={student} />)}</div> : <EmptyState icon="🔎" title="لا توجد نتائج" text={data.students.length ? "غيّر البحث أو الفلتر لعرض طلاب آخرين." : "لا يوجد طلاب مرتبطون بفصولك حتى الآن."} />}
+      <section className="teacherFilters teacherFiltersV2"><div className="teacher-search-wrap"><Icon name="search" size={18} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث باسم الطالب أو الفصل" /></div><select value={className} onChange={e => setClassName(e.target.value)}><option value="all">كل الفصول</option>{data.classes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}</select><span>{filtered.length} طالب</span></section>
+      {filtered.length ? <div className="teacherStudentGrid">{filtered.map(student => <StudentCard key={student.id} student={student} />)}</div> : <EmptyState icon="search" title="لا توجد نتائج" text={data.students.length ? "غيّر البحث أو الفلتر لعرض طلاب آخرين." : "لا يوجد طلاب مرتبطون بفصولك حتى الآن."} />}
     </main>
   );
 }
@@ -196,7 +205,7 @@ function StudentDetail({ user, data, studentId, reloadOverview }) {
   }
   useEffect(() => { load(); }, [studentId, summary?.id]);
 
-  if (!summary) return <main className="wrap page teacherPage"><button className="link" onClick={() => navigate("/teacher/students")}>← كل الطلاب</button><EmptyState icon="🔒" title="الطالب غير متاح" text="هذا الطالب غير مرتبط بفصولك أو تم فك الربط." /></main>;
+  if (!summary) return <main className="wrap page teacherPage"><button className="link" onClick={() => navigate("/teacher/students")}><Icon name="arrow" size={16} /> كل الطلاب</button><EmptyState icon="lock" title="الطالب غير متاح" text="هذا الطالب غير مرتبط بفصولك أو تم فك الربط." /></main>;
 
   const activeProgress = progress.filter(r => Number(r.memorized_percent || 0) > 0);
   async function submitReview(e) {
@@ -217,13 +226,13 @@ function StudentDetail({ user, data, studentId, reloadOverview }) {
 
   return (
     <main className="wrap page teacherPage">
-      <button className="teacherBack" onClick={() => navigate("/teacher/students")}>→ العودة للطلاب</button>
-      <section className="teacherStudentHero"><div className="avatar big">{summary.avatar || "🧒🏻"}</div><div className="grow"><span>{summary.classes.join(" • ")}</span><h1>{summary.display_name}</h1><p>آخر نشاط: {formatDate(summary.lastActivityAt)}</p></div><div className="teacherStudentHeroStats"><div><b>{summary.memorizedAverage}%</b><span>متوسط الحفظ</span></div><div><b>{summary.reviewAverage}%</b><span>متوسط المراجعة</span></div><div><b>{summary.masteredCount}</b><span>سور متقنة</span></div></div></section>
+      <button className="teacherBack" onClick={() => navigate("/teacher/students")}><Icon name="arrow" size={17} /> العودة للطلاب</button>
+      <section className="teacherStudentHero teacherStudentHeroV2"><div className="avatar big teacher-student-avatar"><Icon name="child" size={44} /></div><div className="grow"><span>{summary.classes.join(" • ")}</span><h1>{summary.display_name}</h1><p>آخر نشاط: {formatDate(summary.lastActivityAt)}</p></div><div className="teacherStudentHeroStats"><div><b>{summary.memorizedAverage}%</b><span>متوسط الحفظ</span></div><div><b>{summary.reviewAverage}%</b><span>متوسط المراجعة</span></div><div><b>{summary.masteredCount}</b><span>سور متقنة</span></div></div></section>
       <div className="teacherDetailGrid">
-        <section className="panel"><div className="teacherSectionHead"><div><span>{activeProgress.length} سورة بدأها</span><h2>تقدم السور</h2></div></div>{activeProgress.length ? <div className="teacherProgressList">{activeProgress.map(row => { const s = getSurah(row.surah_number); return <article key={row.surah_number}><div className="num">{row.surah_number}</div><div className="grow"><b>سورة {s?.name || row.surah_name || row.surah_number}</b><div className="bar"><i style={{ width: `${Number(row.memorized_percent || 0)}%` }} /></div><small>{Number(row.memorized_percent || 0)}% حفظ • {Number(row.review_percent || 0)}% مراجعة • {row.status === "mastered" ? "متقنة" : row.status === "review" ? "تحتاج مراجعة" : "قيد الحفظ"}</small></div></article>; })}</div> : <EmptyState icon="📖" title="لم يبدأ الحفظ بعد" text="سيظهر تقدم السور هنا بمجرد أن يبدأ الطفل أول جلسة حفظ." />}</section>
-        <section className="panel teacherReviewBox"><h2>تسجيل مراجعة</h2><p className="muted">سجّل نتيجة التسميع بعد مراجعة الطفل معك.</p>{activeProgress.length ? <form onSubmit={submitReview}><label>السورة<select value={surahNumber} onChange={e => setSurahNumber(e.target.value)} required>{activeProgress.map(row => { const s = getSurah(row.surah_number); return <option key={row.surah_number} value={row.surah_number}>سورة {s?.name || row.surah_name || row.surah_number}</option>; })}</select></label><label>التقييم<select value={score} onChange={e => setScore(Number(e.target.value))}><option value="100">ممتاز — 100%</option><option value="90">ممتاز جدًا — 90%</option><option value="80">جيد — 80%</option><option value="60">يحتاج تدريب — 60%</option></select></label><label>ملاحظات<input value={notes} onChange={e => setNotes(e.target.value)} placeholder="ملاحظة اختيارية لولي الأمر" maxLength="300" /></label><button className="primary full" disabled={busy}>{busy ? "جارٍ التسجيل..." : "حفظ نتيجة المراجعة"}</button></form> : <p className="muted">لا يمكن تسجيل مراجعة قبل أن يبدأ الطفل حفظ سورة.</p>}{message && <div className="msg ok">{message}</div>}<ErrorBox text={error} /></section>
+        <section className="panel teacherPanelV2"><div className="teacherSectionHead"><div><span>{activeProgress.length} سورة بدأها</span><h2>تقدم السور</h2></div></div>{activeProgress.length ? <div className="teacherProgressList">{activeProgress.map(row => { const s = getSurah(row.surah_number); return <article key={row.surah_number}><div className="num">{row.surah_number}</div><div className="grow"><b>سورة {s?.name || row.surah_name || row.surah_number}</b><div className="bar"><i style={{ width: `${Number(row.memorized_percent || 0)}%` }} /></div><small>{Number(row.memorized_percent || 0)}% حفظ • {Number(row.review_percent || 0)}% مراجعة • {row.status === "mastered" ? "متقنة" : row.status === "review" ? "تحتاج مراجعة" : "قيد الحفظ"}</small></div></article>; })}</div> : <EmptyState icon="quran" title="لم يبدأ الحفظ بعد" text="سيظهر تقدم السور هنا بمجرد أن يبدأ الطفل أول جلسة حفظ." />}</section>
+        <section className="panel teacherReviewBox teacherPanelV2"><div className="panel-icon"><Icon name="review" size={28} /></div><h2>تسجيل مراجعة</h2><p className="muted">سجّل نتيجة التسميع بعد مراجعة الطفل معك.</p>{activeProgress.length ? <form onSubmit={submitReview}><label>السورة<select value={surahNumber} onChange={e => setSurahNumber(e.target.value)} required>{activeProgress.map(row => { const s = getSurah(row.surah_number); return <option key={row.surah_number} value={row.surah_number}>سورة {s?.name || row.surah_name || row.surah_number}</option>; })}</select></label><label>التقييم<select value={score} onChange={e => setScore(Number(e.target.value))}><option value="100">ممتاز — 100%</option><option value="90">ممتاز جدًا — 90%</option><option value="80">جيد — 80%</option><option value="60">يحتاج تدريب — 60%</option></select></label><label>ملاحظات<input value={notes} onChange={e => setNotes(e.target.value)} placeholder="ملاحظة اختيارية لولي الأمر" maxLength="300" /></label><button className="primary full" disabled={busy}>{busy ? "جارٍ التسجيل..." : "حفظ نتيجة المراجعة"}</button></form> : <p className="muted">لا يمكن تسجيل مراجعة قبل أن يبدأ الطفل حفظ سورة.</p>}{message && <div className="msg ok">{message}</div>}<ErrorBox text={error} /></section>
       </div>
-      <section className="panel teacherHistory"><div className="teacherSectionHead"><div><span>آخر 20 مراجعة</span><h2>سجل المراجعات</h2></div></div>{reviews.length ? <div className="teacherReviewHistory">{reviews.map(review => { const s = getSurah(review.surah_number); return <article key={review.id}><div><b>سورة {s?.name || review.surah_number}</b><small>{formatDate(review.reviewed_at)}</small></div><strong>{review.score}%</strong>{review.notes && <p>{review.notes}</p>}</article>; })}</div> : <p className="muted">لم تُسجل مراجعات لهذا الطالب بعد.</p>}</section>
+      <section className="panel teacherHistory teacherPanelV2"><div className="teacherSectionHead"><div><span>آخر 20 مراجعة</span><h2>سجل المراجعات</h2></div><span className="history-icon"><Icon name="clock" size={21} /></span></div>{reviews.length ? <div className="teacherReviewHistory">{reviews.map(review => { const s = getSurah(review.surah_number); return <article key={review.id}><div><b>سورة {s?.name || review.surah_number}</b><small>{formatDate(review.reviewed_at)}</small></div><strong>{review.score}%</strong>{review.notes && <p>{review.notes}</p>}</article>; })}</div> : <p className="muted">لم تُسجل مراجعات لهذا الطالب بعد.</p>}</section>
     </main>
   );
 }
@@ -274,7 +283,7 @@ export default function TeacherPortal() {
   else if (path === "/teacher/classes") page = <Classes user={user} data={data} reload={reload} />;
   else if (path === "/teacher/students") page = <Students data={data} />;
   else if (match) page = <StudentDetail user={user} data={data} studentId={match[1]} reloadOverview={reload} />;
-  else page = <main className="wrap page teacherPage"><EmptyState icon="🧭" title="الصفحة غير موجودة" text="ارجع إلى لوحة المعلم واختر القسم المطلوب." action="لوحة المعلم" onAction={() => navigate("/teacher")} /></main>;
+  else page = <main className="wrap page teacherPage"><EmptyState icon="target" title="الصفحة غير موجودة" text="ارجع إلى لوحة المعلم واختر القسم المطلوب." action="لوحة المعلم" onAction={() => navigate("/teacher")} /></main>;
 
   return <TeacherShell user={user}><ErrorBox text={error} />{page}</TeacherShell>;
 }
