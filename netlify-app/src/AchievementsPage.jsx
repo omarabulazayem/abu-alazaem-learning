@@ -14,6 +14,7 @@ const badgeDefinitions = [
   ["first_surah", "star", "أول سورة", "أتم حفظ سورة كاملة", "sun"],
   ["five_surahs", "mosque", "خمس سور", "أتم حفظ خمس سور كاملة", "mint"],
   ["first_review", "review", "مراجع صغير", "أكمل أول مراجعة", "sky"],
+  ["game_engine_player", "game", "أول لعبة مسجلة", "أكمل أول لعبة مرتبطة بـ GameEngine", "lavender"],
   ["memory_player", "brain", "بطل الذاكرة", "أكمل لعبة الذاكرة", "lavender"],
   ["surah_order_master", "puzzle", "خبير ترتيب السور", "أكمل لعبة ترتيب السور", "sun"],
   ["surah_quiz_star", "bolt", "نجم اختبار السور", "اجتز اختبار السور بنجاح", "lavender"],
