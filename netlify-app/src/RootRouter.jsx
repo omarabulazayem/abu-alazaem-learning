@@ -84,16 +84,19 @@ export default function RootRouter() {
   const childMode = useChildMode();
   const accountType = useAccountType();
 
-  const teacherAllowed = path === "/" || path === "/login" || path === "/teacher" || path.startsWith("/teacher/");
+  const isTeacherRoute = path === "/teacher" || path.startsWith("/teacher/");
+  const teacherAllowed = path === "/" || path === "/login" || isTeacherRoute;
+
   useEffect(() => {
     if (accountType === "teacher" && !teacherAllowed) navigate("/teacher", true);
   }, [accountType, path, teacherAllowed]);
 
+  if (isTeacherRoute) return <TeacherPortal />;
   if (accountType === "teacher" && !teacherAllowed) return <TeacherPortal />;
-  if (path === "/child") return <ChildHub />;
-  if (childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
-  if (path === "/teacher" || path.startsWith("/teacher/")) return <TeacherPortal />;
+  if (path === "/child") return <ChildHub />;
+  if (accountType !== "teacher" && childMode && !isChildSafeRoute(path)) return <ChildHub />;
+
   if (path === "/quran") return <QuranPage />;
   if (path === "/memorize") return <MemorizePage />;
   if (path === "/games") return <GamesHub />;
