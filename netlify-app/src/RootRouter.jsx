@@ -8,6 +8,7 @@ import SurahOrderGame from "./SurahOrderGame.jsx";
 import SurahQuizGame from "./SurahQuizGame.jsx";
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
+import TeacherPortal from "./TeacherPortal.jsx";
 
 const childSafeRoutes = new Set([
   "/child",
@@ -25,9 +26,10 @@ function isChildSafeRoute(path) {
 }
 
 function usePath() {
-  const [path, setPath] = useState(window.location.pathname);
+  const read = () => typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
+  const [path, setPath] = useState(read);
   useEffect(() => {
-    const sync = () => setPath(window.location.pathname);
+    const sync = () => setPath(read());
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, []);
@@ -55,6 +57,7 @@ export default function RootRouter() {
   if (path === "/child") return <ChildHub />;
   if (childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
+  if (path === "/teacher" || path.startsWith("/teacher/")) return <TeacherPortal />;
   if (path === "/quran") return <QuranPage />;
   if (path === "/memorize") return <MemorizePage />;
   if (path === "/games") return <GamesHub />;
