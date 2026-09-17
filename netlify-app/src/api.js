@@ -120,7 +120,7 @@ export async function signIn(email, password) {
   return getCurrentUser();
 }
 
-export async function signUp({ email, password, displayName, accountType, childName, childAgeBand }) {
+export async function signUp({ email, password, displayName, accountType, childName, childAgeBand, childAgeYears, childGender }) {
   const redirectTo = appUrl("/login");
   const path = redirectTo ? `/signup?redirect_to=${encodeURIComponent(redirectTo)}` : "/signup";
   const data = await authRequest(path, {
@@ -133,6 +133,8 @@ export async function signUp({ email, password, displayName, accountType, childN
         account_type: accountType === "teacher" ? "teacher" : "parent",
         child_name: accountType === "parent" ? childName || undefined : undefined,
         child_age_band: accountType === "parent" ? childAgeBand || "7-9" : undefined,
+        child_age_years: accountType === "parent" && Number.isInteger(Number(childAgeYears)) ? Number(childAgeYears) : undefined,
+        child_gender: accountType === "parent" ? childGender || "unspecified" : undefined,
       },
     }),
   });
@@ -229,11 +231,33 @@ export async function listChildren(user) {
   return rest(`/child_profiles?parent_id=eq.${encodeURIComponent(user.id)}&is_active=eq.true&select=*&order=created_at.asc`);
 }
 
+function childProfilePayload(input) {
+  const payload = {
+    display_name: String(input.displayName || "").trim(),
+    age_band: input.ageBand || "7-9",
+    avatar: input.avatar || "🧒🏻",
+    gender: ["male", "female", "unspecified"].includes(input.gender) ? input.gender : "unspecified",
+  };
+  const ageYears = Number(input.ageYears);
+  if (Number.isInteger(ageYears) && ageYears >= 3 && ageYears <= 18) payload.age_years = ageYears;
+  if (input.customization && typeof input.customization === "object") payload.customization = input.customization;
+  return payload;
+}
+
 export async function createChild(user, input) {
   const rows = await rest("/child_profiles", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ parent_id: user.id, display_name: input.displayName, age_band: input.ageBand, avatar: input.avatar || "🧒🏻" }),
+    body: JSON.stringify({ parent_id: user.id, ...childProfilePayload(input) }),
+  });
+  return rows?.[0];
+}
+
+export async function updateChild(childId, input) {
+  const rows = await rest(`/child_profiles?id=eq.${encodeURIComponent(childId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(childProfilePayload(input)),
   });
   return rows?.[0];
 }
@@ -329,8 +353,8 @@ export async function teacherOverview(userId) {
       const rows = progress.filter(p => p.child_id === child.id);
       const avg = key => rows.length ? Math.round(rows.reduce((sum,r) => sum + Number(r[key] || 0), 0) / rows.length) : 0;
       const names = links.filter(l => l.child_id === child.id).map(l => classNames.get(l.class_id)).filter(Boolean);
-      const last = rows.map(r => r.last_activity_at).filter(Boolean).sort().at(-1) || null;
-      return { ...child, classes: names, memorizedAverage: avg("memorized_percent"), reviewAverage: avg("review_percent"), masteredCount: rows.filter(r => r.status === "mastered").length, surahCount: rows.length, lastActivityAt: last };
+      const progressLast = rows.map(r => r.last_activity_at).filter(Boolean).sort().at(-1) || null;
+      return { ...child, classes: names, memorizedAverage: avg("memorized_percent"), reviewAverage: avg("review_percent"), masteredCount: rows.filter(r => r.status === "mastered").length, surahCount: rows.length, lastActivityAt: child.last_activity_at || progressLast };
     }),
   };
 }
