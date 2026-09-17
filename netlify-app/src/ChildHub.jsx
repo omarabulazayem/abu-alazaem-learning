@@ -7,11 +7,15 @@ import {
   setActiveChildId,
   signIn,
 } from "./api.js";
+import Icon from "./Icon.jsx";
 
 export const CHILD_MODE_KEY = "abu-alazaem-child-mode";
 
+function routePath() {
+  return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
+}
 function navigate(path) {
-  if (window.location.pathname !== path) {
+  if (routePath() !== path) {
     history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
@@ -21,15 +25,22 @@ export function enterChildMode() {
   localStorage.setItem(CHILD_MODE_KEY, "1");
   window.dispatchEvent(new Event("abu-child-mode"));
 }
-
 export function exitChildMode() {
   localStorage.removeItem(CHILD_MODE_KEY);
   window.dispatchEvent(new Event("abu-child-mode"));
 }
-
 export function isChildModeActive() {
   return localStorage.getItem(CHILD_MODE_KEY) === "1";
 }
+
+const actions = [
+  ["quran", "الحفظ", "أكمل جلسة قصيرة واحفظ تقدمك", "/memorize", "mint"],
+  ["review", "المراجعة", "راجع ما حفظته وثبّته", "/review", "sky"],
+  ["game", "الألعاب", "ذاكرة وترتيب واختبار", "/games", "featured"],
+  ["trophy", "إنجازاتي", "شاهد الميداليات التي فتحتها", "/achievements", "lavender"],
+  ["target", "تحديات اليوم", "اعرف ما أكملته اليوم", "/challenges", "sun"],
+  ["room", "غرفتي", "شاهد نقاطك ونجومك وتقدمك", "/room", "rose"],
+];
 
 export default function ChildHub() {
   const [user, setUser] = useState(undefined);
@@ -100,52 +111,60 @@ export default function ChildHub() {
 
   if (user === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز وضع الطفل...</p></div>;
 
-  const actions = [
-    ["📖", "الحفظ", "أكمل جلسة قصيرة واحفظ تقدمك", "/memorize", ""],
-    ["🔁", "المراجعة", "راجع ما حفظته وثبّته", "/review", ""],
-    ["🎮", "الألعاب", `${gameProgress}/٣ ألعاب اليوم • ذاكرة وترتيب واختبار`, "/games", "featured"],
-    ["🏆", "إنجازاتي", "شاهد الميداليات التي فتحتها", "/achievements", ""],
-    ["🔥", "تحديات اليوم", "اعرف ما أكملته اليوم", "/challenges", ""],
-    ["⭐", "غرفتي", "شاهد نقاطك ونجومك وتقدمك", "/room", ""],
-  ];
-
   return (
-    <div className="app child-dashboard" dir="rtl">
-      <header>
+    <div className="app child-dashboard child-dashboard-v2" dir="rtl">
+      <header className="child-topbar">
         <div className="wrap nav">
-          <button className="brand" onClick={() => navigate("/child")}><span className="logo">ع</span><span><b>أبو العزايم</b><small>وضع الطفل</small></span></button>
-          <div className="actions"><span className="reward-chip">🏆 {child?.points || 0}</span><span className="reward-chip">⭐ {child?.stars || 0}</span><button className="secondary" onClick={() => { setShowExit(true); setError(""); }}>خروج ولي الأمر</button></div>
+          <button className="brand" onClick={() => navigate("/child")}>
+            <span className="logo"><Icon name="mosque" size={24} /></span>
+            <span><b>أبو العزايم</b><small>وضع الطفل</small></span>
+          </button>
+          <div className="actions child-rewards">
+            <span className="reward-chip"><Icon name="trophy" size={17} /> {child?.points || 0} نقطة</span>
+            <span className="reward-chip"><Icon name="star" size={17} /> {child?.stars || 0} نجمة</span>
+            <button className="secondary" onClick={() => { setShowExit(true); setError(""); }}><Icon name="lock" size={17} /> خروج ولي الأمر</button>
+          </div>
         </div>
       </header>
 
       <main className="wrap page">
-        <section className="childHero childHeroPlus">
-          <div className="avatar big">{child?.avatar || "🧒🏻"}</div>
-          <div className="grow"><span>رحلتي اليوم</span><h1>أهلًا {child?.display_name || "بطلنا الصغير"}!</h1><p>اختر نشاطًا صغيرًا، واجمع نقاطك ونجومك خطوة بخطوة.</p></div>
-          <div className="child-level"><span>🔥 سلسلة النشاط</span><b>{child?.streak || 0}</b><small>يوم متواصل</small></div>
+        <section className="childHero childHeroPlus childHeroIllustrated">
+          <div className="child-avatar-art"><Icon name="child" size={58} /></div>
+          <div className="grow"><span>رحلتي اليوم</span><h1>أهلًا {child?.display_name || "بطلنا الصغير"}</h1><p>اختر نشاطًا صغيرًا، واجمع نقاطك ونجومك خطوة بخطوة.</p></div>
+          <div className="child-level"><span><Icon name="flame" size={16} /> سلسلة النشاط</span><b>{child?.streak || 0}</b><small>يوم متواصل</small></div>
         </section>
 
         {!showExit && child && (
           <div className="child-summary">
-            <div className="child-stat"><span>🏆</span><div><b>{child.points || 0}</b><small>نقطة</small></div></div>
-            <div className="child-stat"><span>⭐</span><div><b>{child.stars || 0}</b><small>نجمة</small></div></div>
-            <div className="child-stat"><span>🎮</span><div><b>{gameProgress}/٣</b><small>ألعاب اليوم</small></div></div>
-            <button className="daily-game-cta" onClick={() => navigate("/games")}><span>{gameProgress === 3 ? "🎉" : "🚀"}</span><div><b>{gameProgress === 3 ? "أكملت ألعاب اليوم!" : "كمّل تحدي الألعاب"}</b><small>{gameProgress === 3 ? "يمكنك اللعب مرة أخرى للتدريب" : `باقي ${3 - gameProgress} لعبة`}</small></div><i>←</i></button>
+            <div className="child-stat"><span className="stat-icon gold"><Icon name="trophy" size={25} /></span><div><b>{child.points || 0}</b><small>نقطة</small></div></div>
+            <div className="child-stat"><span className="stat-icon sun"><Icon name="star" size={25} /></span><div><b>{child.stars || 0}</b><small>نجمة</small></div></div>
+            <div className="child-stat"><span className="stat-icon sky"><Icon name="game" size={25} /></span><div><b>{gameProgress}/٣</b><small>ألعاب اليوم</small></div></div>
+            <button className="daily-game-cta" onClick={() => navigate("/games")}>
+              <span className="daily-game-icon"><Icon name={gameProgress === 3 ? "circleCheck" : "rocket"} size={30} /></span>
+              <div><b>{gameProgress === 3 ? "أكملت ألعاب اليوم" : "كمّل تحدي الألعاب"}</b><small>{gameProgress === 3 ? "يمكنك اللعب مرة أخرى للتدريب" : `باقي ${3 - gameProgress} لعبة`}</small></div>
+              <Icon name="arrow" size={22} />
+            </button>
           </div>
         )}
 
         {error && <div className="msg error">{error}</div>}
 
         {!showExit && (
-          <div className="kidgrid">
+          <div className="kidgrid kidgrid-v2">
             {actions.map(([icon, title, description, path, className]) => (
-              <button className={className} key={path} onClick={() => child && navigate(path)} disabled={!child}><span>{icon}</span><b>{title}</b><small>{description}</small></button>
+              <button className={`kid-action ${className}`} key={path} onClick={() => child && navigate(path)} disabled={!child}>
+                <span className="kid-action-icon"><Icon name={icon} size={42} /></span>
+                <b>{title}</b>
+                <small>{path === "/games" ? `${gameProgress}/٣ ألعاب اليوم • ${description}` : description}</small>
+                <span className="kid-action-arrow"><Icon name="arrow" size={18} /></span>
+              </button>
             ))}
           </div>
         )}
 
         {showExit && (
-          <section className="panel authbox" style={{ margin: "28px auto 0" }}>
+          <section className="panel authbox child-exit-card" style={{ margin: "28px auto 0" }}>
+            <div className="child-exit-icon"><Icon name="shield" size={42} /></div>
             <h2>خروج من وضع الطفل</h2>
             <p>أدخل كلمة مرور ولي الأمر للعودة إلى إدارة الأسرة.</p>
             <form onSubmit={verifyParent}><input type="password" minLength="6" autoFocus autoComplete="current-password" placeholder="كلمة مرور ولي الأمر" value={password} onChange={e => setPassword(e.target.value)} required /><button className="primary full" disabled={busy}>{busy ? "جارٍ التحقق..." : "التحقق والخروج"}</button></form>
