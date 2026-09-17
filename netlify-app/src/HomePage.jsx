@@ -5,7 +5,7 @@ import { DEFAULT_HOME_CONTENT, DEFAULT_MAIN_NAV, loadHomeContent } from "./siteC
 
 function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path){if(routePath()!==path){history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}}
-function BrandMark({brand=DEFAULT_HOME_CONTENT.brand}){return <button className="homeBrand" onClick={()=>navigate("/")}><span className="homeBrandIcon"><Icon name="mosque" size={42}/></span><span><b>{brand.title}</b><small>{brand.subtitle}</small></span></button>;}
+function BrandMark({brand}){return <button className="homeBrand" onClick={()=>navigate("/")}><span className="homeBrandIcon"><Icon name="mosque" size={31}/></span><span><b>{brand.title}</b><small>{brand.subtitle}</small></span></button>;}
 function HeroTitle({title,highlight}){if(!highlight||!String(title).includes(highlight))return <>{title}</>;const [before,...rest]=String(title).split(highlight);return <>{before}<strong>{highlight}</strong>{rest.join(highlight)}</>;}
 
 const primaryRoutes=new Set(["/memorize","/games","/review"]);
@@ -15,39 +15,86 @@ const worldMeta={
   "/review":{tone:"review",label:"نراجع",icon:"review",companion:"sparkle"},
 };
 
-function KidsHeroScene(){return <svg className="kidsHeroScene" viewBox="0 0 760 500" role="img" aria-label="أطفال يتعلمون القرآن في عالم مرح وهادئ">
-  <defs><linearGradient id="khSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#dff6ff"/><stop offset="1" stopColor="#fffdf7"/></linearGradient><linearGradient id="khGrass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#dff7e7"/><stop offset="1" stopColor="#bde9cf"/></linearGradient><filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="9" floodColor="#5d8ea5" floodOpacity=".13"/></filter></defs>
-  <rect width="760" height="500" rx="48" fill="url(#khSky)"/>
-  <circle cx="650" cy="70" r="38" fill="#fff0a8"/><circle cx="650" cy="70" r="53" fill="#fff0a8" opacity=".18"/>
-  <g fill="#fff" opacity=".95"><ellipse cx="120" cy="92" rx="48" ry="20"/><ellipse cx="156" cy="90" rx="35" ry="26"/><ellipse cx="510" cy="118" rx="42" ry="18"/><ellipse cx="543" cy="115" rx="30" ry="23"/></g>
-  <path d="M0 360c110-62 214-54 319 0 84 43 179 42 264 3 77-36 128-34 177-10v147H0Z" fill="url(#khGrass)"/>
-  <path d="M93 397c91-54 196-52 287-5 86 44 164 44 282-5" fill="none" stroke="#fff" strokeWidth="24" strokeLinecap="round" opacity=".8"/>
-  <g transform="translate(277 203)" filter="url(#softShadow)"><ellipse cx="107" cy="208" rx="130" ry="26" fill="#9ccfb1" opacity=".35"/><rect x="13" y="116" width="188" height="102" rx="26" fill="#fff" stroke="#d4e9ef" strokeWidth="4"/><path d="M107 126v80" stroke="#d2b05b" strokeWidth="4"/><path d="M105 138c-33-20-61-22-82-14v69c26-9 52-5 82 13Z" fill="#fff8d9" stroke="#e4c66f" strokeWidth="3"/><path d="M109 138c33-20 61-22 82-14v69c-26-9-52-5-82 13Z" fill="#fff8d9" stroke="#e4c66f" strokeWidth="3"/><path d="M45 153c18-4 35-2 51 5M119 158c16-7 34-9 51-5M45 170c17-3 34-1 50 5M120 175c15-6 31-7 47-4" stroke="#dbc27c" strokeWidth="2" strokeLinecap="round" opacity=".8"/><circle cx="107" cy="74" r="27" fill="#ffd8bd"/><path d="M80 69c5-34 53-38 60-5-12-10-22-11-31-8-13 5-18 11-29 13Z" fill="#463b52"/><circle cx="98" cy="76" r="2.5" fill="#4a3b37"/><circle cx="116" cy="76" r="2.5" fill="#4a3b37"/><path d="M101 87c4 4 9 4 13 0" fill="none" stroke="#ba786e" strokeWidth="2.5" strokeLinecap="round"/><path d="M79 96c14 7 42 8 57 0l14 39H65Z" fill="#7bc8e9"/><path d="M72 124 47 165M143 124l26 41" stroke="#ffd8bd" strokeWidth="13" strokeLinecap="round"/></g>
-  <g transform="translate(95 250)" filter="url(#softShadow)"><circle cx="64" cy="45" r="24" fill="#f1c7a5"/><path d="M42 42c0-34 48-38 50-5-17-9-32-8-50 5Z" fill="#4d3b31"/><circle cx="56" cy="48" r="2.3" fill="#4a3b37"/><circle cx="72" cy="48" r="2.3" fill="#4a3b37"/><path d="M58 58c4 3 8 3 12 0" fill="none" stroke="#aa6e61" strokeWidth="2.3" strokeLinecap="round"/><path d="M38 72c17 10 36 10 53 0l18 78H18Z" fill="#b9a7ec"/><path d="M31 96 4 126M94 95l31 31" stroke="#f1c7a5" strokeWidth="12" strokeLinecap="round"/><circle cx="12" cy="136" r="13" fill="#ffd86d"/><path d="M7 136h10M12 131v10" stroke="#fff" strokeWidth="3"/></g>
-  <g transform="translate(555 245)" filter="url(#softShadow)"><circle cx="55" cy="43" r="23" fill="#e8bb99"/><path d="M32 44c2-31 45-37 49-6-14-7-31-6-49 6Z" fill="#372f35"/><circle cx="48" cy="47" r="2.2" fill="#423838"/><circle cx="63" cy="47" r="2.2" fill="#423838"/><path d="M49 57c4 3 8 3 12 0" fill="none" stroke="#a66d62" strokeWidth="2.2" strokeLinecap="round"/><path d="M30 69c16 10 34 10 50 0l17 80H12Z" fill="#f3a6c8"/><path d="M24 95 0 124M86 95l27 29" stroke="#e8bb99" strokeWidth="11" strokeLinecap="round"/><rect x="98" y="116" width="29" height="29" rx="9" fill="#dff5ff"/><path d="M105 130h15" stroke="#4c9ac0" strokeWidth="3"/></g>
-  <g fill="#f4c64f"><path d="m220 95 6 13 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2Z"/><path d="m604 165 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/></g>
-  <g transform="translate(44 174)"><rect width="72" height="72" rx="24" fill="#fff" stroke="#d9ecf2" strokeWidth="3"/><circle cx="36" cy="36" r="18" fill="#e5f8ef"/><path d="M28 36h16M36 28v16" stroke="#43a976" strokeWidth="4" strokeLinecap="round"/></g>
-  <g transform="translate(615 357)"><rect width="74" height="74" rx="25" fill="#fff" stroke="#ecdff1" strokeWidth="3"/><circle cx="37" cy="37" r="18" fill="#f4eaff"/><path d="M28 38l7 7 13-17" fill="none" stroke="#8a63bd" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/></g>
-</svg>;}
-
-function HomeWorldArt({meta}){return <span className={`home-world-art ${meta.tone}`} aria-hidden="true"><span className="home-world-sun"/><span className="home-world-hill back"/><span className="home-world-hill front"/><span className="home-world-path"/><span className="home-world-main"><Icon name={meta.icon} size={50}/></span><span className="home-world-friend"><Icon name={meta.companion} size={24}/></span></span>;}
+function WorldArt({meta}){return <span className={`home-world-art ${meta.tone}`} aria-hidden="true"><span className="home-world-main"><Icon name={meta.icon} size={49}/></span><span className="home-world-friend"><Icon name={meta.companion} size={20}/></span></span>;}
 
 export default function HomePage(){
-  const [user,setUser]=useState(undefined),[child,setChild]=useState(null),[menuOpen,setMenuOpen]=useState(false),[content,setContent]=useState({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV});
-  useEffect(()=>{let alive=true;(async()=>{const [current,editorial]=await Promise.all([getCurrentUser().catch(()=>null),loadHomeContent("ar").catch(()=>({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV}))]);if(!alive)return;setContent(editorial);setUser(current);if(!current||current.accountType==="teacher")return;const kids=await listChildren(current).catch(()=>[]);if(!alive)return;const activeId=getActiveChildId();const selected=kids.find(k=>k.id===activeId)||kids[0]||null;if(selected&&selected.id!==activeId)setActiveChildId(selected.id);setChild(selected);})();return()=>{alive=false;};},[]);
+  const [user,setUser]=useState(undefined);
+  const [child,setChild]=useState(null);
+  const [menuOpen,setMenuOpen]=useState(false);
+  const [content,setContent]=useState({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV});
+
+  useEffect(()=>{let alive=true;(async()=>{
+    const [current,editorial]=await Promise.all([
+      getCurrentUser().catch(()=>null),
+      loadHomeContent("ar").catch(()=>({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV}))
+    ]);
+    if(!alive)return;
+    setContent(editorial);setUser(current);
+    if(!current||current.accountType==="teacher")return;
+    const kids=await listChildren(current).catch(()=>[]);if(!alive)return;
+    const activeId=getActiveChildId();const selected=kids.find(k=>k.id===activeId)||kids[0]||null;
+    if(selected&&selected.id!==activeId)setActiveChildId(selected.id);setChild(selected);
+  })();return()=>{alive=false;};},[]);
+
   const isTeacher=user?.accountType==="teacher";
   const accountLabel=useMemo(()=>!user?"تسجيل الدخول":isTeacher?"لوحة المعلم":"حساب الأسرة",[user,isTeacher]);
-  async function logout(){await signOut();setUser(null);setChild(null);} function openAccount(){if(!user)return navigate("/login");navigate(isTeacher?"/teacher":"/family");}
-  const navigation=content.navigation||DEFAULT_MAIN_NAV,hero=content.hero||DEFAULT_HOME_CONTENT.hero,sections=content.sections||DEFAULT_HOME_CONTENT.sections,heading=content.sectionsHeading||DEFAULT_HOME_CONTENT.sectionsHeading,promise=content.promise||DEFAULT_HOME_CONTENT.promise,footer=content.footer||DEFAULT_HOME_CONTENT.footer;
+  async function logout(){await signOut();setUser(null);setChild(null);}
+  function openAccount(){if(!user)return navigate("/login");navigate(isTeacher?"/teacher":"/family");}
+
+  const navigation=content.navigation||DEFAULT_MAIN_NAV;
+  const hero=content.hero||DEFAULT_HOME_CONTENT.hero;
+  const sections=content.sections||DEFAULT_HOME_CONTENT.sections;
+  const heading=content.sectionsHeading||DEFAULT_HOME_CONTENT.sectionsHeading;
+  const promise=content.promise||DEFAULT_HOME_CONTENT.promise;
+  const footer=content.footer||DEFAULT_HOME_CONTENT.footer;
   const primarySections=sections.filter(item=>primaryRoutes.has(item.route));
   const secondarySections=sections.filter(item=>!primaryRoutes.has(item.route));
   const childPreview=Boolean(child)||isTeacher;
-  const activeHero=childPreview?{eyebrow:child?`أهلًا ${child.display_name}`:"معاينة تجربة الطفل",title:"جاهز لمغامرة جديدة؟",highlight:"مغامرة",description:"نحفظ، نلعب، ونراجع في خطوات قصيرة وواضحة تناسب الطفل الصغير.",primaryLabel:isTeacher?"جرّب الألعاب":"ادخل عالمي",secondaryLabel:"افتح القرآن",secondaryRoute:"/quran"}:hero;
+  const activeHero=childPreview?{
+    eyebrow:child?`أهلًا ${child.display_name}`:"معاينة تجربة الطفل",
+    title:"جاهز لمغامرة جديدة؟",
+    highlight:"مغامرة",
+    description:"اختار خطوة واحدة: نحفظ، نلعب، أو نراجع. كل جولة قصيرة وواضحة ومناسبة للأطفال الصغار.",
+    primaryLabel:isTeacher?"معاينة الألعاب":"ادخل عالمي",
+    secondaryLabel:"افتح القرآن",secondaryRoute:"/quran"
+  }:hero;
   const primaryRoute=isTeacher?"/games":user?"/child":"/login";
-  return <div className={`homeV2 ${isTeacher?"teacher-home-preview":""}`} dir="rtl"><header className="homeHeader"><div className="homeHeaderInner"><BrandMark brand={content.brand}/>{!isTeacher&&<nav className={menuOpen?"homeNav open":"homeNav"}>{navigation.map(item=><button key={`${item.url}:${item.label}`} className={item.url==="/"?"active":""} onClick={()=>{navigate(item.url||"/");setMenuOpen(false);}}><Icon name={item.icon||"arrow"} size={23}/><span>{item.label}</span></button>)}</nav>}<div className="homeAccountArea">{child&&<div className="homeScore"><Icon name="star" size={22}/><b>{child.points||0}</b><span>نقطة</span></div>}<button className="homeAccount" onClick={openAccount}><Icon name={user?"user":"login"} size={22}/><span>{accountLabel}</span></button>{user&&<button className="homeLogout" onClick={logout} aria-label="تسجيل الخروج"><Icon name="logout" size={20}/></button>}{!isTeacher&&<button className="homeMenu" onClick={()=>setMenuOpen(v=>!v)} aria-label="فتح القائمة"><Icon name={menuOpen?"close":"menu"} size={24}/></button>}</div></div></header>
-  <main><section className="homeHeroWrap"><div className="homeHero"><div className="homeHeroCopy"><span className="homeEyebrow"><Icon name="sparkle" size={18}/>{activeHero.eyebrow}</span><h1><HeroTitle title={activeHero.title} highlight={activeHero.highlight}/></h1><p>{activeHero.description}</p><div className="homeHeroActions"><button className="homePrimary" onClick={()=>navigate(primaryRoute)}><span>{activeHero.primaryLabel}</span><Icon name="arrow" size={19}/></button><button className="homeGhost" onClick={()=>navigate(activeHero.secondaryRoute||"/quran")}><Icon name="quran" size={20}/><span>{activeHero.secondaryLabel}</span></button></div>{child&&<div className="homeChildStrip"><span className="homeChildAvatar"><Icon name="child" size={24}/></span><div><small>بطل الرحلة</small><b>{child.display_name}</b></div><div className="homeChildMetric"><strong>{child.stars||0}</strong><span>نجمة</span></div><div className="homeChildMetric"><strong>{child.streak||0}</strong><span>يوم متواصل</span></div></div>}</div><div className="homeHeroVisual"><KidsHeroScene/></div></div></section>
-  <section className="homeSections home-worlds-section"><div className="homeSectionHeading"><span>{childPreview?"اختار عالمك":heading.eyebrow}</span><h2>{childPreview?"نبدأ منين النهارده؟":heading.title}</h2><p>{childPreview?"3 اختيارات كبيرة وواضحة بدل زحمة القوائم.":heading.description}</p></div><div className="homeWorldGrid">{primarySections.map(item=>{const meta=worldMeta[item.route]||{tone:"memorize",label:item.title,icon:item.icon||"quran",companion:"star"};return <button key={`${item.route}:${item.title}`} className={`home-world-card ${meta.tone}`} onClick={()=>navigate(item.route)}><HomeWorldArt meta={meta}/><span className="home-world-copy"><b>{childPreview?meta.label:item.title}</b><small>{item.subtitle}</small></span><span className="home-world-go">يلا <Icon name="arrow" size={18}/></span></button>;})}</div>
-  {secondarySections.length>0&&<div className="homeMoreWorlds"><div className="home-more-heading"><span>{childPreview?"أماكن تانية":"المزيد"}</span><h3>{childPreview?"حاجاتك وجوائزك":"استكشف باقي المنصة"}</h3></div><div className="homeMiniGrid">{secondarySections.map(item=><button key={`${item.route}:${item.title}`} className={`home-mini-card ${item.tone||""}`} onClick={()=>navigate(item.route)}><span className="home-mini-icon"><Icon name={item.icon||"arrow"} size={30}/></span><span><b>{item.title}</b><small>{item.subtitle}</small></span></button>)}</div></div>}</section>
-  {!childPreview&&<section className="homePromise"><div className="homePromiseIcon"><Icon name="quran" size={34}/></div><div><span>{promise.eyebrow}</span><h3>{promise.title}</h3><p>{promise.description}</p></div><button onClick={()=>navigate(promise.route||"/quran")}>{promise.buttonLabel}<Icon name="arrow" size={18}/></button></section>}</main>
-  <footer className="homeFooter"><div><BrandMark brand={content.brand}/><p>{footer.description}</p></div></footer></div>;
+  const assetBase=import.meta.env.BASE_URL||"/";
+
+  return <div className={`homeV2 ${isTeacher?"teacher-home-preview":""}`} dir="rtl">
+    <header className="homeHeader"><div className="homeHeaderInner">
+      <BrandMark brand={content.brand||DEFAULT_HOME_CONTENT.brand}/>
+      {!isTeacher&&<nav className={menuOpen?"homeNav open":"homeNav"}>{navigation.map(item=><button key={`${item.url}:${item.label}`} className={item.url==="/"?"active":""} onClick={()=>{navigate(item.url||"/");setMenuOpen(false);}}><Icon name={item.icon||"arrow"} size={21}/><span>{item.label}</span></button>)}</nav>}
+      <div className="homeAccountArea">
+        {child&&<div className="homeScore"><Icon name="star" size={18}/><b>{child.points||0}</b><span>نقطة</span></div>}
+        <button className="homeAccount" onClick={openAccount}><Icon name={user?"user":"login"} size={19}/><span>{accountLabel}</span></button>
+        {user&&<button className="homeLogout" onClick={logout} aria-label="تسجيل الخروج"><Icon name="logout" size={18}/></button>}
+        {!isTeacher&&<button className="homeMenu" onClick={()=>setMenuOpen(v=>!v)} aria-label="فتح القائمة"><Icon name={menuOpen?"close":"menu"} size={22}/></button>}
+      </div>
+    </div></header>
+
+    <main>
+      <section className="homeHeroWrap"><div className="homeHero">
+        <div className="homeHeroCopy">
+          <span className="homeEyebrow"><Icon name="sparkle" size={16}/>{activeHero.eyebrow}</span>
+          <h1><HeroTitle title={activeHero.title} highlight={activeHero.highlight}/></h1>
+          <p>{activeHero.description}</p>
+          <div className="homeHeroActions"><button className="homePrimary" onClick={()=>navigate(primaryRoute)}>{activeHero.primaryLabel}<Icon name="arrow" size={18}/></button><button className="homeGhost" onClick={()=>navigate(activeHero.secondaryRoute||"/quran")}><Icon name="quran" size={19}/>{activeHero.secondaryLabel}</button></div>
+          {child&&<div className="homeChildStrip"><span className="homeChildAvatar"><Icon name="child" size={22}/></span><div><small>بطل الرحلة</small><b>{child.display_name}</b></div><div className="homeChildMetric"><strong>{child.stars||0}</strong><span>نجمة</span></div><div className="homeChildMetric"><strong>{child.streak||0}</strong><span>يوم متواصل</span></div></div>}
+        </div>
+        <div className="homeHeroVisual"><img src={`${assetBase}assets/hero-kids.webp?v=4`} alt="طفلان مع المصحف في عالم تعليمي مرح" onError={e=>{e.currentTarget.style.display="none";}}/></div>
+      </div></section>
+
+      <section className="homeSections home-worlds-section">
+        <div className="homeSectionHeading"><span>{childPreview?"اختار عالمك":heading.eyebrow}</span><h2>{childPreview?"نبدأ منين النهارده؟":heading.title}</h2><p>{childPreview?"ثلاث خطوات رئيسية واضحة. والباقي موجود بدون زحمة.":heading.description}</p></div>
+        <div className="homeWorldGrid">{primarySections.map(item=>{const meta=worldMeta[item.route]||{tone:"memorize",label:item.title,icon:item.icon||"quran",companion:"star"};return <button key={`${item.route}:${item.title}`} className={`home-world-card ${meta.tone}`} onClick={()=>navigate(item.route)}><WorldArt meta={meta}/><span className="home-world-copy"><b>{childPreview?meta.label:item.title}</b><small>{item.subtitle}</small></span><span className="home-world-go">يلا <Icon name="arrow" size={17}/></span></button>;})}</div>
+
+        <div className="homeMoreWorlds"><div className="home-more-heading"><span>أماكن إضافية</span><h3>{childPreview?"حاجاتك وجوائزك":"استكشف أكثر"}</h3></div><div className="homeMiniGrid">{secondarySections.slice(0,5).map(item=><button key={`${item.route}:${item.title}`} className="home-mini-card" onClick={()=>navigate(item.route)}><span className="home-mini-icon"><Icon name={item.icon||"arrow"} size={24}/></span><span><b>{item.title}</b><small>{item.subtitle}</small></span></button>)}</div></div>
+
+        <div className="homePromise"><div><small>{promise.eyebrow}</small><b>{promise.title}</b><p>{promise.description}</p></div><button className="secondary" onClick={()=>navigate(promise.route||"/quran")}>{promise.buttonLabel}<Icon name="arrow" size={17}/></button></div>
+      </section>
+    </main>
+
+    <footer className="homeFooter"><div className="wrap"><BrandMark brand={content.brand||DEFAULT_HOME_CONTENT.brand}/><p>{footer.description}</p></div></footer>
+  </div>;
 }

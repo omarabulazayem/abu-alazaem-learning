@@ -25,7 +25,10 @@ test("WordPress migration guide keeps telemetry in dedicated domain tables",asyn
 test("site visual system is loaded after feature styles",async()=>{
   const main=await fs.readFile(path.join(root,"src/main.jsx"),"utf8");
   const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
-  assert.equal(imports.at(-1),"./site-design.css");
+  assert.equal(imports.at(-1),"./design-system.css");
+  for(const legacy of ["./site-design.css","./kids-light-ui.css","./child-worlds.css","./illustrated-child-world.css","./real-child-art-fix.css"]){
+    assert.equal(imports.includes(legacy),false,`legacy visual import: ${legacy}`);
+  }
 });
 
 test("online visual assets have explicit attribution documentation",async()=>{
