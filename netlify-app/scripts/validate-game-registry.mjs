@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GAME_REGISTRY, GAME_STATUS, LIVE_GAME_DEFINITIONS } from "../src/gameRegistry.js";
+import { TAFSIR_GAME_DEFINITIONS, TAFSIR_STATUS } from "../src/tafsirRegistry.js";
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,"..");
@@ -20,16 +21,27 @@ for(const game of GAME_REGISTRY){
   if(game.status===GAME_STATUS.LIVE&&!game.engineIntegrated)fail(`${game.id} is live without GameEngine integration`);
 }
 
-const [router,expansion,hub,newHub]=await Promise.all([
+const tafsirIds=new Set(),tafsirRoutes=new Set();
+for(const game of TAFSIR_GAME_DEFINITIONS){
+  if(tafsirIds.has(game.id)||ids.has(game.id))fail(`duplicate Tafsir/platform game id ${game.id}`);tafsirIds.add(game.id);
+  if(tafsirRoutes.has(game.route)||routes.has(game.route))fail(`duplicate Tafsir/platform route ${game.route}`);tafsirRoutes.add(game.route);
+  if(game.status!==TAFSIR_STATUS.BLOCKED_CONTENT)fail(`Tafsir concept ${game.id} must remain blocked_content until approved content exists`);
+  if(!game.requiresApprovedContent)fail(`Tafsir concept ${game.id} is missing approved-content gate`);
+}
+
+const [router,expansion,hub,newHub,tafsirWorld]=await Promise.all([
   fs.readFile(path.join(src,"RootRouter.jsx"),"utf8"),
   fs.readFile(path.join(src,"NewQuranGamePack.jsx"),"utf8"),
   fs.readFile(path.join(src,"GamesHub.jsx"),"utf8"),
   fs.readFile(path.join(src,"NewGamePackHub.jsx"),"utf8"),
+  fs.readFile(path.join(src,"TafsirWorld.jsx"),"utf8"),
 ]);
 for(const game of LIVE_GAME_DEFINITIONS){if(!router.includes(game.route)&&!expansion.includes(game.route))fail(`live game ${game.id} has no route/component mapping for ${game.route}`);}
 const discovered=new Set([...router.matchAll(/["'](\/games\/[^"']+)["']/g),...expansion.matchAll(/["'](\/games\/[^"']+)["']/g)].map(m=>m[1]));
 discovered.delete("/games/new-pack");
-for(const route of discovered)if(!routes.has(route))fail(`game route ${route} exists in code but not in registry`);
+discovered.delete("/games/tafsir");
+for(const route of discovered)if(!routes.has(route)&&!tafsirRoutes.has(route))fail(`game route ${route} exists in code but not in a validated registry`);
+for(const game of TAFSIR_GAME_DEFINITIONS.slice(0,4))if(!tafsirWorld.includes(`\"${game.route}\"`))fail(`first Tafsir mechanic has no component route: ${game.id}`);
 if(!hub.includes('from "./gameRegistry.js"'))fail("GamesHub does not import canonical gameRegistry");
 if(!newHub.includes('from "./gameRegistry.js"'))fail("NewGamePackHub does not import canonical gameRegistry");
 if(/newGameDefinitions|gameDefinitions/.test(hub+newHub))fail("hub still references a retired definitions source");
@@ -52,4 +64,4 @@ const migration=await fs.readFile(path.resolve(root,"..","patches-live/supabase/
 if(!migration.includes("abandon_game_session")||!migration.includes("reward_awarded = false"))fail("adaptive abandon migration is incomplete");
 if(!router.includes("<NotFoundPage/>"))fail("RootRouter has no explicit NotFound page");
 if(process.exitCode)process.exit(process.exitCode);
-console.log(`Game registry OK: ${GAME_REGISTRY.length} total, ${LIVE_GAME_DEFINITIONS.length} live. Routes, statuses and case-safe Quran modules validated.`);
+console.log(`Game registries OK: ${GAME_REGISTRY.length} standard, ${LIVE_GAME_DEFINITIONS.length} live, ${TAFSIR_GAME_DEFINITIONS.length} Tafsir concepts content-gated.`);
