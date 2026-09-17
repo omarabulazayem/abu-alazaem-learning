@@ -1,14 +1,14 @@
 import { rest, rpc } from "./api.js";
 import { gameDefinition } from "./gameDefinitions.js";
-import { newGameDefinition } from "./newGameDefinitions.js";
 
 export class GameEngine {
   constructor({ childId, gameId, teacherPreview = false }) {
     this.childId = childId || null;
     this.gameId = gameId;
     this.teacherPreview = Boolean(teacherPreview);
-    this.definition = gameDefinition(gameId) || newGameDefinition(gameId);
+    this.definition = gameDefinition(gameId);
     if (!this.definition) throw new Error(`Unknown game definition: ${gameId}`);
+    if (this.definition.status !== "implemented") throw new Error(`Game is not implemented yet: ${gameId}`);
     this.session = null;
     this.local = {
       score: 0,
@@ -41,15 +41,15 @@ export class GameEngine {
     return this.session;
   }
 
-  async recordAnswer({ surahNumber, ayahNumber, questionType, correct, usedHint = false, responseTimeMs = null, metadata = {} }) {
+  async recordAnswer({ surahNumber = null, ayahNumber = null, questionType, correct, usedHint = false, responseTimeMs = null, metadata = {} }) {
     if (!this.session) throw new Error("ابدأ اللعبة أولًا.");
     if (correct) this.local.correctAnswers += 1; else this.local.wrongAnswers += 1;
     if (usedHint) this.local.hintsUsed += 1;
     if (this.teacherPreview) return { ...this.local };
     const result = await rpc("record_game_ayah_event", {
       p_session_id: this.session.id,
-      p_surah_number: Number(surahNumber),
-      p_ayah_number: Number(ayahNumber),
+      p_surah_number: surahNumber == null ? null : Number(surahNumber),
+      p_ayah_number: ayahNumber == null ? null : Number(ayahNumber),
       p_question_type: questionType || "unknown",
       p_is_correct: Boolean(correct),
       p_used_hint: Boolean(usedHint),

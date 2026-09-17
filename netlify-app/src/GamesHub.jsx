@@ -3,33 +3,26 @@ import { signOut } from "./api.js";
 import { isChildModeActive } from "./ChildHub.jsx";
 import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
 import { GameEngine } from "./gameEngine.js";
+import { implementedGamesByGroup, PLANNED_GAME_DEFINITIONS } from "./gameDefinitions.js";
 import Icon from "./Icon.jsx";
 
 function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path){if(routePath()!==path){history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}}
 
-const quranWorld=[
-  {id:"quran-wheel",icon:"target",title:"ساحة العجلة",subtitle:"العجلة الدوارة",description:"العجلة تختار سورة وتحديًا من الحفظ الحقيقي.",route:"/games/quran-wheel",tone:"sky"},
-  {id:"ayah-order",icon:"order",title:"مكتبة الترتيب",subtitle:"ترتيب الآيات",description:"اسحب الآيات باللمس حتى تعود إلى ترتيبها في QuranData.",route:"/games/ayah-order",tone:"mint"},
-  {id:"complete-ayah",icon:"edit",title:"ورشة الآيات",subtitle:"إكمال الآية",description:"استرجع الكلمة الناقصة من النص القرآني المرجعي.",route:"/games/complete-ayah",tone:"rose"},
-  {id:"quick-memory",icon:"memory",title:"غرفة الذاكرة",subtitle:"الذاكرة السريعة",description:"شاهد الآية لثوانٍ ثم استرجع الكلمة المفقودة.",route:"/games/quick-memory",tone:"lavender"},
-  {id:"word-train",icon:"order",title:"محطة القطار",subtitle:"قطار الكلمات",description:"رتّب كلمات الآية كعربات متتابعة ثم شغّل القطار.",route:"/games/train",tone:"sun"},
-  {id:"ayah-burger",icon:"order",title:"مطبخ الآيات",subtitle:"صانع البرجر",description:"ابنِ الآية من أجزاء مرتبة كطبقات فوق بعضها.",route:"/games/burger",tone:"rose"},
-  {id:"knowledge-bridge",icon:"target",title:"وادي المعرفة",subtitle:"جسر المعرفة",description:"كل إجابة صحيحة تبني لوحًا جديدًا حتى تعبر الجسر.",route:"/games/bridge",tone:"sky"},
-  {id:"flip-cards",icon:"memory",title:"قاعة البطاقات",subtitle:"البطاقات المقلوبة",description:"طابق بداية الآية بنهايتها الصحيحة من نفس السورة.",route:"/games/flip-cards",tone:"mint"},
-  {id:"guess-surah",icon:"search",title:"مختبر السور",subtitle:"خمّن السورة",description:"اقرأ آية حقيقية وحدد السورة التي تنتمي إليها.",route:"/games/guess-surah",tone:"lavender"},
-  {id:"word-hunter",icon:"target",title:"ساحة الصيد",subtitle:"صائد الكلمات",description:"التقط الكلمة الصحيحة التي تكمل الآية قبل باقي الخيارات.",route:"/games/word-hunter",tone:"sun"},
-  {id:"ayah-matching",icon:"review",title:"لوحة الربط",subtitle:"مطابقة الآيات",description:"صل بداية الآية بنهايتها الصحيحة من QuranData.",route:"/games/ayah-matching",tone:"sky"},
-  {id:"surah-cards",icon:"order",title:"ممر السور",subtitle:"البطاقات العشوائية",description:"رتّب مجموعة متتالية من السور في ترتيب المصحف الصحيح.",route:"/games/surah-cards",tone:"mint"},
-  {id:"ayah-code",icon:"lock",title:"خزنة الآيات",subtitle:"شفرة الآيات",description:"حل أربع مراحل واجمع أرقام الشفرة حتى تفتح الخزنة.",route:"/games/code",tone:"lavender"},
-  {id:"surah-exam",icon:"trophy",title:"قاعة الاختبار",subtitle:"اختبار حفظ السورة",description:"خمسة أنواع أسئلة تكشف الآيات التي تحتاج مراجعة فعلية.",route:"/games/surah-exam",tone:"rose"},
-];
+const toneByScene={
+  wheel:"sky",bridge:"sky",kitchen:"rose",station:"sun",lab:"lavender",vault:"lavender",cards:"mint",
+  "word-field":"mint",matching:"sky",library:"mint","memory-room":"lavender",workshop:"rose","exam-hall":"rose",
+  "star-forest":"sky","lavender-tower":"lavender","three-roads":"mint","puzzle-table":"rose","memory-race":"sky",
+  "treasure-map":"sun","mirror-room":"lavender","surah-gates":"sky","mystery-boxes":"rose","word-box":"sun",classic:"sky"
+};
+const coreGames=implementedGamesByGroup("quran-core").filter(game=>game.engineIntegrated);
+const expansionGames=implementedGamesByGroup("quran-expansion").filter(game=>game.engineIntegrated);
+const classicGames=implementedGamesByGroup("classic").filter(game=>game.engineIntegrated);
 
-const classicGames=[
-  {id:"classic-memory",icon:"brain",title:"لعبة الذاكرة",description:"طابق البطاقات المتشابهة بأقل عدد من المحاولات.",route:"/games/memory"},
-  {id:"classic-surah-order",icon:"puzzle",title:"رتّب السور",description:"اختبر معرفتك بترتيب السور في المصحف.",route:"/games/order"},
-  {id:"classic-surah-quiz",icon:"bolt",title:"اختبار السور",description:"خمسة أسئلة سريعة عن السور وأرقامها.",route:"/games/quiz"},
-];
+function ZoneGrid({games,progress,viewer}){
+  const teacherPreview=Boolean(viewer?.teacherPreview);
+  return <div className="world-map-grid">{games.map((game,index)=>{const p=progress.find(x=>x.game_id===game.id);return <button key={game.id} className={`world-zone ${toneByScene[game.scene]||"sky"}`} disabled={!learningActorReady(viewer)} onClick={()=>navigate(game.route)}><span className="zone-number">{String(index+1).padStart(2,"0")}</span><span className="zone-icon"><Icon name={game.icon||"game"} size={42}/></span><span className="zone-copy"><small>{game.educationalGoal||"لعبة تعليمية"}</small><b>{game.title}</b><p>{game.description}</p></span><span className="zone-progress">{teacherPreview?"معاينة":p?.best_stars?`${p.best_stars}/3 نجوم`:"ابدأ أول جولة"}<Icon name="arrow" size={18}/></span></button>})}</div>;
+}
 
 export default function GamesHub(){
   const [viewer,setViewer]=useState(undefined);const [progress,setProgress]=useState([]);const [error,setError]=useState("");
@@ -38,14 +31,16 @@ export default function GamesHub(){
   async function logout(){await signOut();navigate("/");}
   if(viewer===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز عالم الألعاب...</p></div>;
   const mastered=progress.filter(p=>Number(p.best_stars||0)>=3).length;
+  const engineGames=[...coreGames,...expansionGames,...classicGames];
   return <div className="app game-shell game-shell-v2 game-world" dir="rtl">
     <header className="game-topbar"><div className="wrap nav"><button className="brand" onClick={()=>navigate(teacherPreview?"/teacher":childMode?"/child":"/")}><span className="logo"><Icon name="game" size={24}/></span><span><b>أبو العزايم</b><small>عالم ألعاب القرآن</small></span></button><div className="actions">{teacherPreview?<span className="reward-chip"><Icon name="teacher" size={17}/> معاينة المعلم</span>:<><span className="reward-chip"><Icon name="star" size={17}/> {child?.stars||0}</span><span className="reward-chip"><Icon name="trophy" size={17}/> {child?.points||0}</span></>}<button className="secondary" onClick={()=>navigate(teacherPreview?"/teacher":childMode?"/child":"/family")}>{teacherPreview?"لوحة المعلم":childMode?"وضع الطفل":"حساب الأسرة"}</button>{!childMode&&<button className="secondary" onClick={logout}><Icon name="logout" size={16}/> خروج</button>}</div></div></header>
     <main className="wrap page">
-      <section className="game-world-hero"><div><span className="game-kicker"><Icon name="quran" size={18}/> منظومة ألعاب مرتبطة بالحفظ</span><h1>{teacherPreview?"استكشف عالم الألعاب قبل الطلاب":`أهلًا ${child?.display_name||"بطلنا"} في عالم القرآن`}</h1><p>{teacherPreview?"كل لعبة جديدة تعمل في وضع معاينة بلا كتابة بيانات. ألعاب الطالب تسجل الإجابات الصحيحة والأخطاء والآيات التي تحتاج مراجعة.":"اختَر منطقة وابدأ اللعب. النظام يتذكر أين أخطأت وأين أتقنت ليقترح مراجعة أفضل في المرات القادمة."}</p><div className="game-world-stats"><span><b>{quranWorld.length}</b> ألعاب قرآنية بالمحرك الجديد</span><span><b>{mastered}</b> ألعاب وصلت فيها إلى 3 نجوم</span><span><b>{progress.length}</b> ألعاب لها سجل تقدم</span></div></div><div className="world-orbit" aria-hidden="true"><span><Icon name="quran" size={38}/></span><span><Icon name="target" size={34}/></span><span><Icon name="memory" size={36}/></span><span><Icon name="star" size={30}/></span></div></section>
+      <section className="game-world-hero"><div><span className="game-kicker"><Icon name="quran" size={18}/> منظومة ألعاب مرتبطة بالحفظ</span><h1>{teacherPreview?"استكشف عالم الألعاب قبل الطلاب":`أهلًا ${child?.display_name||"بطلنا"} في عالم القرآن`}</h1><p>{teacherPreview?"كل لعبة مرتبطة بالمحرك تعمل في وضع معاينة بلا كتابة بيانات. ألعاب الطالب تسجل الجلسات والإجابات والأخطاء والآيات التي تحتاج مراجعة.":"اختَر لعبة وابدأ. GameEngine يحفظ الجلسة والإجابات والتقدم، ويحوّل أخطاء الآيات إلى مراجعة فعلية عندما يكون السؤال مرتبطًا بآية."}</p><div className="game-world-stats"><span><b>{engineGames.length}</b> ألعاب مرتبطة بـGameEngine</span><span><b>{mastered}</b> ألعاب وصلت فيها إلى 3 نجوم</span><span><b>{PLANNED_GAME_DEFINITIONS.length}</b> ألعاب مخططة وغير معروضة</span></div></div><div className="world-orbit" aria-hidden="true"><span><Icon name="quran" size={38}/></span><span><Icon name="target" size={34}/></span><span><Icon name="memory" size={36}/></span><span><Icon name="star" size={30}/></span></div></section>
       {error&&<div className="msg error">{error}</div>}
-      <section className="world-section"><div className="world-heading"><div><span>المناطق المفتوحة الآن</span><h2>ألعاب تعتمد على QuranData</h2><p>كل منطقة أدناه قابلة للدخول واللعب بالكامل، ولا توجد أزرار لصفحات فارغة.</p></div></div><div className="world-map-grid">{quranWorld.map((game,index)=>{const p=progress.find(x=>x.game_id===game.id);return <button key={game.id} className={`world-zone ${game.tone}`} disabled={!learningActorReady(viewer)} onClick={()=>navigate(game.route)}><span className="zone-number">{String(index+1).padStart(2,"0")}</span><span className="zone-icon"><Icon name={game.icon} size={42}/></span><span className="zone-copy"><small>{game.title}</small><b>{game.subtitle}</b><p>{game.description}</p></span><span className="zone-progress">{teacherPreview?"معاينة":p?.best_stars?`${p.best_stars}/3 نجوم` : "ابدأ أول جولة"}<Icon name="arrow" size={18}/></span></button>;})}</div></section>
-      <section className="world-section classic-zone"><div className="world-heading"><div><span>ألعاب إضافية</span><h2>الألعاب الحالية</h2><p>تظل قابلة للعب أثناء نقل نظام المكافآت القديم إلى GameEngine الجديد.</p></div></div><div className="game-grid compact-games">{classicGames.map(game=><article className="game-card" key={game.id}><div className="game-card-top"><div className="game-icon"><Icon name={game.icon} size={38}/></div><span className="level-chip">متاحة</span></div><h2>{game.title}</h2><p>{game.description}</p><button className="game-play" disabled={!learningActorReady(viewer)} onClick={()=>navigate(game.route)}>ابدأ اللعبة <Icon name="arrow" size={18}/></button></article>)}</div></section>
-      <section className="mini-tip"><span className="tip-icon"><Icon name="lightbulb" size={25}/></span><div><b>المراجعة الذكية تعمل داخل الألعاب الجديدة</b><p>أي إجابة خاطئة تُسجل على مستوى السورة والآية، وتدخل تلقائيًا في طابور المراجعة بدل أن تتحول النتيجة إلى رقم فقط.</p></div></section>
-    </main><footer><div className="wrap">أبو العزايم للحفظ الممتع • ألعاب القرآن تتعلم من أداء الطفل وتعيد استخدام نقاط الضعف في المراجعة.</div></footer>
+      <section className="world-section"><div className="world-heading"><div><span>المنظومة الأساسية</span><h2>ألعاب القرآن المكتملة</h2><p>هذه القائمة تأتي مباشرة من Game Definitions؛ اللعبة المخططة لا تظهر هنا باعتبارها متاحة.</p></div></div><ZoneGrid games={coreGames} progress={progress} viewer={viewer}/></section>
+      {expansionGames.length>0&&<section className="world-section"><div className="world-heading"><div><span>توسعة الألعاب</span><h2>مغامرات إضافية مرتبطة بالمحرك</h2><p>لا تظهر هنا إلا الألعاب التي لديها Route وتعريف وربط فعلي بـGameEngine.</p></div><button className="secondary" onClick={()=>navigate("/games/new-pack")}>عرض الحزمة فقط</button></div><ZoneGrid games={expansionGames} progress={progress} viewer={viewer}/></section>}
+      {classicGames.length>0&&<section className="world-section classic-zone"><div className="world-heading"><div><span>ألعاب إضافية</span><h2>الألعاب الكلاسيكية بعد الترحيل</h2><p>الذاكرة وترتيب السور واختبار السور أصبحت تستخدم GameEngine نفسه، بما في ذلك الجلسات والتقدم والمكافآت.</p></div></div><ZoneGrid games={classicGames} progress={progress} viewer={viewer}/></section>}
+      <section className="mini-tip"><span className="tip-icon"><Icon name="lightbulb" size={25}/></span><div><b>مصدر واحد لتوفر الألعاب</b><p>GamesHub لم يعد يحتفظ بقائمة ألعاب منفصلة؛ حالة اللعبة ومسارها وربطها بالمحرك تأتي من Game Definitions نفسها.</p></div></section>
+    </main><footer><div className="wrap">أبو العزايم للحفظ الممتع • الألعاب المتاحة مرتبطة بتعريف موحد ويمكن تتبع تقدمها بوضوح.</div></footer>
   </div>;
 }

@@ -36,7 +36,7 @@ export function isChildModeActive() {
 const actions = [
   ["quran", "الحفظ", "أكمل جلسة قصيرة واحفظ تقدمك", "/memorize", "mint"],
   ["review", "المراجعة", "راجع ما حفظته وثبّته", "/review", "sky"],
-  ["game", "الألعاب", "ذاكرة وترتيب واختبار", "/games", "featured"],
+  ["game", "الألعاب", "تدريب ممتع ومسجل في GameEngine", "/games", "featured"],
   ["trophy", "إنجازاتي", "شاهد الميداليات التي فتحتها", "/achievements", "lavender"],
   ["target", "تحديات اليوم", "اعرف ما أكملته اليوم", "/challenges", "sun"],
   ["room", "غرفتي", "شاهد نقاطك ونجومك وتقدمك", "/room", "rose"],
@@ -88,8 +88,15 @@ export default function ChildHub() {
     return () => { alive = false; };
   }, []);
 
-  const gameEvents = useMemo(() => new Set(todayRewards.filter(r => ["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type)).map(r => r.source_type)), [todayRewards]);
-  const gameProgress = gameEvents.size;
+  const gameEvents = useMemo(() => {
+    const keys = new Set();
+    for (const reward of todayRewards) {
+      if (reward.source_type === "game_session") keys.add(reward.source_key || `game-${keys.size}`);
+      else if (["memory_game","surah_order_game","surah_quiz_game"].includes(reward.source_type)) keys.add(reward.source_type);
+    }
+    return keys;
+  }, [todayRewards]);
+  const gameProgress = Math.min(3, gameEvents.size);
 
   async function verifyParent(e) {
     e.preventDefault();
