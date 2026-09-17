@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 import App from "./App.jsx";
 import AchievementsPage from "./AchievementsPage.jsx";
 import ChildHub, { isChildModeActive } from "./ChildHub.jsx";
+import GamesHub from "./GamesHub.jsx";
 import MemoryGame from "./MemoryGame.jsx";
+import SurahOrderGame from "./SurahOrderGame.jsx";
+import SurahQuizGame from "./SurahQuizGame.jsx";
+import QuranPage from "./QuranPage.jsx";
+import MemorizePage from "./MemorizePage.jsx";
 
 const childSafeRoutes = new Set([
   "/child",
@@ -14,6 +19,10 @@ const childSafeRoutes = new Set([
   "/challenges",
   "/room",
 ]);
+
+function isChildSafeRoute(path) {
+  return childSafeRoutes.has(path) || path.startsWith("/games/");
+}
 
 function usePath() {
   const [path, setPath] = useState(window.location.pathname);
@@ -44,8 +53,15 @@ export default function RootRouter() {
   const childMode = useChildMode();
 
   if (path === "/child") return <ChildHub />;
-  if (childMode && !childSafeRoutes.has(path)) return <ChildHub />;
-  if (path === "/games") return <MemoryGame />;
+  if (childMode && !isChildSafeRoute(path)) return <ChildHub />;
+
+  if (path === "/quran") return <QuranPage />;
+  if (path === "/memorize") return <MemorizePage />;
+  if (path === "/games") return <GamesHub />;
+  if (path === "/games/memory") return <MemoryGame />;
+  if (path === "/games/order") return <SurahOrderGame />;
+  if (path === "/games/quiz") return <SurahQuizGame />;
   if (path === "/achievements") return <AchievementsPage />;
+
   return <App />;
 }
