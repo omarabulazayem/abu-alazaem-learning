@@ -5,7 +5,7 @@ import {
   getActiveChildId,
   getCurrentUser,
   listChildren,
-  signOut,
+  setActiveChildId,
 } from "./api.js";
 
 const symbols = ["🌙", "📖", "⭐", "🕌", "🤲", "💚"];
@@ -42,21 +42,19 @@ export default function MemoryGame() {
       try {
         const current = await getCurrentUser();
         if (!alive) return;
-        if (!current) {
-          navigate("/login");
-          return;
-        }
-        if (current.accountType === "teacher") {
-          navigate("/teacher");
-          return;
-        }
+        if (!current) return navigate("/login");
+        if (current.accountType === "teacher") return navigate("/teacher");
         setUser(current);
         const kids = await listChildren(current);
         if (!alive) return;
         let childId = getActiveChildId();
-        if (!childId || !kids.some(k => k.id === childId)) childId = kids[0]?.id || null;
-        setChild(kids.find(k => k.id === childId) || null);
-        if (!childId) setError("أضف طفلًا أولًا من حساب الأسرة قبل بدء اللعبة.");
+        const selected = kids.find(k => k.id === childId) || kids[0] || null;
+        if (selected && selected.id !== childId) {
+          childId = selected.id;
+          setActiveChildId(childId);
+        }
+        setChild(selected);
+        if (!selected) setError("أضف طفلًا أولًا من حساب الأسرة قبل بدء اللعبة.");
       } catch (e) {
         if (alive) setError(e.message || "تعذر تجهيز اللعبة.");
       }
@@ -83,11 +81,9 @@ export default function MemoryGame() {
       try {
         const result = await claimReward(child.id, "memory_game", dayKey("memory"));
         const value = Array.isArray(result) ? result[0] : result;
-        if (value?.awarded === false) {
-          setMessage("أحسنت! أكملت اللعبة. مكافأة اليوم تم الحصول عليها مسبقًا، ويمكنك اللعب مرة أخرى للتدريب.");
-        } else {
-          setMessage("ممتاز! أكملت لعبة الذاكرة وحصلت على مكافأة اليوم: ٣٥ نقطة ونجمتين.");
-        }
+        setMessage(value?.awarded === false
+          ? "أحسنت! أكملت اللعبة. مكافأة اليوم حصلت عليها مسبقًا، ويمكنك اللعب مرة أخرى للتدريب."
+          : "ممتاز! أكملت لعبة الذاكرة وحصلت على ٣٥ نقطة ونجمتين.");
       } catch (e) {
         setMessage("أحسنت! أكملت اللعبة، لكن تعذر تسجيل المكافأة الآن.");
         setError(e.message || "تعذر تسجيل المكافأة.");
@@ -116,85 +112,43 @@ export default function MemoryGame() {
     setError("");
   }
 
-  async function logout() {
-    await signOut();
-    navigate("/");
-  }
-
-  if (user === undefined) {
-    return <div className="center"><i className="spinner" /><p>جارٍ تجهيز اللعبة...</p></div>;
-  }
+  if (user === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز اللعبة...</p></div>;
 
   const complete = matched.length === deck.length && deck.length > 0;
+  const progress = Math.round((matched.length / deck.length) * 100);
 
   return (
-    <div className="app" dir="rtl">
-      <header>
-        <div className="wrap nav">
-          <button className="brand" onClick={() => navigate("/")}>
-            <span className="logo">ع</span>
-            <span><b>أبو العزايم</b><small>للحفظ الممتع</small></span>
-          </button>
-          <div className="actions">
-            <button className="pill" onClick={() => navigate("/child")}>وضع الطفل</button>
-            <button className="secondary" onClick={logout}>خروج</button>
-          </div>
-        </div>
-      </header>
+    <div className="app game-shell" dir="rtl">
+      <header><div className="wrap nav"><button className="brand" onClick={() => navigate("/games")}><span className="logo">ع</span><span><b>لعبة الذاكرة</b><small>طابق البطاقات</small></span></button><div className="actions"><span className="reward-chip">⭐ {child?.stars || 0}</span><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button></div></div></header>
 
-      <main className="wrap page narrow">
-        <div className="title">
-          <span>الألعاب</span>
-          <h1>لعبة الذاكرة اليومية</h1>
-          <p>{child ? `طابق البطاقات المتشابهة يا ${child.display_name}. المكافأة تُسجل بعد إكمال اللعبة فعلًا.` : "اختر طفلًا من حساب الأسرة أولًا."}</p>
-        </div>
+      <main className="wrap page narrow game-page">
+        <div className="game-title-block"><span>🧠 تركيز وذاكرة</span><h1>اكتشف الأزواج المتشابهة</h1><p>{child ? `افتح بطاقتين في كل مرة يا ${child.display_name}. حاول إنهاء اللوحة بأقل عدد من المحاولات.` : "اختر طفلًا من حساب الأسرة أولًا."}</p></div>
 
         {error && <div className="msg error">{error}</div>}
         {message && <div className="msg ok">{message}</div>}
 
-        <section className="panel focus">
-          <div className="stats" style={{ marginBottom: 18 }}>
-            <div><b>{moves}</b><span>محاولة</span></div>
-            <div><b>{matched.length / 2}</b><span>زوج مكتمل</span></div>
-            <div><b>{complete ? "✓" : `${6 - matched.length / 2}`}</b><span>{complete ? "اكتملت" : "متبقي"}</span></div>
-          </div>
+        <section className="game-stage memory-stage">
+          <div className="stats" style={{ marginBottom: 14 }}><div><b>{moves}</b><span>محاولة</span></div><div><b>{matched.length / 2}</b><span>زوج مكتمل</span></div><div><b>{Math.max(0,6 - matched.length / 2)}</b><span>متبقي</span></div></div>
+          <div className="game-progress" style={{ marginBottom: 20 }}><i style={{ width: `${progress}%` }} /></div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(72px, 1fr))", gap: 12, width: "100%", maxWidth: 520, margin: "0 auto 20px" }}>
+          <div className="memory-grid">
             {deck.map((card, index) => {
               const visible = open.includes(index) || matched.includes(index);
               const done = matched.includes(index);
               return (
-                <button
-                  key={card.id}
-                  type="button"
-                  aria-label={visible ? `بطاقة ${card.symbol}` : "بطاقة مخفية"}
-                  onClick={() => flip(index)}
-                  disabled={!child || done || busy}
-                  style={{
-                    minHeight: 88,
-                    borderRadius: 18,
-                    border: done ? "2px solid currentColor" : "1px solid rgba(0,0,0,.12)",
-                    fontSize: visible ? 34 : 26,
-                    fontWeight: 800,
-                    cursor: done ? "default" : "pointer",
-                    transform: visible ? "scale(1)" : "scale(.98)",
-                    opacity: done ? .72 : 1,
-                  }}
-                >
-                  {visible ? card.symbol : "؟"}
+                <button key={card.id} type="button" className={`memory-card ${visible ? "visible" : ""} ${done ? "matched" : ""}`} aria-label={visible ? `بطاقة ${card.symbol}` : "بطاقة مخفية"} onClick={() => flip(index)} disabled={!child || done || busy}>
+                  <span>{visible ? card.symbol : "؟"}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="row" style={{ justifyContent: "center" }}>
-            <button className="secondary" onClick={() => navigate("/child")}>العودة لوضع الطفل</button>
-            <button className="primary" onClick={reset}>لعبة جديدة</button>
-          </div>
+          {complete && <div className="celebration"><span>🎉</span><b>ذاكرة ممتازة!</b><small>{busy ? "جارٍ تسجيل المكافأة..." : `أنهيت اللعبة في ${moves} محاولة.`}</small></div>}
+          <div className="row" style={{ justifyContent: "center", marginTop: 20 }}><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button><button className="primary" onClick={reset}>لعبة جديدة</button></div>
         </section>
       </main>
 
-      <footer><div className="wrap">أبو العزايم للحفظ الممتع • تعلم، العب، وتقدم كل يوم.</div></footer>
+      <footer><div className="wrap">أبو العزايم للحفظ الممتع • درّب ذاكرتك واجمع مكافأة اليوم.</div></footer>
     </div>
   );
 }
