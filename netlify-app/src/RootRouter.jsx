@@ -15,6 +15,7 @@ import { QuranWheelGame, AyahOrderGame, CompleteAyahGame, QuickMemoryGame } from
 import { WordTrainGame, AyahBurgerGame, KnowledgeBridgeGame, FlipCardsGame } from "./QuranGameBatch2.jsx";
 import { GuessSurahGame, WordHunterGame, AyahMatchingGame, SurahCardsGame } from "./QuranGameBatch3.jsx";
 import { AyahCodeGame, SurahExamGame } from "./QuranGameBatch4.jsx";
+import { NEW_GAME_ROUTES } from "./NewQuranGamePack.jsx";
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
@@ -41,8 +42,10 @@ export default function RootRouter(){
   if(isTeacherRoute||teacherRestricted){const portal=<TeacherPortal/>;return teacher?<TeacherAccessBar>{portal}</TeacherAccessBar>:portal;}
   if(!teacher&&path==="/child")return <ChildHub/>;
   if(!teacher&&childMode&&!isChildSafeRoute(path))return <ChildHub/>;
+  const NewGame=NEW_GAME_ROUTES[path];
   let page;
-  if(path==="/")page=<HomePage/>;
+  if(NewGame)page=<NewGame/>;
+  else if(path==="/")page=<HomePage/>;
   else if(path==="/family")page=<FamilyPage/>;
   else if(path==="/quran")page=teacher?<TeacherQuranPreview/>:<QuranPage/>;
   else if(path==="/memorize")page=teacher?<TeacherLearningPreview type="memorize"/>:<MemorizePage/>;
