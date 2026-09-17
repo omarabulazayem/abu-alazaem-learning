@@ -28,6 +28,7 @@ export const TEACHER_NAV_ITEMS = [
   ["الإنجازات", "/achievements"],
   ["التحديات", "/challenges"],
   ["لوحة المعلم", "/teacher"],
+  ["تقارير الألعاب", "/teacher/game-reports"],
   ["الفصول", "/teacher/classes"],
   ["الطلاب", "/teacher/students"],
 ];
