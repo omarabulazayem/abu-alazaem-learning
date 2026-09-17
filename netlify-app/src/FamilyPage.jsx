@@ -76,7 +76,7 @@ export default function FamilyPage(){
       ageBand:child.age_band||"7-9",
       ageYears:child.age_years||8,
       gender:child.gender||"unspecified",
-      avatar:child.avatar||"🧒🏻",
+      avatar:child.avatar||null,
       customization:child.customization||{},
     });
     setErr("");setMsg("");

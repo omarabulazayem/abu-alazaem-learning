@@ -17,6 +17,7 @@ import { WordTrainGame, AyahBurgerGame, KnowledgeBridgeGame, FlipCardsGame } fro
 import { GuessSurahGame, WordHunterGame, AyahMatchingGame, SurahCardsGame } from "./QuranGameBatch3.jsx";
 import { AyahCodeGame, SurahExamGame } from "./QuranGameBatch4.jsx";
 import { NEW_GAME_ROUTES } from "./NewQuranGamePack.jsx";
+import { TafsirWorldHub, TAFSIR_GAME_ROUTES } from "./TafsirWorld.jsx";
 import { gameByRoute } from "./gameRegistry.js";
 import NotFoundPage from "./NotFoundPage.jsx";
 import QuranPage from "./QuranPage.jsx";
@@ -45,9 +46,11 @@ export default function RootRouter(){
   if(isTeacherRoute||teacherRestricted){const portal=<TeacherPortal/>;return teacher?<TeacherAccessBar>{portal}</TeacherAccessBar>:portal;}
   if(!teacher&&path==="/child")return <ChildHub/>;
   if(!teacher&&childMode&&!isChildSafeRoute(path))return <ChildHub/>;
+  const TafsirGame=TAFSIR_GAME_ROUTES[path];
   const NewGame=NEW_GAME_ROUTES[path];
   let page;
-  if(NewGame){
+  if(TafsirGame)page=<TafsirGame/>;
+  else if(NewGame){
     const definition=gameByRoute(path);
     page=definition?.status==="live"?<NewGame/>:<NotFoundPage/>;
   }
@@ -58,6 +61,7 @@ export default function RootRouter(){
   else if(path==="/review")page=teacher?<TeacherLearningPreview type="review"/>:<ReviewPage/>;
   else if(path==="/games")page=<GamesHub/>;
   else if(path==="/games/new-pack")page=<NewGamePackHub/>;
+  else if(path==="/games/tafsir")page=<TafsirWorldHub/>;
   else if(path==="/games/quran-wheel")page=<QuranWheelGame/>;
   else if(path==="/games/ayah-order")page=<AyahOrderGame/>;
   else if(path==="/games/complete-ayah")page=<CompleteAyahGame/>;
