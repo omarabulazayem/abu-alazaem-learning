@@ -132,9 +132,10 @@ export async function signUp({ email, password, displayName, accountType, childN
 
 export async function requestPasswordReset(email) {
   const redirectTo = typeof location !== "undefined" ? `${location.origin}/login` : undefined;
-  return authRequest("/recover", {
+  const path = redirectTo ? `/recover?redirect_to=${encodeURIComponent(redirectTo)}` : "/recover";
+  return authRequest(path, {
     method: "POST",
-    body: JSON.stringify({ email, redirect_to: redirectTo }),
+    body: JSON.stringify({ email }),
   });
 }
 
@@ -187,13 +188,15 @@ export async function getCurrentUser() {
   catch { clearSession(); return null; }
   const profiles = await rest(`/profiles?id=eq.${encodeURIComponent(authUser.id)}&select=id,display_name,account_type&limit=1`);
   const profile = profiles?.[0];
-  const profileType = profile?.account_type;
-  const accountType = profileType === "admin" ? "admin" : profileType === "teacher" ? "teacher" : "parent";
+  if (!profile || !["parent", "teacher", "admin"].includes(profile.account_type)) {
+    clearSession();
+    throw new Error("ملف الحساب غير مكتمل. أعد تسجيل الدخول أو تواصل مع الإدارة.");
+  }
   return {
     id: authUser.id,
     email: authUser.email || null,
-    name: profile?.display_name || authUser?.user_metadata?.display_name || null,
-    accountType,
+    name: profile.display_name || authUser?.user_metadata?.display_name || null,
+    accountType: profile.account_type,
   };
 }
 
