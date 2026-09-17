@@ -4,7 +4,14 @@ const SESSION_KEY = "abu-alazaem-netlify-session";
 const ACTIVE_CHILD_KEY = "abu-alazaem-active-child";
 
 function assertConfig() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("إعدادات Supabase غير موجودة في Netlify.");
+  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("إعدادات Supabase غير موجودة في نسخة الموقع الحالية.");
+}
+
+function appUrl(path = "/") {
+  if (typeof location === "undefined") return undefined;
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+  const relative = String(path || "/").replace(/^\/+/, "");
+  return new URL(`${base}${relative}`, location.origin).toString();
 }
 
 async function json(response) {
@@ -114,7 +121,7 @@ export async function signIn(email, password) {
 }
 
 export async function signUp({ email, password, displayName, accountType, childName, childAgeBand }) {
-  const redirectTo = typeof location !== "undefined" ? `${location.origin}/login` : undefined;
+  const redirectTo = appUrl("/login");
   const path = redirectTo ? `/signup?redirect_to=${encodeURIComponent(redirectTo)}` : "/signup";
   const data = await authRequest(path, {
     method: "POST",
@@ -134,7 +141,7 @@ export async function signUp({ email, password, displayName, accountType, childN
 }
 
 export async function requestPasswordReset(email) {
-  const redirectTo = typeof location !== "undefined" ? `${location.origin}/login` : undefined;
+  const redirectTo = appUrl("/login");
   const path = redirectTo ? `/recover?redirect_to=${encodeURIComponent(redirectTo)}` : "/recover";
   return authRequest(path, {
     method: "POST",
