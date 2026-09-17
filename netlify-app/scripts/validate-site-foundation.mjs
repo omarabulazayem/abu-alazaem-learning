@@ -7,23 +7,32 @@ const root=path.resolve(here,"..");
 const repo=path.resolve(root,"..");
 function fail(message){console.error(`SITE FOUNDATION VALIDATION FAILED: ${message}`);process.exitCode=1;}
 
-const [main,design,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family]=await Promise.all([
+const [main,ui,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=await Promise.all([
   fs.readFile(path.join(root,"src/main.jsx"),"utf8"),
-  fs.readFile(path.join(root,"src/design-system.css"),"utf8"),
+  fs.readFile(path.join(root,"src/ui-v4.css"),"utf8"),
   fs.readFile(path.join(repo,"docs/VISUAL_ASSETS.md"),"utf8"),
   fs.readFile(path.join(repo,"docs/WORDPRESS_MIGRATION.md"),"utf8"),
   fs.readFile(path.join(repo,"patches-live/supabase/migrations/20260918_cms_compatibility_layer.sql"),"utf8"),
   fs.readFile(path.join(repo,"patches-live/supabase/migrations/20260918_tafsir_world_foundation.sql"),"utf8"),
   fs.readFile(path.join(root,"src/NewGamePackHub.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/FamilyPage.jsx"),"utf8"),
+  fs.readFile(path.join(root,"src/HomePage.jsx"),"utf8"),
+  fs.readFile(path.join(root,"src/ChildHub.jsx"),"utf8"),
 ]);
 
 const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
-if(imports.at(-1)!=="./design-system.css")fail("design-system.css must be the final CSS import and the single visual authority");
-for(const legacy of ["./visual-cleanup.css","./kids-light-ui.css","./child-worlds.css","./illustrated-child-world.css","./real-child-art-fix.css","./site-design.css"]){
-  if(imports.includes(legacy))fail(`legacy visual override is still imported: ${legacy}`);
+if(imports.at(-1)!=="./ui-v4.css")fail("ui-v4.css must be the final CSS import and the clean-sheet visual authority");
+for(const legacy of [
+  "./design-system.css","./learning-layout.css","./child-dashboard.css","./teacher.css","./teacher-access.css",
+  "./home-v2.css","./internal-v2.css","./preview-v2.css","./family-learning-v2.css","./teacher-game-reports.css",
+  "./login-page.css","./visual-cleanup.css","./kids-light-ui.css","./child-worlds.css","./illustrated-child-world.css",
+  "./real-child-art-fix.css","./site-design.css"
+])if(imports.includes(legacy))fail(`legacy page visual layer is still imported: ${legacy}`);
+for(const token of ["--aa-ink","--aa-blue",".aa-app",".aa-home-hero",".aa-world-grid",".aa-login-shell",".aa-surah-grid",".aa-game-grid"])if(!ui.includes(token))fail(`UI v4 is missing ${token}`);
+for(const component of [home,child]){
+  if(!component.includes("AppShell"))fail("core rebuilt pages must use the UI v4 shell");
+  if(/homeV2|child-world-home|kidsHeroScene|real-child-hero-img/.test(component))fail("legacy homepage/child markup leaked into UI v4");
 }
-for(const token of ["--ds-ink","--ds-blue","homeHeroVisual","child-world-card","game-world-hero","teacherHero","tafsir-hero","login-layout"])if(!design.includes(token))fail(`design system is missing ${token}`);
 if(main.includes("installRealChildArt")||main.includes("RealChildArt"))fail("DOM artwork injection must not return; artwork belongs in React markup");
 for(const source of ["Opened Qur'an","Sundanese Muslim children","Sultan Hassan","CC BY 2.0","CC BY-SA 4.0"])if(!assetsDoc.includes(source))fail(`visual asset documentation missing ${source}`);
 for(const table of ["cms_content","cms_content_meta","cms_terms","cms_taxonomies","cms_term_relationships","cms_media","cms_options","cms_navigation"])if(!cmsSql.includes(`public.${table}`))fail(`CMS migration missing ${table}`);
@@ -34,4 +43,4 @@ for(const emoji of ["🍃","🚪","🎁","🪞","✨"])if(newHub.includes(emoji)
 if(family.includes('avatar:child.avatar||"🧒🏻"')||family.includes('avatar: child.avatar || "🧒🏻"'))fail("Family child editing still uses an emoji avatar fallback");
 
 if(process.exitCode)process.exit(process.exitCode);
-console.log("Site foundation OK: unified design system, media attribution, WordPress portability and Tafsir safety gates validated.");
+console.log("Site foundation OK: clean-sheet UI v4, media attribution, WordPress portability and Tafsir safety gates validated.");
