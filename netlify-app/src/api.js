@@ -54,6 +54,33 @@ async function authRequest(path, init = {}) {
   return data;
 }
 
+async function userFromAccessToken(token) {
+  assertConfig();
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
+  });
+  const data = await json(response);
+  if (!response.ok || !data?.id) throw new Error(errorMessage(data, "تعذر التحقق من جلسة الحساب."));
+  return data;
+}
+
+async function consumeAuthRedirect() {
+  if (typeof location === "undefined" || !location.hash || !location.hash.includes("access_token=")) return null;
+  const params = new URLSearchParams(location.hash.slice(1));
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (!accessToken || !refreshToken) return null;
+  const user = await userFromAccessToken(accessToken);
+  const session = saveSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: Number(params.get("expires_in") || 3600),
+    user,
+  });
+  history.replaceState({}, "", `${location.pathname}${location.search}`);
+  return { session, type: params.get("type") || "auth" };
+}
+
 async function refreshSession(session) {
   try {
     const data = await authRequest("/token?grant_type=refresh_token", {
@@ -84,7 +111,9 @@ export async function signIn(email, password) {
 }
 
 export async function signUp({ email, password, displayName, accountType, childName, childAgeBand }) {
-  const data = await authRequest("/signup", {
+  const redirectTo = typeof location !== "undefined" ? `${location.origin}/login` : undefined;
+  const path = redirectTo ? `/signup?redirect_to=${encodeURIComponent(redirectTo)}` : "/signup";
+  const data = await authRequest(path, {
     method: "POST",
     body: JSON.stringify({
       email,
@@ -99,6 +128,24 @@ export async function signUp({ email, password, displayName, accountType, childN
   });
   if (data?.access_token) saveSession(data);
   return { sessionCreated: Boolean(data?.access_token), user: data?.user || null };
+}
+
+export async function requestPasswordReset(email) {
+  const redirectTo = typeof location !== "undefined" ? `${location.origin}/login` : undefined;
+  return authRequest("/recover", {
+    method: "POST",
+    body: JSON.stringify({ email, redirect_to: redirectTo }),
+  });
+}
+
+export async function updatePassword(password) {
+  const token = await accessToken();
+  if (!token) throw new Error("رابط استعادة كلمة المرور غير صالح أو انتهت صلاحيته.");
+  return authRequest("/user", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ password }),
+  });
 }
 
 export async function signOut() {
@@ -132,19 +179,16 @@ export async function rpc(name, body) {
 }
 
 export async function getCurrentUser() {
+  if (!getStoredSession()) await consumeAuthRedirect().catch(() => null);
   const token = await accessToken();
   if (!token) return null;
-  assertConfig();
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
-  });
-  const authUser = await json(response);
-  if (!response.ok || !authUser?.id) { clearSession(); return null; }
+  let authUser;
+  try { authUser = await userFromAccessToken(token); }
+  catch { clearSession(); return null; }
   const profiles = await rest(`/profiles?id=eq.${encodeURIComponent(authUser.id)}&select=id,display_name,account_type&limit=1`);
   const profile = profiles?.[0];
   const profileType = profile?.account_type;
-  const metadataType = authUser?.user_metadata?.account_type;
-  const accountType = profileType === "admin" ? "admin" : profileType === "teacher" || (!profileType && metadataType === "teacher") ? "teacher" : "parent";
+  const accountType = profileType === "admin" ? "admin" : profileType === "teacher" ? "teacher" : "parent";
   return {
     id: authUser.id,
     email: authUser.email || null,
