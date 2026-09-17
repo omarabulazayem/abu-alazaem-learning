@@ -12,9 +12,10 @@ import "./internal-v2.css";
 import "./preview-v2.css";
 import "./family-learning-v2.css";
 import "./quran-games.css";
-import "./quran-game-batch2.css";
 import "./teacher-game-reports.css";
 import "./game-intelligence.css";
+import "./quran-game-batch2.css";
+import "./quran-game-batch3.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");const basePath=configuredBase==="/"?"":configuredBase;
 window.__ABU_ROUTE_PATH__=()=>{const pathname=window.location.pathname||"/";if(!basePath)return pathname;if(pathname===basePath||pathname===`${basePath}/`)return "/";if(pathname.startsWith(`${basePath}/`))return pathname.slice(basePath.length)||"/";return pathname;};
