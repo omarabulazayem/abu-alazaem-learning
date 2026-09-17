@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,7 +49,24 @@ jobs:
         run: npm run build
 
       - name: Add SPA fallback
-        run: cp netlify-app/dist/index.html netlify-app/dist/404.html
+        run: |
+          cp netlify-app/dist/index.html netlify-app/dist/404.html
+          touch netlify-app/dist/.nojekyll
+
+      - name: Mirror production build to main root
+        run: |
+          rm -rf assets
+          cp netlify-app/dist/index.html ./index.html
+          cp netlify-app/dist/404.html ./404.html
+          cp -R netlify-app/dist/assets ./assets
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html 404.html assets .nojekyll
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish GitHub Pages build [skip ci]"
+            git push origin HEAD:main
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
