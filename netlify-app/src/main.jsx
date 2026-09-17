@@ -26,6 +26,7 @@ import "./visual-cleanup.css";
 import "./kids-light-ui.css";
 import "./child-worlds.css";
 import "./illustrated-child-world.css";
+import "./real-child-art-fix.css";
 import "./site-design.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");const basePath=configuredBase==="/"?"":configuredBase;
