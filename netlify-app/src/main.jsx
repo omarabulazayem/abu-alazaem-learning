@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import RootRouter from "./RootRouter.jsx";
 import SiteCredits from "./SiteCredits.jsx";
+import { installRealChildArt } from "./RealChildArt.jsx";
 import "./styles.css";
 import "./ui-enhancements.css";
 import "./memory-game.css";
@@ -39,3 +40,4 @@ const withBase=url=>{if(!basePath||typeof url!=="string"||!url.startsWith("/")||
 const nativePushState=window.history.pushState.bind(window.history),nativeReplaceState=window.history.replaceState.bind(window.history);
 window.history.pushState=(state,unused,url)=>nativePushState(state,unused,withBase(url));window.history.replaceState=(state,unused,url)=>nativeReplaceState(state,unused,withBase(url));
 createRoot(document.getElementById("root")).render(<React.StrictMode><RootRouter/><SiteCredits/></React.StrictMode>);
+installRealChildArt();
