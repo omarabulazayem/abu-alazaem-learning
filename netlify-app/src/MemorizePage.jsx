@@ -10,7 +10,7 @@ import {
   setActiveChildId,
 } from "./api.js";
 import { isChildModeActive } from "./ChildHub.jsx";
-import { getSurah, SHORT_SURAH_ORDER, SURAHS } from "./quranData.js";
+import { getSurah, SHORT_SURAH_ORDER, SURAHS } from "./surahCatalog.js";
 import { selectSurah, selectedSurahNumber } from "./QuranPage.jsx";
 
 function navigate(path) {

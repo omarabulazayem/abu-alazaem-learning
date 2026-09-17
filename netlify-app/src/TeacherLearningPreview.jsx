@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { getSurah, SURAHS } from "./quranData.js";
+import { getSurah, SURAHS } from "./surahCatalog.js";
 import { selectedSurahNumber, selectSurah } from "./QuranPage.jsx";
 import Icon from "./Icon.jsx";
 

@@ -10,7 +10,7 @@ import {
   signOut,
   teacherOverview,
 } from "./api.js";
-import { getSurah } from "./quranData.js";
+import { getSurah } from "./surahCatalog.js";
 import Icon from "./Icon.jsx";
 
 function routePath() {

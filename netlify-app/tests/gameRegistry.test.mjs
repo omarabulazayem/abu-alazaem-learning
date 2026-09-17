@@ -1,52 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  ALL_GAME_DEFINITIONS,
-  IMPLEMENTED_GAME_DEFINITIONS,
-  PLANNED_GAME_DEFINITIONS,
-  gameDefinition,
-} from "../src/gameDefinitions.js";
+import { GAME_REGISTRY, GAME_STATUS, LIVE_GAME_DEFINITIONS, gameDefinition, gamesBy } from "../src/gameRegistry.js";
 
-test("game ids and routes are unique", () => {
-  assert.equal(new Set(ALL_GAME_DEFINITIONS.map(game => game.id)).size, ALL_GAME_DEFINITIONS.length);
-  assert.equal(new Set(ALL_GAME_DEFINITIONS.map(game => game.route)).size, ALL_GAME_DEFINITIONS.length);
-});
-
-test("every game is explicitly implemented or planned", () => {
-  for (const game of ALL_GAME_DEFINITIONS) {
-    assert.ok(["implemented", "planned"].includes(game.status), `${game.id} has invalid status`);
-  }
-  assert.equal(IMPLEMENTED_GAME_DEFINITIONS.length + PLANNED_GAME_DEFINITIONS.length, ALL_GAME_DEFINITIONS.length);
-});
-
-test("implemented games use GameEngine", () => {
-  for (const game of IMPLEMENTED_GAME_DEFINITIONS) {
-    assert.equal(game.engineIntegrated, true, `${game.id} must use GameEngine before it can be implemented`);
-  }
-});
-
-test("known unimplemented concepts remain planned", () => {
-  for (const id of ["forgetfulness-dungeon", "listen-memorize", "page-lines", "quran-detective", "gift-boxes", "xo", "balloon-pop", "picture-memory", "flashlight", "hidden-picture"]) {
-    assert.equal(gameDefinition(id)?.status, "planned", `${id} must not be exposed as implemented`);
-  }
-});
-
-test("expansion games with incomplete replay/session loops stay planned", () => {
-  for (const id of ["ayah-hunter", "where-start", "what-next", "memory-race", "surah-treasure", "similarity-boxes", "similarity-mirror", "where-mentioned", "word-box"]) {
-    assert.equal(gameDefinition(id)?.status, "planned", `${id} must stay hidden until its full loop is verified`);
-  }
-});
-
-test("verified expansion games remain available", () => {
-  for (const id of ["build-ayah", "missing-word-adventure"]) {
-    assert.equal(gameDefinition(id)?.status, "implemented");
-    assert.equal(gameDefinition(id)?.engineIntegrated, true);
-  }
-});
-
-test("classic games are migrated to GameEngine", () => {
-  for (const id of ["classic-memory", "classic-surah-order", "classic-surah-quiz"]) {
-    assert.equal(gameDefinition(id)?.status, "implemented");
-    assert.equal(gameDefinition(id)?.engineIntegrated, true);
-  }
-});
+test("game ids and routes are unique",()=>{assert.equal(new Set(GAME_REGISTRY.map(g=>g.id)).size,GAME_REGISTRY.length);assert.equal(new Set(GAME_REGISTRY.map(g=>g.route)).size,GAME_REGISTRY.length);});
+test("all games use supported lifecycle statuses",()=>{for(const game of GAME_REGISTRY)assert.ok(Object.values(GAME_STATUS).includes(game.status),game.id);});
+test("live games are GameEngine integrated",()=>{for(const game of LIVE_GAME_DEFINITIONS)assert.equal(game.engineIntegrated,true,game.id);});
+test("content-dependent concepts are blocked",()=>{for(const id of ["listen-memorize","page-lines","quran-detective"])assert.equal(gameDefinition(id)?.status,GAME_STATUS.BLOCKED_CONTENT,id);});
+test("known unfinished concepts remain planned",()=>{for(const id of ["forgetfulness-dungeon","gift-boxes","xo","balloon-pop","picture-memory","flashlight","hidden-picture","ayah-hunter","where-start","what-next","memory-race","surah-treasure","similarity-mirror","where-mentioned","similarity-boxes","word-box"])assert.equal(gameDefinition(id)?.status,GAME_STATUS.PLANNED,id);});
+test("registry can filter by pack category status and age",()=>{assert.ok(gamesBy({pack:"quran-core",status:"live"}).length>0);assert.ok(gamesBy({category:"words",status:"live",age:8}).length>0);});

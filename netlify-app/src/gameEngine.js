@@ -1,5 +1,5 @@
 import { rest, rpc } from "./api.js";
-import { gameDefinition } from "./gameDefinitions.js";
+import { gameDefinition } from "./gameRegistry.js";
 
 export class GameEngine {
   constructor({ childId, gameId, teacherPreview = false }) {
@@ -8,7 +8,7 @@ export class GameEngine {
     this.teacherPreview = Boolean(teacherPreview);
     this.definition = gameDefinition(gameId);
     if (!this.definition) throw new Error(`Unknown game definition: ${gameId}`);
-    if (this.definition.status !== "implemented") throw new Error(`Game is not implemented yet: ${gameId}`);
+    if (this.definition.status !== "live") throw new Error(`Game is not live: ${gameId}`);
     this.session = null;
     this.local = {
       score: 0,

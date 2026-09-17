@@ -17,7 +17,8 @@ import { WordTrainGame, AyahBurgerGame, KnowledgeBridgeGame, FlipCardsGame } fro
 import { GuessSurahGame, WordHunterGame, AyahMatchingGame, SurahCardsGame } from "./QuranGameBatch3.jsx";
 import { AyahCodeGame, SurahExamGame } from "./QuranGameBatch4.jsx";
 import { NEW_GAME_ROUTES } from "./NewQuranGamePack.jsx";
-import { gameDefinition } from "./gameDefinitions.js";
+import { gameByRoute } from "./gameRegistry.js";
+import NotFoundPage from "./NotFoundPage.jsx";
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
@@ -47,10 +48,8 @@ export default function RootRouter(){
   const NewGame=NEW_GAME_ROUTES[path];
   let page;
   if(NewGame){
-    const definition=Object.values(NEW_GAME_ROUTES).includes(NewGame)
-      ? gameDefinition(Object.entries(NEW_GAME_ROUTES).find(([,component])=>component===NewGame)?.[0]?.replace("/games/","")||"")
-      : null;
-    page=definition?.status==="implemented"&&definition?.engineIntegrated?<NewGame/>:<GamesHub/>;
+    const definition=gameByRoute(path);
+    page=definition?.status==="live"?<NewGame/>:<NotFoundPage/>;
   }
   else if(path==="/")page=<HomePage/>;
   else if(path==="/family")page=<FamilyPage/>;
@@ -79,6 +78,7 @@ export default function RootRouter(){
   else if(path==="/achievements")page=teacher?<TeacherLearningPreview type="achievements"/>:<AchievementsPage/>;
   else if(path==="/challenges")page=teacher?<TeacherLearningPreview type="challenges"/>:<ChallengesPage/>;
   else if(path==="/room")page=<RoomPage/>;
-  else page=<App/>;
+  else if(path==="/login")page=<App/>;
+  else page=<NotFoundPage/>;
   return teacher?<TeacherAccessBar>{page}</TeacherAccessBar>:page;
 }

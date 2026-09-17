@@ -1,61 +1,45 @@
 # أبو العزايم للحفظ الممتع
 
-منصة تعليمية عربية للأطفال مبنية بـ React + Vite + Express + tRPC + Drizzle + MySQL.
+منصة عربية لحفظ ومراجعة القرآن للأطفال، مع حساب أسرة، وضع طفل، لوحة معلم، ألعاب تعليمية، مراجعة ذكية، نقاط ونجوم وإنجازات.
 
-## الحالة الحالية
+## النسخة الحالية
 
-المشروع حاليًا Prototype متقدم للواجهة مع أجزاء Backend حقيقية للحسابات وملف الطفل وتقدم الحفظ والمكافآت. بعض الصفحات ما زالت تعتمد على بيانات ثابتة أو `localStorage`، وبعض الوظائف ما زالت Placeholder ولم تُربط بقاعدة البيانات.
+المسار الأساسي الحالي هو `netlify-app/`:
 
-راجع الملف [`PROJECT_STATUS.md`](./PROJECT_STATUS.md) لمعرفة ما يعمل وما يحتاج استكمالًا.
+- React 19 + Vite
+- Supabase Auth
+- Supabase PostgreSQL / REST / RPC
+- GameEngine موحد للجلسات والإجابات والتقدم والمراجعة والمكافآت
+- Quran corpus مولد مركزيًا ولا تُكتب الآيات داخل مكونات الألعاب
 
-## المتطلبات
+Netlify يبني `netlify-app` مباشرة. GitHub Pages يبني نفس التطبيق كمسار نشر ثانوي.
 
-- Node.js 22+
-- pnpm 10+
-- MySQL عند تجربة الوظائف التي تحتاج قاعدة بيانات
+## تشغيل نسخة Netlify محليًا
 
-## التشغيل محليًا على Windows / VS Code
-
-```powershell
-corepack enable
-corepack prepare pnpm@10.15.1 --activate
-pnpm install
-Copy-Item .env.example .env
-pnpm dev
+```bash
+cd netlify-app
+npm install
+npm run check
+npm test
+npm run build
+npm run dev
 ```
 
-ثم افتح:
+تحتاج نسخة التطوير إلى متغيرات Supabase العامة المناسبة (URL + publishable/anon key). لا تضع service-role key داخل Vite أو المتصفح.
 
-```text
-http://localhost:3000
-```
+## بنية المستودع
 
-`pnpm dev` أصبح Cross-platform ويعمل على Windows/macOS/Linux.
+- `netlify-app/`: المصدر الأساسي للواجهة الحالية والألعاب.
+- `patches-live/supabase/migrations/`: سجل migrations الخاصة بـSupabase.
+- `source.tgz + patches-live/`: مسار full-stack قديم/ثانوي يستخدمه bootstrap الخاص بـRailway/Docker؛ ليس المصدر الأساسي لواجهة Netlify.
+- `docs/ARCHITECTURE.md`: شرح تفصيلي لمصادر الحقيقة ومسارات النشر.
+- `PROJECT_STATUS.md`: ملخص الحالة الحالية.
 
-## فحص المشروع
+## قواعد مهمة
 
-```powershell
-pnpm check
-pnpm test
-pnpm build
-```
+- `netlify-app/src/gameRegistry.js` هو المصدر الوحيد لتعريف وتوفر الألعاب.
+- اللعبة لا تظهر للطفل إلا إذا كانت `status: live`.
+- `quranCorpus.js` هو API قراءة corpus القرآن الكامل، و`surahCatalog.js` للـmetadata البسيطة للسور.
+- لا تعدل نص القرآن داخل Components، ولا تنشئ مصدر قرآن أو GameEngine أو Rewards/Review system موازٍ.
 
-## قاعدة البيانات
-
-بعد ضبط `DATABASE_URL` في `.env`:
-
-```powershell
-pnpm db:push
-```
-
-## ملاحظة مهمة عن تسجيل الدخول
-
-نظام تسجيل الدخول الحالي مأخوذ من بيئة Manus ويعتمد على `VITE_APP_ID` و`OAUTH_SERVER_URL` و`VITE_OAUTH_PORTAL_URL`. لذلك تشغيل الواجهة محليًا ممكن، لكن تسجيل الدخول والـ protected APIs يحتاجان هذه البيئة أو استبدال نظام المصادقة بنظام مستقل للمشروع.
-
-## أسلوب العمل المقترح
-
-- `main`: نسخة مستقرة.
-- فرع لكل تطوير جديد.
-- Pull Request لكل مجموعة تغييرات مهمة.
-- تشغيل محلي بـ `pnpm dev` لمشاهدة التغييرات فور حفظ الملفات.
-- لاحقًا ربط المستودع بـ Railway للحصول على Preview/Deploy مباشر من GitHub.
+للتفاصيل: [Architecture](docs/ARCHITECTURE.md).
