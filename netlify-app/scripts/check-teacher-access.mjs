@@ -27,18 +27,21 @@ function files(dir) {
   });
 }
 
+// We only reject a forced role guard that immediately sends teachers away.
+// Normal navigation buttons and account links to /teacher are explicitly allowed.
+const forcedTeacherRedirect = /if\s*\([^)]*accountType\s*={2,3}\s*["']teacher["'][^)]*\)\s*(?:\{\s*)?(?:return\s+)?(?:navigate|go)\s*\(\s*["']\/teacher["']\s*\)/gs;
+
 const violations = [];
 for (const file of files(srcDir)) {
   if (centrallyHandled.has(path.basename(file))) continue;
   const text = fs.readFileSync(file, "utf8");
-  const mentionsTeacher = /accountType\s*={2,3}\s*["']teacher["']/.test(text);
-  const redirectsTeacher = /(?:navigate|go)\s*\(\s*["']\/teacher["']\s*\)/.test(text);
-  if (mentionsTeacher && redirectsTeacher) violations.push(path.relative(process.cwd(), file));
+  if (forcedTeacherRedirect.test(text)) violations.push(path.relative(process.cwd(), file));
+  forcedTeacherRedirect.lastIndex = 0;
 }
 
 if (violations.length) {
-  console.error("Teacher-access policy violation: learning/content pages must not redirect teachers away.");
-  console.error("Teachers can preview content by default. Restrict only through src/accessPolicy.js or a dedicated preview routed centrally.");
+  console.error("Teacher-access policy violation: learning/content pages must not force teachers back to /teacher.");
+  console.error("Normal teacher navigation is allowed. Restrict only through src/accessPolicy.js or a dedicated preview routed centrally.");
   for (const file of violations) console.error(` - ${file}`);
   process.exit(1);
 }
