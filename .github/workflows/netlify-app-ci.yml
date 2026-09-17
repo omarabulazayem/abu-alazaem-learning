@@ -29,7 +29,9 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Check teacher access policy
-        run: node scripts/check-teacher-access.mjs
+      - name: Architecture checks
+        run: npm run check
+      - name: Unit tests
+        run: npm test
       - name: Build
         run: npm run build
