@@ -12,6 +12,7 @@ import "./internal-v2.css";
 import "./preview-v2.css";
 import "./family-learning-v2.css";
 import "./quran-games.css";
+import "./quran-game-batch2.css";
 import "./teacher-game-reports.css";
 import "./game-intelligence.css";
 
