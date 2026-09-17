@@ -5,6 +5,7 @@ import "./styles.css";
 import "./ui-enhancements.css";
 import "./memory-game.css";
 import "./child-dashboard.css";
+import "./teacher.css";
 
 const configuredBase = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const basePath = configuredBase === "/" ? "" : configuredBase;
