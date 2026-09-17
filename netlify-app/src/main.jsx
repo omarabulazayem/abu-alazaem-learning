@@ -11,6 +11,7 @@ import "./home-v2.css";
 import "./internal-v2.css";
 import "./preview-v2.css";
 import "./family-learning-v2.css";
+import "./quran-games.css";
 
 const configuredBase = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const basePath = configuredBase === "/" ? "" : configuredBase;
