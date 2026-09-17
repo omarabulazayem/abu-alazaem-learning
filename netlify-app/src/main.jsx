@@ -24,6 +24,7 @@ import "./tafsir-world.css";
 import "./login-page.css";
 import "./visual-cleanup.css";
 import "./site-design.css";
+import "./kids-light-ui.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");const basePath=configuredBase==="/"?"":configuredBase;
 window.__ABU_ROUTE_PATH__=()=>{const pathname=window.location.pathname||"/";if(!basePath)return pathname;if(pathname===basePath||pathname===`${basePath}/`)return "/";if(pathname.startsWith(`${basePath}/`))return pathname.slice(basePath.length)||"/";return pathname;};
