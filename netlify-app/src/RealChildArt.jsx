@@ -1,6 +1,6 @@
 const assetBase = import.meta.env.BASE_URL || "/";
-const heroSrc = `${assetBase}assets/hero-kids.webp`;
-const cardsSrc = `${assetBase}assets/world-card-art.webp`;
+const heroSrc = `${assetBase}assets/hero-kids.webp?v=3`;
+const cardsSrc = `${assetBase}assets/world-card-art.webp?v=3`;
 
 function setStyles(node, styles) {
   Object.assign(node.style, styles);
@@ -19,14 +19,14 @@ function ensureHeroArt() {
     img.decoding = "async";
     setStyles(img, {
       position: "absolute",
-      inset: "0",
-      width: "100%",
-      height: "100%",
+      inset: "14px",
+      width: "calc(100% - 28px)",
+      height: "calc(100% - 28px)",
       objectFit: "cover",
-      objectPosition: "center",
+      objectPosition: "center 56%",
       zIndex: "40",
       display: "block",
-      borderRadius: "inherit",
+      borderRadius: "26px",
       opacity: "1",
       visibility: "visible",
       pointerEvents: "none",
@@ -61,6 +61,7 @@ function ensureCardArt() {
       display: "block",
       pointerEvents: "none",
       borderRadius: "inherit",
+      background: "rgba(255,255,255,.72)",
     });
 
     const img = document.createElement("img");
@@ -71,12 +72,12 @@ function ensureCardArt() {
     const index = artIndex(host);
     setStyles(img, {
       position: "absolute",
-      top: "0",
+      top: "50%",
       left: `${index * -100}%`,
       width: "500%",
       maxWidth: "none",
-      height: "100%",
-      objectFit: "fill",
+      height: "auto",
+      transform: "translateY(-50%)",
       display: "block",
       opacity: "1",
       visibility: "visible",
