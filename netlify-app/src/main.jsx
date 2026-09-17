@@ -2,18 +2,12 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import RootRouter from "./RootRouter.jsx";
 import SiteCredits from "./SiteCredits.jsx";
+
+/* Game-mechanics CSS only. These files style playable internals, not the site shell. */
 import "./styles.css";
 import "./ui-enhancements.css";
 import "./memory-game.css";
-import "./child-dashboard.css";
-import "./teacher.css";
-import "./teacher-access.css";
-import "./home-v2.css";
-import "./internal-v2.css";
-import "./preview-v2.css";
-import "./family-learning-v2.css";
 import "./quran-games.css";
-import "./teacher-game-reports.css";
 import "./game-intelligence.css";
 import "./quran-game-batch2.css";
 import "./quran-game-batch3.css";
@@ -21,9 +15,10 @@ import "./quran-game-batch4.css";
 import "./new-quran-game-pack.css";
 import "./adaptive-games.css";
 import "./tafsir-world.css";
-import "./login-page.css";
-import "./learning-layout.css";
-import "./design-system.css";
+
+/* Clean-sheet interface. UI v4 is the final visual authority. */
+import "./ui-v4-preview.css";
+import "./ui-v4.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");
 const basePath=configuredBase==="/"?"":configuredBase;
