@@ -7,6 +7,7 @@ import "./memory-game.css";
 import "./child-dashboard.css";
 import "./teacher.css";
 import "./teacher-access.css";
+import "./home-v2.css";
 
 const configuredBase = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const basePath = configuredBase === "/" ? "" : configuredBase;
