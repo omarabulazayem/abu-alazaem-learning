@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import App from "./App.jsx";
+import AchievementsPage from "./AchievementsPage.jsx";
 import MemoryGame from "./MemoryGame.jsx";
 
 function usePath() {
@@ -15,5 +16,6 @@ function usePath() {
 export default function RootRouter() {
   const path = usePath();
   if (path === "/games") return <MemoryGame />;
+  if (path === "/achievements") return <AchievementsPage />;
   return <App />;
 }
