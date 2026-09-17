@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "node scripts/build-quran-data.mjs && vite build",
     "dev": "vite"
   },
   "dependencies": {
