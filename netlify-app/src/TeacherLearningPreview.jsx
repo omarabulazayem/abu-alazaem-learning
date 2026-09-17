@@ -1,20 +1,21 @@
 import React, { useMemo, useState } from "react";
 import { getSurah, SURAHS } from "./quranData.js";
 import { selectedSurahNumber, selectSurah } from "./QuranPage.jsx";
+import Icon from "./Icon.jsx";
 
 const badgeDefinitions = [
-  ["🌱", "البداية الجميلة", "ابدأ أول نشاط في الرحلة"],
-  ["📖", "أول حفظ", "أكمل أول جلسة حفظ"],
-  ["🌙", "أول سورة", "أتم حفظ سورة كاملة"],
-  ["🕌", "خمس سور", "أتم حفظ خمس سور كاملة"],
-  ["🔁", "مراجع صغير", "أكمل أول مراجعة"],
-  ["🧠", "بطل الذاكرة", "أكمل لعبة الذاكرة"],
-  ["🧩", "خبير ترتيب السور", "أكمل لعبة ترتيب السور"],
-  ["⚡", "نجم اختبار السور", "اجتز اختبار السور بنجاح"],
-  ["⭐", "١٠٠ نقطة", "اجمع ١٠٠ نقطة"],
-  ["🏅", "٥٠٠ نقطة", "اجمع ٥٠٠ نقطة"],
-  ["🔥", "٣ أيام متواصلة", "حافظ على نشاطك ٣ أيام"],
-  ["🏆", "أسبوع كامل", "حافظ على نشاطك ٧ أيام"],
+  ["sparkle", "البداية الجميلة", "ابدأ أول نشاط في الرحلة"],
+  ["quran", "أول حفظ", "أكمل أول جلسة حفظ"],
+  ["star", "أول سورة", "أتم حفظ سورة كاملة"],
+  ["mosque", "خمس سور", "أتم حفظ خمس سور كاملة"],
+  ["review", "مراجع صغير", "أكمل أول مراجعة"],
+  ["brain", "بطل الذاكرة", "أكمل لعبة الذاكرة"],
+  ["puzzle", "خبير ترتيب السور", "أكمل لعبة ترتيب السور"],
+  ["bolt", "نجم اختبار السور", "اجتز اختبار السور بنجاح"],
+  ["star", "١٠٠ نقطة", "اجمع ١٠٠ نقطة"],
+  ["medal", "٥٠٠ نقطة", "اجمع ٥٠٠ نقطة"],
+  ["flame", "٣ أيام متواصلة", "حافظ على نشاطك ٣ أيام"],
+  ["trophy", "أسبوع كامل", "حافظ على نشاطك ٧ أيام"],
 ];
 
 function routePath() {
@@ -35,7 +36,7 @@ function sessionAyahCount(total) {
 }
 
 function PreviewShell({ label, title, text, children }) {
-  return <main className="wrap page teacherPreviewPage"><div className="title"><span>{label} • معاينة المعلم</span><h1>{title}</h1><p>{text}</p></div><div className="msg ok teacherPreviewNotice">👨‍🏫 هذه معاينة آمنة للمعلم — لا يتم تعديل نقاط أو تقدم أي طالب.</div>{children}</main>;
+  return <main className="wrap page teacherPreviewPage"><div className="title"><span>{label} • معاينة المعلم</span><h1>{title}</h1><p>{text}</p></div><div className="msg ok teacherPreviewNotice"><Icon name="teacher" size={18} /> هذه معاينة آمنة للمعلم — لا يتم تعديل نقاط أو تقدم أي طالب.</div>{children}</main>;
 }
 
 function MemorizePreview() {
@@ -58,17 +59,17 @@ function ReviewPreview() {
   const [score, setScore] = useState(null);
   const surah = getSurah(number) || SURAHS[0];
   return <PreviewShell label="المراجعة" title="تجربة شاشة المراجعة" text="اختر سورة وجرّب تقييم التسميع بدون إنشاء Review Event حقيقي.">
-    <section className="panel focus"><label style={{width:"100%",textAlign:"right"}}><b>السورة</b><select value={surah.number} onChange={e => { const n=Number(e.target.value); setNumber(n); selectSurah(n); setScore(null); }} style={{marginTop:8}}>{SURAHS.map(s => <option key={s.number} value={s.number}>سورة {s.name}</option>)}</select></label><h2>سورة {surah.name}</h2><p>كيف كان أداء الطالب في التسميع؟</p><div className="row" style={{justifyContent:"center",flexWrap:"wrap"}}>{[[60,"يحتاج تدريب"],[80,"جيد"],[90,"ممتاز جدًا"],[100,"ممتاز"]].map(([value,label]) => <button key={value} className={score===value?"primary":"secondary"} onClick={() => setScore(value)}>{label} — {value}%</button>)}</div>{score && <div className="msg ok">نتيجة المعاينة: {score}% — لم يتم حفظها على أي طالب.</div>}</section>
+    <section className="panel focus"><label style={{width:"100%",textAlign:"right"}}><b>السورة</b><select value={surah.number} onChange={e => { const n=Number(e.target.value); setNumber(n); selectSurah(n); setScore(null); }} style={{marginTop:8}}>{SURAHS.map(s => <option key={s.number} value={s.number}>سورة {s.name}</option>)}</select></label><h2>سورة {surah.name}</h2><p>كيف كان أداء الطالب في التسميع؟</p><div className="row" style={{justifyContent:"center",flexWrap:"wrap"}}>{[[60,"يحتاج تدريب"],[80,"جيد"],[90,"ممتاز جدًا"],[100,"ممتاز"]].map(([value,label]) => <button key={value} className={score===value?"primary":"secondary"} onClick={() => setScore(value)}>{label} — {value}%</button>)}</div>{score && <div className="msg ok"><Icon name="circleCheck" size={18} /> نتيجة المعاينة: {score}% — لم يتم حفظها على أي طالب.</div>}</section>
   </PreviewShell>;
 }
 
 function AchievementsPreview() {
-  return <PreviewShell label="الإنجازات" title="كتالوج الميداليات" text="شاهد كل الإنجازات التي يمكن للطلاب فتحها من النشاط الحقيقي."><div className="badges">{badgeDefinitions.map(([icon,title,description]) => <article className="won teacherBadgePreview" key={title}><div>{icon}</div><h3>{title}</h3><p>{description}</p><small>معاينة المعلم</small></article>)}</div></PreviewShell>;
+  return <PreviewShell label="الإنجازات" title="كتالوج الميداليات" text="شاهد كل الإنجازات التي يمكن للطلاب فتحها من النشاط الحقيقي."><div className="badges badges-v2">{badgeDefinitions.map(([icon,title,description]) => <article className="won teacherBadgePreview" key={title}><div className="badge-icon"><Icon name={icon} size={34} /></div><h3>{title}</h3><p>{description}</p><small>معاينة المعلم</small></article>)}</div></PreviewShell>;
 }
 
 function ChallengesPreview() {
-  const rows = [["📖","جلسة حفظ","يكمل الطفل دفعة حفظ يومية"],["🔁","جلسة مراجعة","يسجل تقييم مراجعة حقيقي"],["🎮","لعبة تعليمية","يكمل لعبة من منطقة الألعاب"]];
-  return <PreviewShell label="تحديات اليوم" title="كيف يرى الطالب تحدياته؟" text="هذه معاينة للتحديات اليومية. حالة الإنجاز الحقيقية تُحسب من سجل نشاط الطفل."><div className="challenges">{rows.map(([icon,title,text]) => <article key={title}><b>{icon}</b><span><strong>{title}</strong><small style={{display:"block"}}>{text}</small></span></article>)}</div><div className="row" style={{justifyContent:"center",marginTop:24}}><button className="primary" onClick={() => navigate("/games")}>معاينة الألعاب</button><button className="secondary" onClick={() => navigate("/memorize")}>معاينة الحفظ</button></div></PreviewShell>;
+  const rows = [["quran","جلسة حفظ","يكمل الطفل دفعة حفظ يومية"],["review","جلسة مراجعة","يسجل تقييم مراجعة حقيقي"],["game","لعبة تعليمية","يكمل لعبة من منطقة الألعاب"]];
+  return <PreviewShell label="تحديات اليوم" title="كيف يرى الطالب تحدياته؟" text="هذه معاينة للتحديات اليومية. حالة الإنجاز الحقيقية تُحسب من سجل نشاط الطفل."><div className="challenges">{rows.map(([icon,title,text]) => <article key={title}><b className="challenge-svg-icon"><Icon name={icon} size={28} /></b><span><strong>{title}</strong><small style={{display:"block"}}>{text}</small></span></article>)}</div><div className="row" style={{justifyContent:"center",marginTop:24}}><button className="primary" onClick={() => navigate("/games")}><Icon name="game" size={18} /> معاينة الألعاب</button><button className="secondary" onClick={() => navigate("/memorize")}><Icon name="quran" size={18} /> معاينة الحفظ</button></div></PreviewShell>;
 }
 
 export default function TeacherLearningPreview({ type }) {
