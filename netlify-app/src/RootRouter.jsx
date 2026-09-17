@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import App from "./App.jsx";
+import HomePage from "./HomePage.jsx";
 import AchievementsPage from "./AchievementsPage.jsx";
 import ChildHub, { isChildModeActive } from "./ChildHub.jsx";
 import GamesHub from "./GamesHub.jsx";
@@ -104,7 +105,8 @@ export default function RootRouter() {
   if (!teacher && childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
   let page;
-  if (path === "/quran") page = teacher ? <TeacherQuranPreview /> : <QuranPage />;
+  if (path === "/") page = <HomePage />;
+  else if (path === "/quran") page = teacher ? <TeacherQuranPreview /> : <QuranPage />;
   else if (path === "/memorize") page = teacher ? <TeacherLearningPreview type="memorize" /> : <MemorizePage />;
   else if (path === "/review") page = teacher ? <TeacherLearningPreview type="review" /> : <App />;
   else if (path === "/games") page = <GamesHub />;
@@ -115,7 +117,5 @@ export default function RootRouter() {
   else if (path === "/challenges") page = teacher ? <TeacherLearningPreview type="challenges" /> : <App />;
   else page = <App />;
 
-  // Teacher access is intentionally default-open for learning/content pages.
-  // Only the explicit family/child identity routes in accessPolicy.js are restricted.
   return teacher ? <TeacherAccessBar>{page}</TeacherAccessBar> : page;
 }
