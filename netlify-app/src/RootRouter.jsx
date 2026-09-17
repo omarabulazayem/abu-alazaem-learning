@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import App from "./App.jsx";
+import LoginPage from "./LoginPage.jsx";
 import HomePage from "./HomePage.jsx";
 import FamilyPage from "./FamilyPage.jsx";
 import ReviewPage from "./ReviewPage.jsx";
@@ -30,7 +30,7 @@ import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
 import { getCurrentUser } from "./api.js";
 import { isTeacherRestrictedRoute } from "./accessPolicy.js";
 
-const childSafeRoutes = new Set(["/child","/quran","/memorize","/review","/games","/achievements","/challenges","/room"]);
+const childSafeRoutes=new Set(["/child","/quran","/memorize","/review","/games","/achievements","/challenges","/room"]);
 function readPath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path,replace=false){if(readPath()===path)return;if(replace)history.replaceState({},"",path);else history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}
 function isChildSafeRoute(path){return childSafeRoutes.has(path)||path.startsWith("/games/");}
@@ -50,10 +50,7 @@ export default function RootRouter(){
   const NewGame=NEW_GAME_ROUTES[path];
   let page;
   if(TafsirGame)page=<TafsirGame/>;
-  else if(NewGame){
-    const definition=gameByRoute(path);
-    page=definition?.status==="live"?<NewGame/>:<NotFoundPage/>;
-  }
+  else if(NewGame){const definition=gameByRoute(path);page=definition?.status==="live"?<NewGame/>:<NotFoundPage/>;}
   else if(path==="/")page=<HomePage/>;
   else if(path==="/family")page=<FamilyPage/>;
   else if(path==="/quran")page=teacher?<TeacherQuranPreview/>:<QuranPage/>;
@@ -82,7 +79,7 @@ export default function RootRouter(){
   else if(path==="/achievements")page=teacher?<TeacherLearningPreview type="achievements"/>:<AchievementsPage/>;
   else if(path==="/challenges")page=teacher?<TeacherLearningPreview type="challenges"/>:<ChallengesPage/>;
   else if(path==="/room")page=<RoomPage/>;
-  else if(path==="/login")page=<App/>;
+  else if(path==="/login")page=<LoginPage/>;
   else page=<NotFoundPage/>;
   return teacher?<TeacherAccessBar>{page}</TeacherAccessBar>:page;
 }
