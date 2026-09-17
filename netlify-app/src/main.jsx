@@ -4,6 +4,7 @@ import RootRouter from "./RootRouter.jsx";
 import "./styles.css";
 import "./ui-enhancements.css";
 import "./memory-game.css";
+import "./child-dashboard.css";
 
 const configuredBase = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const basePath = configuredBase === "/" ? "" : configuredBase;
