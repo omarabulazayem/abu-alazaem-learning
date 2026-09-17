@@ -14,6 +14,8 @@ const badgeDefinitions = [
   ["five_surahs", "🕌", "خمس سور", "أتم حفظ خمس سور كاملة"],
   ["first_review", "🔁", "مراجع صغير", "أكمل أول مراجعة"],
   ["memory_player", "🧠", "بطل الذاكرة", "أكمل لعبة الذاكرة"],
+  ["surah_order_master", "🧩", "خبير ترتيب السور", "أكمل لعبة ترتيب السور"],
+  ["surah_quiz_star", "⚡", "نجم اختبار السور", "اجتز اختبار السور بنجاح"],
   ["hundred_points", "⭐", "١٠٠ نقطة", "اجمع ١٠٠ نقطة"],
   ["five_hundred_points", "🏅", "٥٠٠ نقطة", "اجمع ٥٠٠ نقطة"],
   ["three_day_streak", "🔥", "٣ أيام متواصلة", "حافظ على نشاطك ٣ أيام"],
@@ -122,7 +124,7 @@ export default function AchievementsPage() {
         </div>
 
         <div className="row" style={{ justifyContent: "center", marginTop: 24 }}>
-          <button className="secondary" onClick={() => navigate("/child")}>العودة لوضع الطفل</button>
+          <button className="secondary" onClick={() => navigate("/games")}>الألعاب</button>
           <button className="primary" onClick={() => navigate("/challenges")}>تحديات اليوم</button>
         </div>
       </main>
