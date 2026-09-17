@@ -10,6 +10,7 @@ import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
 import TeacherAccessBar from "./TeacherAccessBar.jsx";
+import TeacherLearningPreview from "./TeacherLearningPreview.jsx";
 import { getCurrentUser } from "./api.js";
 import { isTeacherRestrictedRoute } from "./accessPolicy.js";
 
@@ -93,23 +94,27 @@ export default function RootRouter() {
     if (teacherRestricted) navigate("/teacher", true);
   }, [teacherRestricted]);
 
-  if (isTeacherRoute || teacherRestricted) return <TeacherPortal />;
+  if (isTeacherRoute || teacherRestricted) {
+    const portal = <TeacherPortal />;
+    return teacher ? <TeacherAccessBar>{portal}</TeacherAccessBar> : portal;
+  }
 
   if (!teacher && path === "/child") return <ChildHub />;
   if (!teacher && childMode && !isChildSafeRoute(path)) return <ChildHub />;
 
   let page;
   if (path === "/quran") page = <QuranPage />;
-  else if (path === "/memorize") page = <MemorizePage />;
+  else if (path === "/memorize") page = teacher ? <TeacherLearningPreview type="memorize" /> : <MemorizePage />;
+  else if (path === "/review") page = teacher ? <TeacherLearningPreview type="review" /> : <App />;
   else if (path === "/games") page = <GamesHub />;
   else if (path === "/games/memory") page = <MemoryGame />;
   else if (path === "/games/order") page = <SurahOrderGame />;
   else if (path === "/games/quiz") page = <SurahQuizGame />;
-  else if (path === "/achievements") page = <AchievementsPage />;
+  else if (path === "/achievements") page = teacher ? <TeacherLearningPreview type="achievements" /> : <AchievementsPage />;
+  else if (path === "/challenges") page = teacher ? <TeacherLearningPreview type="challenges" /> : <App />;
   else page = <App />;
 
-  // Teachers get all learning/content pages by default. Only explicit account/child
-  // identity routes are blocked above. The access bar also keeps every current and
-  // future content area reachable from any page.
+  // Teacher access is intentionally default-open for learning/content pages.
+  // Only the explicit family/child identity routes in accessPolicy.js are restricted.
   return teacher ? <TeacherAccessBar>{page}</TeacherAccessBar> : page;
 }
