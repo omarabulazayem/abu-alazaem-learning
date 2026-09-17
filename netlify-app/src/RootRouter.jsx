@@ -9,6 +9,7 @@ import AchievementsPage from "./AchievementsPage.jsx";
 import ChildHub,{isChildModeActive} from "./ChildHub.jsx";
 import GamesHub from "./GamesHub.jsx";
 import NewGamePackHub from "./NewGamePackHub.jsx";
+import TafsirWorldHubV4 from "./TafsirWorldHubV4.jsx";
 import MemoryGame from "./MemoryGame.jsx";
 import SurahOrderGame from "./SurahOrderGame.jsx";
 import SurahQuizGame from "./SurahQuizGame.jsx";
@@ -17,7 +18,7 @@ import {WordTrainGame,AyahBurgerGame,KnowledgeBridgeGame,FlipCardsGame} from "./
 import {GuessSurahGame,WordHunterGame,AyahMatchingGame,SurahCardsGame} from "./QuranGameBatch3.jsx";
 import {AyahCodeGame,SurahExamGame} from "./QuranGameBatch4.jsx";
 import {NEW_GAME_ROUTES} from "./NewQuranGamePack.jsx";
-import {TafsirWorldHub,TAFSIR_GAME_ROUTES} from "./TafsirWorld.jsx";
+import {TAFSIR_GAME_ROUTES} from "./TafsirWorld.jsx";
 import {gameByRoute} from "./gameRegistry.js";
 import NotFoundPage from "./NotFoundPage.jsx";
 import QuranPage from "./QuranPage.jsx";
@@ -57,7 +58,7 @@ export default function RootRouter(){
   else if(path==="/review")page=teacher?<TeacherLearningPreview type="review"/>:<ReviewPage/>;
   else if(path==="/games")page=<GamesHub/>;
   else if(path==="/games/new-pack")page=<NewGamePackHub/>;
-  else if(path==="/games/tafsir")page=<TafsirWorldHub/>;
+  else if(path==="/games/tafsir")page=<TafsirWorldHubV4/>;
   else if(path==="/games/quran-wheel")page=<QuranWheelGame/>;
   else if(path==="/games/ayah-order")page=<AyahOrderGame/>;
   else if(path==="/games/complete-ayah")page=<CompleteAyahGame/>;
