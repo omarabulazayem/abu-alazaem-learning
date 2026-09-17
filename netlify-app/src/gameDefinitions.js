@@ -42,6 +42,7 @@ const CORE_IMPLEMENTED_IDS = new Set([
 ]);
 const ENGINE_INTEGRATED_IDS = new Set([
   ...CORE_IMPLEMENTED_IDS,
+  "classic-memory","classic-surah-order","classic-surah-quiz",
   "ayah-hunter","where-start","what-next","build-ayah","memory-race","surah-treasure","similarity-boxes","missing-word-adventure",
 ]);
 
@@ -59,7 +60,11 @@ const core = QURAN_GAME_DEFINITIONS.map(definition => normalize(
   "quran-core",
   CORE_IMPLEMENTED_IDS.has(definition.id) ? "implemented" : "planned",
 ));
-const expansion = NEW_QURAN_GAME_DEFINITIONS.map(definition => normalize(definition, "quran-expansion", "implemented"));
+const expansion = NEW_QURAN_GAME_DEFINITIONS.map(definition => normalize(
+  definition,
+  "quran-expansion",
+  ENGINE_INTEGRATED_IDS.has(definition.id) ? "implemented" : "planned",
+));
 const classic = CLASSIC_GAME_DEFINITIONS.map(definition => normalize(definition, "classic", "implemented"));
 const recreational = RECREATIONAL_GAME_DEFINITIONS.map(definition => normalize(definition, "recreational", "planned"));
 
