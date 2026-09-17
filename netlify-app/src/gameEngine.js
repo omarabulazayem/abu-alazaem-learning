@@ -1,12 +1,13 @@
 import { rest, rpc } from "./api.js";
 import { gameDefinition } from "./gameDefinitions.js";
+import { newGameDefinition } from "./newGameDefinitions.js";
 
 export class GameEngine {
   constructor({ childId, gameId, teacherPreview = false }) {
     this.childId = childId || null;
     this.gameId = gameId;
     this.teacherPreview = Boolean(teacherPreview);
-    this.definition = gameDefinition(gameId);
+    this.definition = gameDefinition(gameId) || newGameDefinition(gameId);
     if (!this.definition) throw new Error(`Unknown game definition: ${gameId}`);
     this.session = null;
     this.local = {
