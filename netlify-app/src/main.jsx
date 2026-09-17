@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import RootRouter from "./RootRouter.jsx";
 import "./styles.css";
+import "./ui-enhancements.css";
 
 const configuredBase = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 const basePath = configuredBase === "/" ? "" : configuredBase;
