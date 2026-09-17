@@ -34,12 +34,12 @@ export function isChildModeActive() {
 }
 
 const actions = [
-  ["quran", "الحفظ", "أكمل جلسة قصيرة واحفظ تقدمك", "/memorize", "mint"],
-  ["review", "المراجعة", "راجع ما حفظته وثبّته", "/review", "sky"],
-  ["game", "الألعاب", "تدريب ممتع ومسجل في GameEngine", "/games", "featured"],
-  ["trophy", "إنجازاتي", "شاهد الميداليات التي فتحتها", "/achievements", "lavender"],
-  ["target", "تحديات اليوم", "اعرف ما أكملته اليوم", "/challenges", "sun"],
-  ["room", "غرفتي", "شاهد نقاطك ونجومك وتقدمك", "/room", "rose"],
+  ["quran", "نحفظ سوا", "احفظ جزءًا صغيرًا وخد نجمة", "/memorize", "mint"],
+  ["review", "نفتكر سوا", "راجع اللي حفظته بطريقة سهلة", "/review", "sky"],
+  ["game", "يلا نلعب", "ألعاب قصيرة فيها حركة ومكافآت", "/games", "featured"],
+  ["trophy", "جوائزي", "شوف النجوم والميداليات اللي كسبتها", "/achievements", "lavender"],
+  ["target", "مهمتي اليوم", "مهمة صغيرة تقدر تخلصها بسرعة", "/challenges", "sun"],
+  ["room", "غرفتي", "شوف حاجاتك وتقدمك ومكافآتك", "/room", "rose"],
 ];
 
 export default function ChildHub() {
@@ -116,7 +116,7 @@ export default function ChildHub() {
     }
   }
 
-  if (user === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز وضع الطفل...</p></div>;
+  if (user === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز عالمك...</p></div>;
 
   return (
     <div className="app child-dashboard child-dashboard-v2" dir="rtl">
@@ -124,12 +124,12 @@ export default function ChildHub() {
         <div className="wrap nav">
           <button className="brand" onClick={() => navigate("/child")}>
             <span className="logo"><Icon name="mosque" size={24} /></span>
-            <span><b>أبو العزايم</b><small>وضع الطفل</small></span>
+            <span><b>أبو العزايم</b><small>عالمي الصغير</small></span>
           </button>
           <div className="actions child-rewards">
             <span className="reward-chip"><Icon name="trophy" size={17} /> {child?.points || 0} نقطة</span>
             <span className="reward-chip"><Icon name="star" size={17} /> {child?.stars || 0} نجمة</span>
-            <button className="secondary" onClick={() => { setShowExit(true); setError(""); }}><Icon name="lock" size={17} /> خروج ولي الأمر</button>
+            <button className="secondary" onClick={() => { setShowExit(true); setError(""); }}><Icon name="lock" size={17} /> ولي الأمر</button>
           </div>
         </div>
       </header>
@@ -137,8 +137,8 @@ export default function ChildHub() {
       <main className="wrap page">
         <section className="childHero childHeroPlus childHeroIllustrated">
           <div className="child-avatar-art"><Icon name="child" size={58} /></div>
-          <div className="grow"><span>رحلتي اليوم</span><h1>أهلًا {child?.display_name || "بطلنا الصغير"}</h1><p>اختر نشاطًا صغيرًا، واجمع نقاطك ونجومك خطوة بخطوة.</p></div>
-          <div className="child-level"><span><Icon name="flame" size={16} /> سلسلة النشاط</span><b>{child?.streak || 0}</b><small>يوم متواصل</small></div>
+          <div className="grow"><span>جاهز نبدأ؟</span><h1>أهلًا {child?.display_name || "بطلنا الصغير"}</h1><p>اختار مكان تحبه، والعب أو احفظ خطوة صغيرة كل مرة.</p></div>
+          <div className="child-level"><span><Icon name="flame" size={16} /> أيام متواصلة</span><b>{child?.streak || 0}</b><small>استمر يا بطل</small></div>
         </section>
 
         {!showExit && child && (
@@ -148,7 +148,7 @@ export default function ChildHub() {
             <div className="child-stat"><span className="stat-icon sky"><Icon name="game" size={25} /></span><div><b>{gameProgress}/٣</b><small>ألعاب اليوم</small></div></div>
             <button className="daily-game-cta" onClick={() => navigate("/games")}>
               <span className="daily-game-icon"><Icon name={gameProgress === 3 ? "circleCheck" : "rocket"} size={30} /></span>
-              <div><b>{gameProgress === 3 ? "أكملت ألعاب اليوم" : "كمّل تحدي الألعاب"}</b><small>{gameProgress === 3 ? "يمكنك اللعب مرة أخرى للتدريب" : `باقي ${3 - gameProgress} لعبة`}</small></div>
+              <div><b>{gameProgress === 3 ? "برافو! خلصت ألعاب اليوم" : "نلعب لعبة كمان؟"}</b><small>{gameProgress === 3 ? "تقدر تلعب تاني لو حابب" : `باقي ${3 - gameProgress} لعبة`}</small></div>
               <Icon name="arrow" size={22} />
             </button>
           </div>
@@ -172,15 +172,15 @@ export default function ChildHub() {
         {showExit && (
           <section className="panel authbox child-exit-card" style={{ margin: "28px auto 0" }}>
             <div className="child-exit-icon"><Icon name="shield" size={42} /></div>
-            <h2>خروج من وضع الطفل</h2>
-            <p>أدخل كلمة مرور ولي الأمر للعودة إلى إدارة الأسرة.</p>
+            <h2>منطقة ولي الأمر</h2>
+            <p>أدخل كلمة المرور للعودة إلى إدارة الأسرة.</p>
             <form onSubmit={verifyParent}><input type="password" minLength="6" autoFocus autoComplete="current-password" placeholder="كلمة مرور ولي الأمر" value={password} onChange={e => setPassword(e.target.value)} required /><button className="primary full" disabled={busy}>{busy ? "جارٍ التحقق..." : "التحقق والخروج"}</button></form>
-            <button className="link" onClick={() => { setShowExit(false); setPassword(""); setError(""); }}>العودة للأنشطة</button>
+            <button className="link" onClick={() => { setShowExit(false); setPassword(""); setError(""); }}>ارجع لعالمي</button>
           </section>
         )}
       </main>
 
-      <footer><div className="wrap">أبو العزايم للحفظ الممتع • وضع الطفل يحمي إعدادات الأسرة من التغيير بالخطأ.</div></footer>
+      <footer><div className="wrap">أبو العزايم للحفظ الممتع • نتعلم خطوة صغيرة كل مرة.</div></footer>
     </div>
   );
 }
