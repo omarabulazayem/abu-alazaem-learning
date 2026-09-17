@@ -29,6 +29,10 @@ import "./illustrated-child-world.css";
 import "./site-design.css";
 
 const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");const basePath=configuredBase==="/"?"":configuredBase;
+const publicAssetBase=import.meta.env.BASE_URL||"/";
+document.documentElement.style.setProperty("--child-hero-art",`url("${publicAssetBase}assets/hero-kids.webp")`);
+document.documentElement.style.setProperty("--child-world-bg",`url("${publicAssetBase}assets/child-world-bg.webp")`);
+document.documentElement.style.setProperty("--child-card-art",`url("${publicAssetBase}assets/world-card-art.webp")`);
 window.__ABU_ROUTE_PATH__=()=>{const pathname=window.location.pathname||"/";if(!basePath)return pathname;if(pathname===basePath||pathname===`${basePath}/`)return "/";if(pathname.startsWith(`${basePath}/`))return pathname.slice(basePath.length)||"/";return pathname;};
 const withBase=url=>{if(!basePath||typeof url!=="string"||!url.startsWith("/")||url===basePath||url.startsWith(`${basePath}/`))return url;return `${basePath}${url}`;};
 const nativePushState=window.history.pushState.bind(window.history),nativeReplaceState=window.history.replaceState.bind(window.history);
