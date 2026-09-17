@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { claimReward, dayKey } from "./api.js";
 import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
+import { GameEngine, gameResultSummary } from "./gameEngine.js";
 import Icon from "./Icon.jsx";
 
 const symbols = [
@@ -38,7 +38,11 @@ export default function MemoryGame() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const rewarded = useRef(false);
+  const [engineReady, setEngineReady] = useState(false);
+  const [roundKey, setRoundKey] = useState(0);
+  const engineRef = useRef(null);
+  const startedAt = useRef(0);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -57,43 +61,74 @@ export default function MemoryGame() {
   }, []);
 
   useEffect(() => {
+    if (!viewer || !learningActorReady(viewer)) return;
+    let alive = true;
+    setEngineReady(false);
+    setBusy(true);
+    (async () => {
+      try {
+        const engine = new GameEngine({ childId: viewer.child?.id, gameId: "classic-memory", teacherPreview: Boolean(viewer.teacherPreview) });
+        await engine.start({ difficulty: "easy" });
+        if (!alive) return;
+        engineRef.current = engine;
+        startedAt.current = performance.now();
+        completedRef.current = false;
+        setEngineReady(true);
+      } catch (e) {
+        if (alive) setError(e.message || "تعذر بدء جلسة اللعبة.");
+      } finally {
+        if (alive) setBusy(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [viewer, roundKey]);
+
+  useEffect(() => {
     if (open.length !== 2) return;
     const [first, second] = open;
     const same = deck[first]?.symbol.name === deck[second]?.symbol.name;
+    engineRef.current?.recordAnswer({
+      questionType: "matching",
+      correct: same,
+      metadata: {
+        firstSymbol: deck[first]?.symbol.name || null,
+        secondSymbol: deck[second]?.symbol.name || null,
+        move: moves,
+      },
+    }).catch(e => setError(e.message || "تعذر تسجيل المحاولة."));
     const timer = window.setTimeout(() => {
       if (same) setMatched(prev => [...new Set([...prev, first, second])]);
       setOpen([]);
     }, same ? 420 : 720);
     return () => window.clearTimeout(timer);
-  }, [open, deck]);
+  }, [open, deck, moves]);
 
   useEffect(() => {
-    if (!viewer || matched.length !== deck.length || !deck.length || rewarded.current) return;
-    rewarded.current = true;
-    if (viewer.teacherPreview) {
-      setMessage("اكتملت اللعبة بنجاح في وضع معاينة المعلم. لم يتم تسجيل أي نقاط أو نجوم.");
-      return;
-    }
-    if (!viewer.child?.id) return;
+    if (!viewer || !engineReady || matched.length !== deck.length || !deck.length || completedRef.current) return;
+    completedRef.current = true;
     setBusy(true);
     (async () => {
       try {
-        const result = await claimReward(viewer.child.id, "memory_game", dayKey("memory"));
-        const value = Array.isArray(result) ? result[0] : result;
-        setMessage(value?.awarded === false
-          ? "أحسنت! أكملت اللعبة. مكافأة اليوم حصلت عليها مسبقًا، ويمكنك اللعب مرة أخرى للتدريب."
-          : "ممتاز! أكملت لعبة الذاكرة وحصلت على ٣٥ نقطة ونجمتين.");
+        const elapsedSeconds = Math.max(1, Math.round((performance.now() - startedAt.current) / 1000));
+        await engineRef.current?.save({ moves, matchedPairs: matched.length / 2 }, elapsedSeconds);
+        const session = await engineRef.current?.complete({ elapsedSeconds, resumeState: { moves, matchedPairs: matched.length / 2 } });
+        const result = gameResultSummary(session);
+        setMessage(viewer.teacherPreview
+          ? `اكتملت اللعبة في وضع معاينة المعلم في ${moves} محاولة. لم يتم تسجيل مكافآت.`
+          : result?.rewardAwarded === false
+            ? `أحسنت! اكتملت الجولة بدقة ${result?.accuracy || 0}%. مكافأة هذه اللعبة لليوم حصلت عليها مسبقًا.`
+            : `ممتاز! اكتملت الجولة بدقة ${result?.accuracy || 0}% وحصلت على ${Number(session?.earned_rewards?.points || 0)} نقطة و${Number(session?.earned_rewards?.stars || 0)} نجمة.`);
       } catch (e) {
-        setMessage("أحسنت! أكملت اللعبة، لكن تعذر تسجيل المكافأة الآن.");
-        setError(e.message || "تعذر تسجيل المكافأة.");
+        completedRef.current = false;
+        setError(e.message || "اكتملت اللعبة لكن تعذر حفظ الجلسة.");
       } finally {
         setBusy(false);
       }
     })();
-  }, [matched, deck.length, viewer]);
+  }, [matched, deck.length, viewer, engineReady, moves]);
 
   function flip(index) {
-    if (busy || open.length >= 2 || open.includes(index) || matched.includes(index)) return;
+    if (busy || !engineReady || open.length >= 2 || open.includes(index) || matched.includes(index)) return;
     setOpen(prev => {
       const next = [...prev, index];
       if (next.length === 2) setMoves(m => m + 1);
@@ -102,13 +137,16 @@ export default function MemoryGame() {
   }
 
   function reset() {
-    rewarded.current = false;
+    engineRef.current = null;
+    completedRef.current = false;
+    setEngineReady(false);
     setDeck(shuffledDeck());
     setOpen([]);
     setMatched([]);
     setMoves(0);
     setMessage("");
     setError("");
+    setRoundKey(key => key + 1);
   }
 
   if (viewer === undefined) return <div className="center"><i className="spinner" /><p>جارٍ تجهيز اللعبة...</p></div>;
@@ -123,7 +161,7 @@ export default function MemoryGame() {
       <header className="game-topbar"><div className="wrap nav"><button className="brand" onClick={() => navigate("/games")}><span className="logo"><Icon name="brain" size={24} /></span><span><b>لعبة الذاكرة</b><small>{teacherPreview ? "معاينة المعلم" : "طابق البطاقات"}</small></span></button><div className="actions">{teacherPreview ? <span className="reward-chip"><Icon name="teacher" size={17} /> معاينة بلا نقاط</span> : <span className="reward-chip"><Icon name="star" size={17} /> {child?.stars || 0}</span>}<button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button></div></div></header>
 
       <main className="wrap page narrow game-page">
-        <div className="game-title-block"><span><Icon name="brain" size={18} /> تركيز وذاكرة</span><h1>اكتشف الأزواج المتشابهة</h1><p>{teacherPreview ? "جرّب اللعبة بالكامل كما يراها الطالب. هذه الجولة لن تسجل أي مكافأة." : child ? `افتح بطاقتين في كل مرة يا ${child.display_name}. حاول إنهاء اللوحة بأقل عدد من المحاولات.` : "اختر طفلًا من حساب الأسرة أولًا."}</p></div>
+        <div className="game-title-block"><span><Icon name="brain" size={18} /> تركيز وذاكرة</span><h1>اكتشف الأزواج المتشابهة</h1><p>{teacherPreview ? "جرّب اللعبة بالكامل كما يراها الطالب. هذه الجولة لا تكتب بيانات طالب." : child ? `افتح بطاقتين في كل مرة يا ${child.display_name}. كل محاولة أصبحت جزءًا من Game Session موحد.` : "اختر طفلًا من حساب الأسرة أولًا."}</p></div>
 
         {error && <div className="msg error">{error}</div>}
         {message && <div className="msg ok">{message}</div>}
@@ -135,15 +173,15 @@ export default function MemoryGame() {
             {deck.map((card, index) => {
               const visible = open.includes(index) || matched.includes(index);
               const done = matched.includes(index);
-              return <button key={card.id} type="button" className={`memory-card ${visible ? "visible" : ""} ${done ? "matched" : ""}`} aria-label={visible ? `بطاقة ${card.symbol.label}` : "بطاقة مخفية"} onClick={() => flip(index)} disabled={!learningActorReady(viewer) || done || busy}><span>{visible ? <Icon name={card.symbol.name} size={34} /> : <span className="card-back-mark">ع</span>}</span></button>;
+              return <button key={card.id} type="button" className={`memory-card ${visible ? "visible" : ""} ${done ? "matched" : ""}`} aria-label={visible ? `بطاقة ${card.symbol.label}` : "بطاقة مخفية"} onClick={() => flip(index)} disabled={!learningActorReady(viewer) || !engineReady || done || busy}><span>{visible ? <Icon name={card.symbol.name} size={34} /> : <span className="card-back-mark">ع</span>}</span></button>;
             })}
           </div>
-          {complete && <div className="celebration"><span className="celebration-icon"><Icon name="trophy" size={46} /></span><b>ذاكرة ممتازة</b><small>{busy ? "جارٍ تسجيل المكافأة..." : teacherPreview ? `أنهيت المعاينة في ${moves} محاولة.` : `أنهيت اللعبة في ${moves} محاولة.`}</small></div>}
+          {complete && <div className="celebration"><span className="celebration-icon"><Icon name="trophy" size={46} /></span><b>ذاكرة ممتازة</b><small>{busy ? "جارٍ حفظ جلسة GameEngine..." : `أنهيت اللعبة في ${moves} محاولة.`}</small></div>}
           <div className="row" style={{ justifyContent: "center", marginTop: 20 }}><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button><button className="primary" onClick={reset}>لعبة جديدة</button></div>
         </section>
       </main>
 
-      <footer><div className="wrap">أبو العزايم للحفظ الممتع • درّب ذاكرتك واجمع مكافأة اليوم.</div></footer>
+      <footer><div className="wrap">أبو العزايم للحفظ الممتع • جلسات الألعاب تُحفظ من محرك واحد.</div></footer>
     </div>
   );
 }
