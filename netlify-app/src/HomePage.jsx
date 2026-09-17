@@ -1,111 +1,36 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Icon from "./Icon.jsx";
-import {
-  getActiveChildId,
-  getCurrentUser,
-  listChildren,
-  setActiveChildId,
-  signOut,
-} from "./api.js";
+import { getActiveChildId,getCurrentUser,listChildren,setActiveChildId,signOut } from "./api.js";
 import { DEFAULT_HOME_CONTENT, DEFAULT_MAIN_NAV, loadHomeContent } from "./siteContent.js";
 
 function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path){if(routePath()!==path){history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}}
+function BrandMark({brand=DEFAULT_HOME_CONTENT.brand}){return <button className="homeBrand" onClick={()=>navigate("/")}><span className="homeBrandIcon"><Icon name="mosque" size={42}/></span><span><b>{brand.title}</b><small>{brand.subtitle}</small></span></button>;}
+function HeroTitle({title,highlight}){if(!highlight||!String(title).includes(highlight))return <>{title}</>;const [before,...rest]=String(title).split(highlight);return <>{before}<strong>{highlight}</strong>{rest.join(highlight)}</>;}
 
-function BrandMark({brand=DEFAULT_HOME_CONTENT.brand}){
-  return <button className="homeBrand" onClick={()=>navigate("/")}>
-    <span className="homeBrandIcon"><Icon name="mosque" size={42}/></span>
-    <span><b>{brand.title}</b><small>{brand.subtitle}</small></span>
-  </button>;
-}
-
-function HeroTitle({title,highlight}){
-  if(!highlight||!String(title).includes(highlight))return <>{title}</>;
-  const [before,...rest]=String(title).split(highlight);
-  return <>{before}<strong>{highlight}</strong>{rest.join(highlight)}</>;
-}
+function KidsHeroScene(){return <svg className="kidsHeroScene" viewBox="0 0 760 500" role="img" aria-label="طفلان يتعلمان القرآن في عالم مرح وهادئ">
+  <defs><linearGradient id="khSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#dff6ff"/><stop offset="1" stopColor="#fffdf7"/></linearGradient><linearGradient id="khGrass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#dff7e7"/><stop offset="1" stopColor="#bde9cf"/></linearGradient></defs>
+  <rect width="760" height="500" rx="48" fill="url(#khSky)"/>
+  <circle cx="650" cy="70" r="38" fill="#fff0a8"/><g fill="#fff" opacity=".95"><ellipse cx="120" cy="92" rx="48" ry="20"/><ellipse cx="156" cy="90" rx="35" ry="26"/><ellipse cx="510" cy="118" rx="42" ry="18"/><ellipse cx="543" cy="115" rx="30" ry="23"/></g>
+  <path d="M0 360c110-62 214-54 319 0 84 43 179 42 264 3 77-36 128-34 177-10v147H0Z" fill="url(#khGrass)"/>
+  <path d="M93 397c91-54 196-52 287-5 86 44 164 44 282-5" fill="none" stroke="#fff" strokeWidth="24" strokeLinecap="round" opacity=".8"/>
+  <g transform="translate(277 203)"><ellipse cx="107" cy="208" rx="130" ry="26" fill="#9ccfb1" opacity=".35"/><rect x="13" y="116" width="188" height="102" rx="26" fill="#fff" stroke="#d4e9ef" strokeWidth="4"/><path d="M107 126v80" stroke="#d2b05b" strokeWidth="4"/><path d="M105 138c-33-20-61-22-82-14v69c26-9 52-5 82 13Z" fill="#fff8d9" stroke="#e4c66f" strokeWidth="3"/><path d="M109 138c33-20 61-22 82-14v69c-26-9-52-5-82 13Z" fill="#fff8d9" stroke="#e4c66f" strokeWidth="3"/><circle cx="107" cy="74" r="27" fill="#ffd8bd"/><path d="M80 69c5-34 53-38 60-5-12-10-22-11-31-8-13 5-18 11-29 13Z" fill="#463b52"/><path d="M79 96c14 7 42 8 57 0l14 39H65Z" fill="#7bc8e9"/><path d="M72 124 47 165M143 124l26 41" stroke="#ffd8bd" strokeWidth="13" strokeLinecap="round"/></g>
+  <g transform="translate(95 250)"><circle cx="64" cy="45" r="24" fill="#f1c7a5"/><path d="M42 42c0-34 48-38 50-5-17-9-32-8-50 5Z" fill="#4d3b31"/><path d="M38 72c17 10 36 10 53 0l18 78H18Z" fill="#b9a7ec"/><path d="M31 96 4 126M94 95l31 31" stroke="#f1c7a5" strokeWidth="12" strokeLinecap="round"/><circle cx="12" cy="136" r="13" fill="#ffd86d"/><path d="M7 136h10M12 131v10" stroke="#fff" strokeWidth="3"/></g>
+  <g transform="translate(555 245)"><circle cx="55" cy="43" r="23" fill="#e8bb99"/><path d="M32 44c2-31 45-37 49-6-14-7-31-6-49 6Z" fill="#372f35"/><path d="M30 69c16 10 34 10 50 0l17 80H12Z" fill="#f3a6c8"/><path d="M24 95 0 124M86 95l27 29" stroke="#e8bb99" strokeWidth="11" strokeLinecap="round"/><rect x="98" y="116" width="29" height="29" rx="9" fill="#dff5ff"/><path d="M105 130h15" stroke="#4c9ac0" strokeWidth="3"/></g>
+  <g fill="#f4c64f"><path d="m220 95 6 13 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2Z"/><path d="m604 165 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/></g>
+  <g transform="translate(32 176)"><rect width="118" height="58" rx="20" fill="#fff" stroke="#d9ecf2" strokeWidth="3"/><circle cx="28" cy="29" r="16" fill="#e5f8ef"/><path d="M24 29h8M28 25v8" stroke="#43a976" strokeWidth="3" strokeLinecap="round"/><text x="51" y="35" fontFamily="Tahoma,Arial" fontWeight="800" fontSize="14" fill="#477188">نلعب ونتعلم</text></g>
+  <g transform="translate(584 358)"><rect width="128" height="64" rx="22" fill="#fff" stroke="#ecdff1" strokeWidth="3"/><circle cx="29" cy="32" r="17" fill="#f4eaff"/><path d="M21 33l6 6 11-14" fill="none" stroke="#8a63bd" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><text x="55" y="38" fontFamily="Tahoma,Arial" fontWeight="800" fontSize="14" fill="#6f5a86">نتقدم سوا</text></g>
+</svg>;}
 
 export default function HomePage(){
-  const [user,setUser]=useState(undefined);
-  const [child,setChild]=useState(null);
-  const [menuOpen,setMenuOpen]=useState(false);
-  const [content,setContent]=useState({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV});
-
-  useEffect(()=>{
-    let alive=true;
-    (async()=>{
-      const [current,editorial]=await Promise.all([
-        getCurrentUser().catch(()=>null),
-        loadHomeContent("ar").catch(()=>({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV}))
-      ]);
-      if(!alive)return;
-      setContent(editorial);
-      setUser(current);
-      if(!current||current.accountType==="teacher")return;
-      const kids=await listChildren(current).catch(()=>[]);
-      if(!alive)return;
-      const activeId=getActiveChildId();
-      const selected=kids.find(k=>k.id===activeId)||kids[0]||null;
-      if(selected&&selected.id!==activeId)setActiveChildId(selected.id);
-      setChild(selected);
-    })();
-    return()=>{alive=false;};
-  },[]);
-
-  const accountLabel=useMemo(()=>{
-    if(!user)return "تسجيل الدخول";
-    if(user.accountType==="teacher")return "لوحة المعلم";
-    return "حساب الأسرة";
-  },[user]);
-
-  async function logout(){await signOut();setUser(null);setChild(null);}
-  function openAccount(){if(!user)return navigate("/login");navigate(user.accountType==="teacher"?"/teacher":"/family");}
-
-  const navigation=content.navigation||DEFAULT_MAIN_NAV;
-  const hero=content.hero||DEFAULT_HOME_CONTENT.hero;
-  const sections=content.sections||DEFAULT_HOME_CONTENT.sections;
-  const heading=content.sectionsHeading||DEFAULT_HOME_CONTENT.sectionsHeading;
-  const promise=content.promise||DEFAULT_HOME_CONTENT.promise;
-  const footer=content.footer||DEFAULT_HOME_CONTENT.footer;
-
-  return <div className="homeV2" dir="rtl">
-    <header className="homeHeader"><div className="homeHeaderInner">
-      <BrandMark brand={content.brand}/>
-      <nav className={menuOpen?"homeNav open":"homeNav"}>
-        {navigation.map(item=><button key={`${item.url}:${item.label}`} className={item.url==="/"?"active":""} onClick={()=>{navigate(item.url||"/");setMenuOpen(false);}}><Icon name={item.icon||"arrow"} size={23}/><span>{item.label}</span></button>)}
-        {user?.accountType==="teacher"&&<button onClick={()=>{navigate("/teacher");setMenuOpen(false);}}><Icon name="teacher" size={23}/><span>المعلم</span></button>}
-      </nav>
-      <div className="homeAccountArea">
-        {child&&<div className="homeScore"><Icon name="star" size={22}/><b>{child.points||0}</b><span>نقطة</span></div>}
-        <button className="homeAccount" onClick={openAccount}><Icon name={user?"user":"login"} size={22}/><span>{accountLabel}</span></button>
-        {user&&<button className="homeLogout" onClick={logout} aria-label="تسجيل الخروج"><Icon name="logout" size={20}/></button>}
-        <button className="homeMenu" onClick={()=>setMenuOpen(v=>!v)} aria-label="فتح القائمة"><Icon name={menuOpen?"close":"menu"} size={24}/></button>
-      </div>
-    </div></header>
-
-    <main>
-      <section className="homeHeroWrap"><div className="homeHero">
-        <div className="homeHeroCopy">
-          <span className="homeEyebrow"><Icon name="sparkle" size={18}/>{hero.eyebrow}</span>
-          <h1><HeroTitle title={hero.title} highlight={hero.highlight}/></h1>
-          <p>{hero.description}</p>
-          <div className="homeHeroActions">
-            <button className="homePrimary" onClick={()=>navigate(user?(user.accountType==="teacher"?"/teacher":"/child"):"/login")}><span>{user?"ابدأ رحلتك":hero.primaryLabel}</span><Icon name="arrow" size={19}/></button>
-            <button className="homeGhost" onClick={()=>navigate(hero.secondaryRoute||"/quran")}><Icon name="quran" size={20}/><span>{hero.secondaryLabel}</span></button>
-          </div>
-          {child&&<div className="homeChildStrip"><span className="homeChildAvatar"><Icon name="user" size={24}/></span><div><small>المستوى الحالي</small><b>{child.display_name}</b></div><div className="homeChildMetric"><strong>{child.stars||0}</strong><span>نجمة</span></div><div className="homeChildMetric"><strong>{child.streak||0}</strong><span>يوم متواصل</span></div></div>}
-        </div>
-        <div className="homeHeroVisual" role="img" aria-label="أطفال يتعلمون القرآن"/>
-      </div></section>
-
-      <section className="homeSections">
-        <div className="homeSectionHeading"><span>{heading.eyebrow}</span><h2>{heading.title}</h2><p>{heading.description}</p></div>
-        <div className="homeCardGrid">{sections.map(item=><button key={`${item.route}:${item.title}`} className={`homeFeatureCard ${item.tone||""}`} onClick={()=>navigate(item.route)}><span className="homeFeatureIcon"><Icon name={item.icon||"arrow"} size={42}/></span><span className="homeFeatureText"><b>{item.title}</b><small>{item.subtitle}</small></span><span className="homeFeatureArrow"><Icon name="arrow" size={18}/></span></button>)}</div>
-      </section>
-
-      <section className="homePromise"><div className="homePromiseIcon"><Icon name="quran" size={34}/></div><div><span>{promise.eyebrow}</span><h3>{promise.title}</h3><p>{promise.description}</p></div><button onClick={()=>navigate(promise.route||"/quran")}>{promise.buttonLabel}<Icon name="arrow" size={18}/></button></section>
-    </main>
-
-    <footer className="homeFooter"><div><BrandMark brand={content.brand}/><p>{footer.description}</p></div><small>{content.brand?.title||"أبو العزايم"} {content.brand?.subtitle||"للحفظ الممتع"}</small></footer>
-  </div>;
+  const [user,setUser]=useState(undefined),[child,setChild]=useState(null),[menuOpen,setMenuOpen]=useState(false),[content,setContent]=useState({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV});
+  useEffect(()=>{let alive=true;(async()=>{const [current,editorial]=await Promise.all([getCurrentUser().catch(()=>null),loadHomeContent("ar").catch(()=>({...DEFAULT_HOME_CONTENT,navigation:DEFAULT_MAIN_NAV}))]);if(!alive)return;setContent(editorial);setUser(current);if(!current||current.accountType==="teacher")return;const kids=await listChildren(current).catch(()=>[]);if(!alive)return;const activeId=getActiveChildId();const selected=kids.find(k=>k.id===activeId)||kids[0]||null;if(selected&&selected.id!==activeId)setActiveChildId(selected.id);setChild(selected);})();return()=>{alive=false;};},[]);
+  const accountLabel=useMemo(()=>!user?"تسجيل الدخول":user.accountType==="teacher"?"لوحة المعلم":"حساب الأسرة",[user]);
+  async function logout(){await signOut();setUser(null);setChild(null);} function openAccount(){if(!user)return navigate("/login");navigate(user.accountType==="teacher"?"/teacher":"/family");}
+  const navigation=content.navigation||DEFAULT_MAIN_NAV,hero=content.hero||DEFAULT_HOME_CONTENT.hero,sections=content.sections||DEFAULT_HOME_CONTENT.sections,heading=content.sectionsHeading||DEFAULT_HOME_CONTENT.sectionsHeading,promise=content.promise||DEFAULT_HOME_CONTENT.promise,footer=content.footer||DEFAULT_HOME_CONTENT.footer;
+  return <div className="homeV2" dir="rtl"><header className="homeHeader"><div className="homeHeaderInner"><BrandMark brand={content.brand}/><nav className={menuOpen?"homeNav open":"homeNav"}>{navigation.map(item=><button key={`${item.url}:${item.label}`} className={item.url==="/"?"active":""} onClick={()=>{navigate(item.url||"/");setMenuOpen(false);}}><Icon name={item.icon||"arrow"} size={23}/><span>{item.label}</span></button>)}{user?.accountType==="teacher"&&<button onClick={()=>{navigate("/teacher");setMenuOpen(false);}}><Icon name="teacher" size={23}/><span>المعلم</span></button>}</nav><div className="homeAccountArea">{child&&<div className="homeScore"><Icon name="star" size={22}/><b>{child.points||0}</b><span>نقطة</span></div>}<button className="homeAccount" onClick={openAccount}><Icon name={user?"user":"login"} size={22}/><span>{accountLabel}</span></button>{user&&<button className="homeLogout" onClick={logout} aria-label="تسجيل الخروج"><Icon name="logout" size={20}/></button>}<button className="homeMenu" onClick={()=>setMenuOpen(v=>!v)} aria-label="فتح القائمة"><Icon name={menuOpen?"close":"menu"} size={24}/></button></div></div></header>
+  <main><section className="homeHeroWrap"><div className="homeHero"><div className="homeHeroCopy"><span className="homeEyebrow"><Icon name="sparkle" size={18}/>{hero.eyebrow}</span><h1><HeroTitle title={hero.title} highlight={hero.highlight}/></h1><p>{hero.description}</p><div className="homeHeroActions"><button className="homePrimary" onClick={()=>navigate(user?(user.accountType==="teacher"?"/teacher":"/child"):"/login")}><span>{user?"ابدأ رحلتك":hero.primaryLabel}</span><Icon name="arrow" size={19}/></button><button className="homeGhost" onClick={()=>navigate(hero.secondaryRoute||"/quran")}><Icon name="quran" size={20}/><span>{hero.secondaryLabel}</span></button></div>{child&&<div className="homeChildStrip"><span className="homeChildAvatar"><Icon name="user" size={24}/></span><div><small>بطل الرحلة</small><b>{child.display_name}</b></div><div className="homeChildMetric"><strong>{child.stars||0}</strong><span>نجمة</span></div><div className="homeChildMetric"><strong>{child.streak||0}</strong><span>يوم متواصل</span></div></div>}</div><div className="homeHeroVisual"><KidsHeroScene/></div></div></section>
+  <section className="homeSections"><div className="homeSectionHeading"><span>{heading.eyebrow}</span><h2>{heading.title}</h2><p>{heading.description}</p></div><div className="homeCardGrid">{sections.map(item=><button key={`${item.route}:${item.title}`} className={`homeFeatureCard ${item.tone||""}`} onClick={()=>navigate(item.route)}><span className="homeFeatureSpark" aria-hidden="true"/><span className="homeFeatureIcon"><Icon name={item.icon||"arrow"} size={42}/></span><span className="homeFeatureText"><b>{item.title}</b><small>{item.subtitle}</small></span><span className="homeFeatureArrow"><Icon name="arrow" size={18}/></span></button>)}</div></section>
+  <section className="homePromise"><div className="homePromiseIcon"><Icon name="quran" size={34}/></div><div><span>{promise.eyebrow}</span><h3>{promise.title}</h3><p>{promise.description}</p></div><button onClick={()=>navigate(promise.route||"/quran")}>{promise.buttonLabel}<Icon name="arrow" size={18}/></button></section></main>
+  <footer className="homeFooter"><div><BrandMark brand={content.brand}/><p>{footer.description}</p></div><small>{content.brand?.title||"أبو العزايم"} {content.brand?.subtitle||"للحفظ الممتع"}</small></footer></div>;
 }
