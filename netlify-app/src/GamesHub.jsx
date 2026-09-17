@@ -17,6 +17,10 @@ const quranWorld=[
   {id:"ayah-burger",icon:"order",title:"مطبخ الآيات",subtitle:"صانع البرجر",description:"ابنِ الآية من أجزاء مرتبة كطبقات فوق بعضها.",route:"/games/burger",tone:"rose"},
   {id:"knowledge-bridge",icon:"target",title:"وادي المعرفة",subtitle:"جسر المعرفة",description:"كل إجابة صحيحة تبني لوحًا جديدًا حتى تعبر الجسر.",route:"/games/bridge",tone:"sky"},
   {id:"flip-cards",icon:"memory",title:"قاعة البطاقات",subtitle:"البطاقات المقلوبة",description:"طابق بداية الآية بنهايتها الصحيحة من نفس السورة.",route:"/games/flip-cards",tone:"mint"},
+  {id:"guess-surah",icon:"search",title:"مختبر السور",subtitle:"خمّن السورة",description:"اقرأ آية حقيقية وحدد السورة التي تنتمي إليها.",route:"/games/guess-surah",tone:"lavender"},
+  {id:"word-hunter",icon:"target",title:"ساحة الصيد",subtitle:"صائد الكلمات",description:"التقط الكلمة الصحيحة التي تكمل الآية قبل باقي الخيارات.",route:"/games/word-hunter",tone:"sun"},
+  {id:"ayah-matching",icon:"review",title:"لوحة الربط",subtitle:"مطابقة الآيات",description:"صل بداية الآية بنهايتها الصحيحة من QuranData.",route:"/games/ayah-matching",tone:"sky"},
+  {id:"surah-cards",icon:"order",title:"ممر السور",subtitle:"البطاقات العشوائية",description:"رتّب مجموعة متتالية من السور في ترتيب المصحف الصحيح.",route:"/games/surah-cards",tone:"mint"},
 ];
 
 const classicGames=[
