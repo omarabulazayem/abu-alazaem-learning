@@ -1,8 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { claimReward, dayKey } from "./api.js";
 import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
+import Icon from "./Icon.jsx";
 
-const symbols = ["🌙", "📖", "⭐", "🕌", "🤲", "💚"];
+const symbols = [
+  { name: "quran", label: "مصحف" },
+  { name: "star", label: "نجمة" },
+  { name: "mosque", label: "مسجد" },
+  { name: "gift", label: "هدية" },
+  { name: "target", label: "هدف" },
+  { name: "trophy", label: "كأس" },
+];
 
 function routePath() {
   return typeof window.__ABU_ROUTE_PATH__ === "function" ? window.__ABU_ROUTE_PATH__() : window.location.pathname;
@@ -16,7 +24,7 @@ function navigate(path) {
 
 function shuffledDeck() {
   return [...symbols, ...symbols]
-    .map((symbol, index) => ({ id: `${symbol}-${index}-${Math.random()}`, symbol, sort: Math.random() }))
+    .map((symbol, index) => ({ id: `${symbol.name}-${index}-${Math.random()}`, symbol, sort: Math.random() }))
     .sort((a, b) => a.sort - b.sort)
     .map(({ id, symbol }) => ({ id, symbol }));
 }
@@ -51,7 +59,7 @@ export default function MemoryGame() {
   useEffect(() => {
     if (open.length !== 2) return;
     const [first, second] = open;
-    const same = deck[first]?.symbol === deck[second]?.symbol;
+    const same = deck[first]?.symbol.name === deck[second]?.symbol.name;
     const timer = window.setTimeout(() => {
       if (same) setMatched(prev => [...new Set([...prev, first, second])]);
       setOpen([]);
@@ -111,11 +119,11 @@ export default function MemoryGame() {
   const child = viewer?.child || null;
 
   return (
-    <div className="app game-shell" dir="rtl">
-      <header><div className="wrap nav"><button className="brand" onClick={() => navigate("/games")}><span className="logo">ع</span><span><b>لعبة الذاكرة</b><small>{teacherPreview ? "معاينة المعلم" : "طابق البطاقات"}</small></span></button><div className="actions">{teacherPreview ? <span className="reward-chip">👨‍🏫 معاينة بلا نقاط</span> : <span className="reward-chip">⭐ {child?.stars || 0}</span>}<button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button></div></div></header>
+    <div className="app game-shell game-shell-v2" dir="rtl">
+      <header className="game-topbar"><div className="wrap nav"><button className="brand" onClick={() => navigate("/games")}><span className="logo"><Icon name="brain" size={24} /></span><span><b>لعبة الذاكرة</b><small>{teacherPreview ? "معاينة المعلم" : "طابق البطاقات"}</small></span></button><div className="actions">{teacherPreview ? <span className="reward-chip"><Icon name="teacher" size={17} /> معاينة بلا نقاط</span> : <span className="reward-chip"><Icon name="star" size={17} /> {child?.stars || 0}</span>}<button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button></div></div></header>
 
       <main className="wrap page narrow game-page">
-        <div className="game-title-block"><span>🧠 تركيز وذاكرة</span><h1>اكتشف الأزواج المتشابهة</h1><p>{teacherPreview ? "جرّب اللعبة بالكامل كما يراها الطالب. هذه الجولة لن تسجل أي مكافأة." : child ? `افتح بطاقتين في كل مرة يا ${child.display_name}. حاول إنهاء اللوحة بأقل عدد من المحاولات.` : "اختر طفلًا من حساب الأسرة أولًا."}</p></div>
+        <div className="game-title-block"><span><Icon name="brain" size={18} /> تركيز وذاكرة</span><h1>اكتشف الأزواج المتشابهة</h1><p>{teacherPreview ? "جرّب اللعبة بالكامل كما يراها الطالب. هذه الجولة لن تسجل أي مكافأة." : child ? `افتح بطاقتين في كل مرة يا ${child.display_name}. حاول إنهاء اللوحة بأقل عدد من المحاولات.` : "اختر طفلًا من حساب الأسرة أولًا."}</p></div>
 
         {error && <div className="msg error">{error}</div>}
         {message && <div className="msg ok">{message}</div>}
@@ -127,10 +135,10 @@ export default function MemoryGame() {
             {deck.map((card, index) => {
               const visible = open.includes(index) || matched.includes(index);
               const done = matched.includes(index);
-              return <button key={card.id} type="button" className={`memory-card ${visible ? "visible" : ""} ${done ? "matched" : ""}`} aria-label={visible ? `بطاقة ${card.symbol}` : "بطاقة مخفية"} onClick={() => flip(index)} disabled={!learningActorReady(viewer) || done || busy}><span>{visible ? card.symbol : "؟"}</span></button>;
+              return <button key={card.id} type="button" className={`memory-card ${visible ? "visible" : ""} ${done ? "matched" : ""}`} aria-label={visible ? `بطاقة ${card.symbol.label}` : "بطاقة مخفية"} onClick={() => flip(index)} disabled={!learningActorReady(viewer) || done || busy}><span>{visible ? <Icon name={card.symbol.name} size={34} /> : <span className="card-back-mark">ع</span>}</span></button>;
             })}
           </div>
-          {complete && <div className="celebration"><span>🎉</span><b>ذاكرة ممتازة!</b><small>{busy ? "جارٍ تسجيل المكافأة..." : teacherPreview ? `أنهيت المعاينة في ${moves} محاولة.` : `أنهيت اللعبة في ${moves} محاولة.`}</small></div>}
+          {complete && <div className="celebration"><span className="celebration-icon"><Icon name="trophy" size={46} /></span><b>ذاكرة ممتازة</b><small>{busy ? "جارٍ تسجيل المكافأة..." : teacherPreview ? `أنهيت المعاينة في ${moves} محاولة.` : `أنهيت اللعبة في ${moves} محاولة.`}</small></div>}
           <div className="row" style={{ justifyContent: "center", marginTop: 20 }}><button className="secondary" onClick={() => navigate("/games")}>كل الألعاب</button><button className="primary" onClick={reset}>لعبة جديدة</button></div>
         </section>
       </main>
