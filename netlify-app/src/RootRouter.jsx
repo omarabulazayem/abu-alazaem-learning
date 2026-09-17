@@ -15,6 +15,7 @@ import { QuranWheelGame, AyahOrderGame, CompleteAyahGame, QuickMemoryGame } from
 import QuranPage from "./QuranPage.jsx";
 import MemorizePage from "./MemorizePage.jsx";
 import TeacherPortal from "./TeacherPortal.jsx";
+import TeacherGameReports from "./TeacherGameReports.jsx";
 import TeacherAccessBar from "./TeacherAccessBar.jsx";
 import TeacherLearningPreview from "./TeacherLearningPreview.jsx";
 import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
@@ -30,8 +31,10 @@ function useChildMode(){const [active,setActive]=useState(()=>isChildModeActive(
 function useAccountType(){const [role,setRole]=useState(undefined);useEffect(()=>{let alive=true;const sync=async()=>{try{const user=await getCurrentUser();if(alive)setRole(user?.accountType||null);}catch{if(alive)setRole(null);}};sync();window.addEventListener("abu-auth",sync);return()=>{alive=false;window.removeEventListener("abu-auth",sync);};},[]);return role;}
 
 export default function RootRouter(){
-  const path=usePath();const childMode=useChildMode();const accountType=useAccountType();const teacher=accountType==="teacher";const isTeacherRoute=path==="/teacher"||path.startsWith("/teacher/");const teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
+  const path=usePath();const childMode=useChildMode();const accountType=useAccountType();const teacher=accountType==="teacher";const teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
   useEffect(()=>{if(teacherRestricted)navigate("/teacher",true);},[teacherRestricted]);
+  if(path==="/teacher/game-reports"){const report=<TeacherGameReports/>;return teacher?<TeacherAccessBar>{report}</TeacherAccessBar>:report;}
+  const isTeacherRoute=path==="/teacher"||path.startsWith("/teacher/");
   if(isTeacherRoute||teacherRestricted){const portal=<TeacherPortal/>;return teacher?<TeacherAccessBar>{portal}</TeacherAccessBar>:portal;}
   if(!teacher&&path==="/child")return <ChildHub/>;
   if(!teacher&&childMode&&!isChildSafeRoute(path))return <ChildHub/>;
