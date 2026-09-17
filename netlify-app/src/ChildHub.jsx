@@ -1,78 +1,43 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { getActiveChildId,getCurrentUser,listChildren,listRewardsToday,setActiveChildId,signIn } from "./api.js";
+import React,{useEffect,useMemo,useState} from "react";
+import {getActiveChildId,getCurrentUser,listChildren,listRewardsToday,setActiveChildId,signIn} from "./api.js";
 import Icon from "./Icon.jsx";
+import {AppShell,Button,Card,CHILD_NAV,Hero,Section,go} from "./ui-v4.jsx";
 
 export const CHILD_MODE_KEY="abu-alazaem-child-mode";
-function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
-function navigate(path){if(routePath()!==path){history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}}
 export function enterChildMode(){localStorage.setItem(CHILD_MODE_KEY,"1");window.dispatchEvent(new Event("abu-child-mode"));}
 export function exitChildMode(){localStorage.removeItem(CHILD_MODE_KEY);window.dispatchEvent(new Event("abu-child-mode"));}
 export function isChildModeActive(){return localStorage.getItem(CHILD_MODE_KEY)==="1";}
 
-const primaryWorlds=[
-  {icon:"quran",title:"نحفظ",description:"آيات صغيرة خطوة خطوة",path:"/memorize",tone:"memorize",companion:"star"},
-  {icon:"game",title:"نلعب",description:"مغامرات قصيرة ومكافآت",path:"/games",tone:"play",companion:"gift"},
-  {icon:"review",title:"نراجع",description:"نفتكر اللي حفظناه سوا",path:"/review",tone:"review",companion:"sparkle"},
+const worlds=[
+  {path:"/memorize",title:"نحفظ",text:"خطوات قصيرة تناسبني",icon:"quran",tone:"sky"},
+  {path:"/games",title:"نلعب",text:"مغامرات وألعاب تعليمية",icon:"game",tone:"lavender"},
+  {path:"/review",title:"نراجع",text:"نثبت اللي حفظناه سوا",icon:"review",tone:"mint"},
 ];
-const smallWorlds=[
-  {icon:"trophy",title:"جوائزي",path:"/achievements",tone:"rewards"},
-  {icon:"target",title:"مهمتي",path:"/challenges",tone:"mission"},
-  {icon:"room",title:"غرفتي",path:"/room",tone:"room"},
+const more=[
+  {path:"/achievements",title:"جوائزي",text:"نجومي وميدالياتي",icon:"trophy",tone:"gold"},
+  {path:"/challenges",title:"مهمتي",text:"مهمات اليوم",icon:"target",tone:"pink"},
+  {path:"/room",title:"غرفتي",text:"ملخص رحلتي",icon:"room",tone:"sky"},
 ];
-
-function WorldArt({world}){return <span className={`child-world-art ${world.tone}`} aria-hidden="true"><span className="world-main-icon"><Icon name={world.icon} size={50}/></span><span className="world-companion"><Icon name={world.companion} size={20}/></span></span>;}
 
 export default function ChildHub(){
-  const [user,setUser]=useState(undefined),[child,setChild]=useState(null),[todayRewards,setTodayRewards]=useState([]),[password,setPassword]=useState(""),[showExit,setShowExit]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
-
-  useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{
-    const current=await getCurrentUser();if(!alive)return;
-    if(!current){exitChildMode();navigate("/login");return;}
-    if(current.accountType==="teacher"){exitChildMode();navigate("/teacher");return;}
-    setUser(current);const kids=await listChildren(current);if(!alive)return;
-    const activeId=getActiveChildId();const selected=kids.find(k=>k.id===activeId)||kids[0]||null;
-    if(selected&&selected.id!==activeId)setActiveChildId(selected.id);setChild(selected);
-    if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}
-    const rewards=await listRewardsToday(selected.id);if(alive)setTodayRewards(rewards||[]);
-  }catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
-
-  const gameEvents=useMemo(()=>{const keys=new Set();for(const reward of todayRewards){if(reward.source_type==="game_session")keys.add(reward.source_key||`game-${keys.size}`);else if(["memory_game","surah_order_game","surah_quiz_game"].includes(reward.source_type))keys.add(reward.source_type);}return keys;},[todayRewards]);
-  const gameProgress=Math.min(3,gameEvents.size);
-
-  async function verifyParent(e){e.preventDefault();if(!user?.email)return;setBusy(true);setError("");try{const verified=await signIn(user.email,password);if(verified.accountType!=="parent"&&verified.accountType!=="admin")throw new Error("هذا الحساب ليس حساب ولي أمر.");exitChildMode();setPassword("");navigate("/family");}catch{setError("كلمة المرور غير صحيحة. لا يمكن الخروج من وضع الطفل.");}finally{setBusy(false);}}
-
+  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [rewards,setRewards]=useState([]);const [showExit,setShowExit]=useState(false);const [password,setPassword]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+  useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current){exitChildMode();return go("/login");}if(current.accountType==="teacher"){exitChildMode();return go("/teacher");}setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const today=await listRewardsToday(selected.id);if(alive)setRewards(today||[]);}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
+  const gameCount=useMemo(()=>{const ids=new Set();for(const r of rewards){if(r.source_type==="game_session")ids.add(r.source_key||String(ids.size));else if(["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type))ids.add(r.source_type);}return Math.min(3,ids.size);},[rewards]);
+  async function verifyParent(e){e.preventDefault();if(!user?.email)return;setBusy(true);setError("");try{const verified=await signIn(user.email,password);if(!["parent","admin"].includes(verified.accountType))throw new Error();exitChildMode();setPassword("");go("/family");}catch{setError("كلمة المرور غير صحيحة. لا يمكن الخروج من وضع الطفل.");}finally{setBusy(false);}}
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز عالمك...</p></div>;
-
-  return <div className="app child-dashboard child-world-home" dir="rtl">
-    <header className="child-topbar"><div className="wrap nav">
-      <button className="brand" onClick={()=>navigate("/child")}><span className="logo"><Icon name="mosque" size={24}/></span><span><b>أبو العزايم</b><small>عالمي الصغير</small></span></button>
-      <div className="actions child-rewards"><span className="reward-chip"><Icon name="star" size={16}/>{child?.stars||0}</span><span className="reward-chip"><Icon name="trophy" size={16}/>{child?.points||0}</span><button className="secondary parent-zone-button" onClick={()=>{setShowExit(true);setError("");}}><Icon name="lock" size={17}/><span>ولي الأمر</span></button></div>
-    </div></header>
-
-    <main className="wrap page">
-      <section className="child-world-welcome">
-        <div className="child-guide" aria-hidden="true"><Icon name="child" size={52}/><span className="guide-bubble"><Icon name="sparkle" size={18}/></span></div>
-        <div className="grow"><span>جاهز لمغامرة جديدة؟</span><h1>أهلًا {child?.display_name||"يا بطل"}</h1><p>اختار حاجة واحدة نعملها دلوقتي.</p></div>
-        <div className="child-streak-pill"><Icon name="flame" size={18}/><strong>{child?.streak||0}</strong><span>يوم متواصل</span></div>
-      </section>
-
-      {!showExit&&child&&<>
-        <section className="child-world-section" aria-labelledby="child-main-worlds">
-          <div className="child-world-heading"><div><span>اختيار بسيط</span><h2 id="child-main-worlds">نبدأ بإيه؟</h2></div></div>
-          <div className="child-world-grid">{primaryWorlds.map(world=><button key={world.path} className={`child-world-card ${world.tone}`} onClick={()=>navigate(world.path)}><WorldArt world={world}/><span className="child-world-copy"><b>{world.title}</b><small>{world.path==="/games"&&gameProgress?`${gameProgress}/٣ اليوم • ${world.description}`:world.description}</small></span><span className="child-world-start">يلا <Icon name="arrow" size={17}/></span></button>)}</div>
-        </section>
-
-        <section className="child-small-worlds" aria-labelledby="child-more-worlds">
-          <div className="child-world-heading compact"><div><span>أماكنك</span><h2 id="child-more-worlds">حاجاتي</h2></div></div>
-          <div className="child-small-grid">{smallWorlds.map(item=><button key={item.path} className={`child-small-card ${item.tone}`} onClick={()=>navigate(item.path)}><span className="child-small-icon"><Icon name={item.icon} size={29}/></span><b>{item.title}</b></button>)}</div>
-        </section>
-
-        <button className="child-daily-quest" onClick={()=>navigate("/games")}><span className="daily-game-icon"><Icon name={gameProgress===3?"circleCheck":"rocket"} size={28}/></span><div><small>مغامرة اليوم</small><b>{gameProgress===3?"برافو! خلصت ألعاب اليوم":"نكمل لعبة كمان؟"}</b></div><span className="daily-progress-dots" aria-label={`${gameProgress} من 3 ألعاب`}>{[0,1,2].map(i=><i key={i} className={i<gameProgress?"done":""}/>)}</span></button>
-      </>}
-
-      {error&&<div className="msg error">{error}</div>}
-      {showExit&&<section className="panel authbox child-exit-card"><div className="child-exit-icon"><Icon name="shield" size={40}/></div><h2>منطقة ولي الأمر</h2><p>أدخل كلمة المرور للعودة إلى إدارة الأسرة.</p><form onSubmit={verifyParent}><input type="password" minLength="6" autoFocus autoComplete="current-password" placeholder="كلمة مرور ولي الأمر" value={password} onChange={e=>setPassword(e.target.value)} required/><button className="primary full" disabled={busy}>{busy?"جارٍ التحقق...":"التحقق والخروج"}</button></form><button className="link" onClick={()=>{setShowExit(false);setPassword("");setError("");}}>ارجع لعالمي</button></section>}
-    </main>
-    <footer className="child-world-footer"><div className="wrap">أبو العزايم للحفظ الممتع</div></footer>
-  </div>;
+  const headerActions=<><div className="aa-child-score"><span><Icon name="star" size={17}/>{child?.stars||0}</span><span><Icon name="trophy" size={17}/>{child?.points||0}</span></div><Button kind="secondary" icon="lock" onClick={()=>{setShowExit(true);setError("");}}>ولي الأمر</Button></>;
+  return <AppShell mode="child" subtitle="عالمي الصغير" nav={CHILD_NAV} actions={headerActions} footer="أبو العزايم • خطوة صغيرة كل مرة.">
+    <Hero eyebrow="جاهز لمغامرة جديدة؟" title={`أهلًا ${child?.display_name||"يا بطل"}`} description="اختار حاجة واحدة نعملها دلوقتي، والباقي موجود لما تحب." icon="sparkle" tone="pink" aside={<div className="aa-child-score"><span><Icon name="flame" size={18}/>{child?.streak||0} يوم</span></div>}/>
+    {error&&<div className="msg error">{error}</div>}
+    {!showExit&&child&&<>
+      <Section eyebrow="الاختيارات الأساسية" title="هنعمل إيه دلوقتي؟" description="ثلاثة اختيارات كبيرة وواضحة بدون زحمة.">
+        <div className="aa-world-grid">{worlds.map(w=><Card key={w.path} className="aa-world-card" icon={w.icon} title={w.title} text={w.path==="/games"&&gameCount?`${gameCount}/٣ ألعاب اليوم • ${w.text}`:w.text} tone={w.tone} action="يلا" onClick={()=>go(w.path)}/>)}</div>
+      </Section>
+      <Section eyebrow="حاجاتي" title="أماكن تانية">
+        <div className="aa-mini-grid">{more.map(item=><Card key={item.path} icon={item.icon} title={item.title} text={item.text} tone={item.tone} onClick={()=>go(item.path)}/>)}</div>
+        <button className="aa-daily" onClick={()=>go("/games")}><span><Icon name={gameCount===3?"circleCheck":"rocket"} size={28}/></span><span className="aa-daily-copy"><small>مغامرة اليوم</small><b>{gameCount===3?"برافو! خلصت ألعاب اليوم":"نكمل لعبة كمان؟"}</b></span><span className="aa-dots">{[0,1,2].map(i=><i key={i} className={i<gameCount?"is-done":""}/>)}</span></button>
+      </Section>
+    </>}
+    {showExit&&<Section eyebrow="للكبار فقط" title="منطقة ولي الأمر" description="أدخل كلمة المرور للعودة إلى حساب الأسرة."><div className="aa-learning-card" style={{maxWidth:520,margin:"0 auto"}}><form className="aa-form" onSubmit={verifyParent}><label>كلمة مرور ولي الأمر<input type="password" minLength="6" autoFocus autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><Button type="submit" disabled={busy} className="full">{busy?"جارٍ التحقق...":"التحقق والخروج"}</Button><Button kind="ghost" onClick={()=>{setShowExit(false);setPassword("");setError("");}}>ارجع لعالمي</Button></form></div></Section>}
+  </AppShell>;
 }
