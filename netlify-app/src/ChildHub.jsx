@@ -17,17 +17,17 @@ function navigate(path) {
 }
 
 export function enterChildMode() {
-  sessionStorage.setItem(CHILD_MODE_KEY, "1");
+  localStorage.setItem(CHILD_MODE_KEY, "1");
   window.dispatchEvent(new Event("abu-child-mode"));
 }
 
 export function exitChildMode() {
-  sessionStorage.removeItem(CHILD_MODE_KEY);
+  localStorage.removeItem(CHILD_MODE_KEY);
   window.dispatchEvent(new Event("abu-child-mode"));
 }
 
 export function isChildModeActive() {
-  return sessionStorage.getItem(CHILD_MODE_KEY) === "1";
+  return localStorage.getItem(CHILD_MODE_KEY) === "1";
 }
 
 export default function ChildHub() {
@@ -58,8 +58,8 @@ export default function ChildHub() {
         setUser(current);
         const kids = await listChildren(current);
         if (!alive) return;
-        let activeId = getActiveChildId();
-        let selected = kids.find(k => k.id === activeId) || kids[0] || null;
+        const activeId = getActiveChildId();
+        const selected = kids.find(k => k.id === activeId) || kids[0] || null;
         if (selected && selected.id !== activeId) setActiveChildId(selected.id);
         setChild(selected);
         if (!selected) setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");
@@ -83,7 +83,7 @@ export default function ChildHub() {
       exitChildMode();
       setPassword("");
       navigate("/family");
-    } catch (e) {
+    } catch {
       setError("كلمة المرور غير صحيحة. لا يمكن الخروج من وضع الطفل.");
     } finally {
       setBusy(false);
