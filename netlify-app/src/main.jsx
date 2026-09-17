@@ -2,7 +2,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import RootRouter from "./RootRouter.jsx";
 import SiteCredits from "./SiteCredits.jsx";
-import { installRealChildArt } from "./RealChildArt.jsx";
 import "./styles.css";
 import "./ui-enhancements.css";
 import "./memory-game.css";
@@ -23,21 +22,26 @@ import "./new-quran-game-pack.css";
 import "./adaptive-games.css";
 import "./tafsir-world.css";
 import "./login-page.css";
-import "./visual-cleanup.css";
-import "./kids-light-ui.css";
-import "./child-worlds.css";
-import "./illustrated-child-world.css";
-import "./real-child-art-fix.css";
-import "./site-design.css";
+import "./design-system.css";
 
-const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");const basePath=configuredBase==="/"?"":configuredBase;
-const publicAssetBase=import.meta.env.BASE_URL||"/";
-document.documentElement.style.setProperty("--child-hero-art",`url("${publicAssetBase}assets/hero-kids.webp")`);
-document.documentElement.style.setProperty("--child-world-bg",`url("${publicAssetBase}assets/child-world-bg.webp")`);
-document.documentElement.style.setProperty("--child-card-art",`url("${publicAssetBase}assets/world-card-art.webp")`);
-window.__ABU_ROUTE_PATH__=()=>{const pathname=window.location.pathname||"/";if(!basePath)return pathname;if(pathname===basePath||pathname===`${basePath}/`)return "/";if(pathname.startsWith(`${basePath}/`))return pathname.slice(basePath.length)||"/";return pathname;};
-const withBase=url=>{if(!basePath||typeof url!=="string"||!url.startsWith("/")||url===basePath||url.startsWith(`${basePath}/`))return url;return `${basePath}${url}`;};
+const configuredBase=(import.meta.env.BASE_URL||"/").replace(/\/$/,"");
+const basePath=configuredBase==="/"?"":configuredBase;
+window.__ABU_ASSET_BASE__=import.meta.env.BASE_URL||"/";
+window.__ABU_ROUTE_PATH__=()=>{
+  const pathname=window.location.pathname||"/";
+  if(!basePath)return pathname;
+  if(pathname===basePath||pathname===`${basePath}/`)return "/";
+  if(pathname.startsWith(`${basePath}/`))return pathname.slice(basePath.length)||"/";
+  return pathname;
+};
+const withBase=url=>{
+  if(!basePath||typeof url!=="string"||!url.startsWith("/")||url===basePath||url.startsWith(`${basePath}/`))return url;
+  return `${basePath}${url}`;
+};
 const nativePushState=window.history.pushState.bind(window.history),nativeReplaceState=window.history.replaceState.bind(window.history);
-window.history.pushState=(state,unused,url)=>nativePushState(state,unused,withBase(url));window.history.replaceState=(state,unused,url)=>nativeReplaceState(state,unused,withBase(url));
-createRoot(document.getElementById("root")).render(<React.StrictMode><RootRouter/><SiteCredits/></React.StrictMode>);
-installRealChildArt();
+window.history.pushState=(state,unused,url)=>nativePushState(state,unused,withBase(url));
+window.history.replaceState=(state,unused,url)=>nativeReplaceState(state,unused,withBase(url));
+
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode><RootRouter/><SiteCredits/></React.StrictMode>
+);
