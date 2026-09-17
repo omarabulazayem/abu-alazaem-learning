@@ -31,6 +31,19 @@ test("known unimplemented concepts remain planned", () => {
   }
 });
 
+test("expansion games with incomplete replay/session loops stay planned", () => {
+  for (const id of ["ayah-hunter", "where-start", "what-next", "memory-race", "surah-treasure", "similarity-boxes", "similarity-mirror", "where-mentioned", "word-box"]) {
+    assert.equal(gameDefinition(id)?.status, "planned", `${id} must stay hidden until its full loop is verified`);
+  }
+});
+
+test("verified expansion games remain available", () => {
+  for (const id of ["build-ayah", "missing-word-adventure"]) {
+    assert.equal(gameDefinition(id)?.status, "implemented");
+    assert.equal(gameDefinition(id)?.engineIntegrated, true);
+  }
+});
+
 test("classic games are migrated to GameEngine", () => {
   for (const id of ["classic-memory", "classic-surah-order", "classic-surah-quiz"]) {
     assert.equal(gameDefinition(id)?.status, "implemented");

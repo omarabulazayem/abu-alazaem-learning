@@ -40,10 +40,14 @@ const CORE_IMPLEMENTED_IDS = new Set([
   "quran-wheel","knowledge-bridge","ayah-burger","word-train","guess-surah","ayah-code","flip-cards",
   "word-hunter","ayah-matching","surah-cards","ayah-order","quick-memory","complete-ayah","surah-exam",
 ]);
+
+// Expansion games are exposed as implemented only after their full replay flow
+// has been verified. The remaining expansion components stay reachable only
+// through development work until their known replay/session issues are fixed.
 const ENGINE_INTEGRATED_IDS = new Set([
   ...CORE_IMPLEMENTED_IDS,
   "classic-memory","classic-surah-order","classic-surah-quiz",
-  "ayah-hunter","where-start","what-next","build-ayah","memory-race","surah-treasure","similarity-boxes","missing-word-adventure",
+  "build-ayah","missing-word-adventure",
 ]);
 
 function normalize(definition, group, status) {
