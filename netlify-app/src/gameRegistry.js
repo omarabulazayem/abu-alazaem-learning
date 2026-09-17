@@ -1,12 +1,7 @@
 // Canonical game metadata registry. Do not create parallel definition lists.
 // UI, routing validation, GameEngine and teacher reports read game metadata from here.
 
-export const GAME_STATUS = Object.freeze({
-  LIVE: "live",
-  PLANNED: "planned",
-  BLOCKED_CONTENT: "blocked_content",
-  DEPRECATED: "deprecated",
-});
+export const GAME_STATUS = Object.freeze({ LIVE: "live", PLANNED: "planned", BLOCKED_CONTENT: "blocked_content", DEPRECATED: "deprecated" });
 
 const registry = [
   {
@@ -671,7 +666,7 @@ const registry = [
       "mastery": true
     }
   },
-  {
+    {
     "id": "ayah-hunter",
     "title": "صائد الآية",
     "description": "التقط الآية الصحيحة من أوراق متحركة قبل أن تختفي.",
@@ -698,14 +693,14 @@ const registry = [
     ],
     "route": "/games/ayah-hunter",
     "scene": "star-forest",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true,
       "mastery": true
     }
   },
-  {
+    {
     "id": "where-start",
     "title": "من أين أبدأ؟",
     "description": "افتح البوابة التي تحمل بداية الآية الصحيحة واصعد البرج.",
@@ -732,13 +727,13 @@ const registry = [
     ],
     "route": "/games/where-start",
     "scene": "lavender-tower",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true
     }
   },
-  {
+    {
     "id": "what-next",
     "title": "ماذا يأتي بعد؟",
     "description": "اختر مسار الآية التالية لتحرك الشخصية على الطريق.",
@@ -764,13 +759,13 @@ const registry = [
     ],
     "route": "/games/what-next",
     "scene": "three-roads",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true
     }
   },
-  {
+    {
     "id": "build-ayah",
     "title": "ابنِ الآية",
     "description": "حرّك قطع الكلمات حتى تبني الآية كاملة.",
@@ -804,7 +799,7 @@ const registry = [
       "mastery": true
     }
   },
-  {
+    {
     "id": "memory-race",
     "title": "سباق الذاكرة",
     "description": "تقدم في طريق متغير كلما استدعيت الآية التالية.",
@@ -823,20 +818,21 @@ const registry = [
       "hard"
     ],
     "supportedQuestionTypes": [
-      "next_ayah"
+      "next_ayah",
+      "missing_word"
     ],
     "requiredData": [
       "ayah_text"
     ],
     "route": "/games/memory-race",
     "scene": "memory-race",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true
     }
   },
-  {
+    {
     "id": "surah-treasure",
     "title": "كنز السورة",
     "description": "افتح محطات خريطة السورة حتى تصل إلى صندوق الكنز.",
@@ -856,7 +852,8 @@ const registry = [
     ],
     "supportedQuestionTypes": [
       "next_ayah",
-      "ayah_beginning"
+      "ayah_beginning",
+      "missing_word"
     ],
     "requiredData": [
       "ayah_text",
@@ -864,14 +861,14 @@ const registry = [
     ],
     "route": "/games/surah-treasure",
     "scene": "treasure-map",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true,
       "mastery": true
     }
   },
-  {
+    {
     "id": "similarity-mirror",
     "title": "مرآة المتشابهات",
     "description": "قارن مقطعين واكتشف الكلمات المختلفة داخل المرآتين.",
@@ -893,17 +890,18 @@ const registry = [
     ],
     "requiredData": [
       "ayah_text",
-      "words"
+      "words",
+      "similarity_database"
     ],
     "route": "/games/similarity-mirror",
     "scene": "mirror-room",
-    "status": "planned",
+    "status": "blocked_content",
     "engineIntegrated": false,
     "rewards": {
       "completion": true
     }
   },
-  {
+    {
     "id": "where-mentioned",
     "title": "أين وردت؟",
     "description": "اربط المقطع بالسورة الصحيحة من السور التي درستها.",
@@ -930,13 +928,13 @@ const registry = [
     ],
     "route": "/games/where-mentioned",
     "scene": "surah-gates",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true
     }
   },
-  {
+    {
     "id": "similarity-boxes",
     "title": "صندوق المتشابهات",
     "description": "اختر صندوقًا وافتح تحديًا قصيرًا متغيرًا.",
@@ -957,17 +955,18 @@ const registry = [
       "next_ayah"
     ],
     "requiredData": [
-      "ayah_text"
+      "ayah_text",
+      "similarity_database"
     ],
     "route": "/games/similarity-boxes",
     "scene": "mystery-boxes",
-    "status": "planned",
+    "status": "blocked_content",
     "engineIntegrated": false,
     "rewards": {
       "completion": true
     }
   },
-  {
+    {
     "id": "missing-word-adventure",
     "title": "كلمة ضائعة",
     "description": "ابحث عن الكلمة المفقودة بين كلمات متحركة.",
@@ -1001,7 +1000,7 @@ const registry = [
       "mastery": true
     }
   },
-  {
+    {
     "id": "word-box",
     "title": "صندوق الكلمات",
     "description": "فتش داخل الصندوق عن كلمة موجودة في الآية.",
@@ -1019,7 +1018,8 @@ const registry = [
       "medium"
     ],
     "supportedQuestionTypes": [
-      "word_recognition"
+      "missing_word",
+      "word_order"
     ],
     "requiredData": [
       "ayah_text",
@@ -1027,8 +1027,8 @@ const registry = [
     ],
     "route": "/games/word-box",
     "scene": "word-box",
-    "status": "planned",
-    "engineIntegrated": false,
+    "status": "live",
+    "engineIntegrated": true,
     "rewards": {
       "completion": true
     }
@@ -1262,14 +1262,8 @@ export const PLANNED_GAME_DEFINITIONS = GAME_REGISTRY.filter(game => game.status
 export const BLOCKED_CONTENT_GAME_DEFINITIONS = GAME_REGISTRY.filter(game => game.status === GAME_STATUS.BLOCKED_CONTENT);
 export const DEPRECATED_GAME_DEFINITIONS = GAME_REGISTRY.filter(game => game.status === GAME_STATUS.DEPRECATED);
 
-export function gameDefinition(id) {
-  return GAME_REGISTRY.find(game => game.id === id) || null;
-}
-
-export function gameByRoute(route) {
-  return GAME_REGISTRY.find(game => game.route === route) || null;
-}
-
+export function gameDefinition(id) { return GAME_REGISTRY.find(game => game.id === id) || null; }
+export function gameByRoute(route) { return GAME_REGISTRY.find(game => game.route === route) || null; }
 export function gamesBy({ category = null, pack = null, status = null, age = null } = {}) {
   return GAME_REGISTRY.filter(game => {
     if (category && game.category !== category) return false;
