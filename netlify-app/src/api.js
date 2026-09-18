@@ -344,6 +344,34 @@ export async function hasChildModePin() {
   return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
 }
 
+export async function getStudentWallet(childId) {
+  if (!childId) return { wallet_balance: 0, lifetime_points: 0 };
+  const rows = await rest(`/student_wallets?student_id=eq.${encodeURIComponent(childId)}&select=student_id,wallet_balance,lifetime_points,updated_at&limit=1`);
+  return rows?.[0] || { student_id: childId, wallet_balance: 0, lifetime_points: 0 };
+}
+
+export async function listStudentWallets() {
+  return rest("/student_wallets?select=student_id,wallet_balance,lifetime_points,updated_at");
+}
+
+export async function listGameStoreItems() {
+  return rest("/game_store_items?active=eq.true&select=game_id,wallet_price,active&order=wallet_price.asc");
+}
+
+export async function listGameUnlocks(childId) {
+  if (!childId) return [];
+  return rest(`/game_unlocks?student_id=eq.${encodeURIComponent(childId)}&select=id,student_id,game_id,unlocked_at,price_paid,ledger_transaction_id&order=unlocked_at.desc`);
+}
+
+export async function purchaseGameUnlock(childId, gameId) {
+  return rpc("purchase_game_unlock", { p_child_id: childId, p_game_id: gameId });
+}
+
+export async function listPointLedger(childId, limit = 50) {
+  if (!childId) return [];
+  return rest(`/point_ledger?student_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${Math.min(100,Math.max(1,Number(limit)||50))}`);
+}
+
 export async function teacherEnrollmentOverview(userId) {
   const [workspace,enrollments,invites] = await Promise.all([
     getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)
