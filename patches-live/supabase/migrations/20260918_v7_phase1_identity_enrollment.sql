@@ -397,7 +397,7 @@ begin
   end if;
 
   insert into public.family_security(parent_user_id, child_mode_pin_hash, updated_at)
-  values(auth.uid(), crypt(trim(p_pin), gen_salt('bf',10)), now())
+  values(auth.uid(), extensions.crypt(trim(p_pin), extensions.gen_salt('bf',10)), now())
   on conflict(parent_user_id) do update
     set child_mode_pin_hash = excluded.child_mode_pin_hash,
         updated_at = now();
@@ -419,7 +419,7 @@ as $$
   select exists(
     select 1 from public.family_security s
     where s.parent_user_id = auth.uid()
-      and s.child_mode_pin_hash = crypt(trim(coalesce(p_pin,'')), s.child_mode_pin_hash)
+      and s.child_mode_pin_hash = extensions.crypt(trim(coalesce(p_pin,'')), s.child_mode_pin_hash)
   );
 $$;
 
