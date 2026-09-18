@@ -266,6 +266,84 @@ export async function joinChildToClass(childId, joinCode) {
   return rpc("link_child_to_class", { p_child_id: childId, p_join_code: joinCode.trim().toUpperCase() });
 }
 
+// V7 identity / enrollment APIs. Legacy class APIs remain below for transition only.
+export async function getTeacherWorkspace(userId) {
+  if (!userId) return null;
+  const rows = await rest(`/teacher_workspaces?owner_teacher_user_id=eq.${encodeURIComponent(userId)}&select=*&limit=1`);
+  return rows?.[0] || null;
+}
+
+export async function getTeacherSettings(workspaceId) {
+  if (!workspaceId) return null;
+  const rows = await rest(`/teacher_settings?workspace_id=eq.${encodeURIComponent(workspaceId)}&select=*&limit=1`);
+  return rows?.[0] || null;
+}
+
+export async function createEnrollmentInvite(parentEmail, sessionRate = 0) {
+  const result = await rpc("create_enrollment_invite", {
+    p_parent_email: String(parentEmail || "").trim().toLowerCase(),
+    p_session_rate: Math.max(0, Number(sessionRate) || 0),
+    p_expires_hours: 168,
+  });
+  return Array.isArray(result) ? result[0] : result;
+}
+
+export function enrollmentInviteUrl(token) {
+  return appUrl(`/family?invite=${encodeURIComponent(token || "")}`);
+}
+
+export async function listTeacherInvites(userId) {
+  if (!userId) return [];
+  return rest(`/enrollment_invites?invited_by=eq.${encodeURIComponent(userId)}&select=id,workspace_id,invited_email,session_rate,status,expires_at,accepted_at,created_at&order=created_at.desc&limit=50`);
+}
+
+export async function listTeacherEnrollments(userId) {
+  if (!userId) return [];
+  const rows = await rest(`/enrollments?teacher_user_id=eq.${encodeURIComponent(userId)}&status=neq.ended&select=*&order=accepted_at.desc.nullslast,created_at.desc`);
+  if (!rows?.length) return [];
+  const childIds = [...new Set(rows.map(r => r.student_id).filter(Boolean))];
+  if (!childIds.length) return rows.map(r => ({ ...r, child: null }));
+  const childFilter = childIds.map(id => `id.eq.${id}`).join(",");
+  const children = await rest(`/child_profiles?or=(${childFilter})&is_active=eq.true&select=*`);
+  const childMap = new Map((children || []).map(child => [child.id, child]));
+  return rows.map(row => ({ ...row, child: childMap.get(row.student_id) || null }));
+}
+
+export async function listParentEnrollments() {
+  const rows = await rest("/enrollments?status=neq.ended&select=*&order=accepted_at.desc.nullslast,created_at.desc");
+  if (!rows?.length) return [];
+  const workspaceIds = [...new Set(rows.map(r => r.workspace_id).filter(Boolean))];
+  let workspaces = [];
+  if (workspaceIds.length) {
+    const filter = workspaceIds.map(id => `id.eq.${id}`).join(",");
+    workspaces = await rest(`/teacher_workspaces?or=(${filter})&select=id,display_name,timezone,status`);
+  }
+  const workspaceMap = new Map((workspaces || []).map(w => [w.id, w]));
+  return rows.map(row => ({ ...row, workspace: workspaceMap.get(row.workspace_id) || null }));
+}
+
+export async function acceptEnrollmentInvite(token, childId) {
+  const result = await rpc("accept_enrollment_invite", {
+    p_invite_token: String(token || "").trim(),
+    p_child_id: childId,
+  });
+  return Array.isArray(result) ? result[0] : result;
+}
+
+export async function setChildModePin(pin) {
+  return rpc("set_child_mode_pin", { p_pin: String(pin || "").trim() });
+}
+
+export async function verifyChildModePin(pin) {
+  const result = await rpc("verify_child_mode_pin", { p_pin: String(pin || "").trim() });
+  return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
+}
+
+export async function hasChildModePin() {
+  const result = await rpc("has_child_mode_pin", {});
+  return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
+}
+
 export async function getProgress(childId) {
   if (!childId) return [];
   return rest(`/learning_progress?child_id=eq.${encodeURIComponent(childId)}&select=*&order=surah_number.asc`);
