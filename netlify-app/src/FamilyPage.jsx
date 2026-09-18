@@ -8,13 +8,18 @@ import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui
 
 function genderLabel(v){return v==="male"?"ولد":v==="female"?"بنت":"غير محدد";}
 function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}).format(Number(v||0));}
+const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
   const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]);
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
   const [pinReady,setPinReady]=useState(false),[pin,setPin]=useState(""),[pin2,setPin2]=useState("");
-  const [inviteToken,setInviteToken]=useState(()=>new URLSearchParams(window.location.search).get("invite")||"");
+  const [inviteToken,setInviteToken]=useState(()=>{
+    const token=new URLSearchParams(window.location.search).get("invite")||localStorage.getItem(PENDING_INVITE_KEY)||"";
+    if(token)localStorage.setItem(PENDING_INVITE_KEY,token);
+    return token;
+  });
   const [inviteChild,setInviteChild]=useState("");
   const [busy,setBusy]=useState(false),[msg,setMsg]=useState(""),[err,setErr]=useState("");
 
@@ -32,7 +37,7 @@ export default function FamilyPage(){
 
   useEffect(()=>{let alive=true;(async()=>{try{
     const current=await getCurrentUser();if(!alive)return;
-    if(!current)return go("/login");
+    if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
     if(current.accountType==="teacher")return go("/teacher");
     setUser(current);
     const [children,links,pinState]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)]);
@@ -73,7 +78,7 @@ export default function FamilyPage(){
     setBusy(true);setErr("");setMsg("");
     try{
       await acceptEnrollmentInvite(inviteToken,inviteChild);
-      setInviteToken("");history.replaceState({},"","/family");
+      setInviteToken("");localStorage.removeItem(PENDING_INVITE_KEY);history.replaceState({},"","/family");
       await load(user);setMsg("تم ربط الطفل بالمعلم بنجاح.");
     }catch(e){setErr(e.message||"تعذر قبول دعوة المعلم.");}finally{setBusy(false);}
   }
