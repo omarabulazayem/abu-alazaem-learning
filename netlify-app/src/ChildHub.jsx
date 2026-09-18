@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from "react";
-import {getActiveChildId,getCurrentUser,getStudentWallet,hasChildModePin,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
+import {getActiveChildId,getCurrentUser,getStudentWallet,hasChildModePin,listChildTaskAssignments,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,CHILD_NAV,Hero,Section,go} from "./ui-v4.jsx";
 
@@ -20,11 +20,11 @@ const more=[
 ];
 
 export default function ChildHub(){
-  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [wallet,setWallet]=useState({wallet_balance:0,lifetime_points:0});const [rewards,setRewards]=useState([]);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [wallet,setWallet]=useState({wallet_balance:0,lifetime_points:0});const [rewards,setRewards]=useState([]);const [tasks,setTasks]=useState([]);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
   useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current){exitChildMode();return go("/login");}if(current.accountType==="teacher"){exitChildMode();return go("/teacher");}
 const pinReady=await hasChildModePin().catch(()=>false);
 if(!pinReady){exitChildMode();return go("/family");}
-setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const [today,walletState]=await Promise.all([listRewardsToday(selected.id),getStudentWallet(selected.id)]);if(alive){setRewards(today||[]);setWallet(walletState||{wallet_balance:0,lifetime_points:0});}}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
+setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const [today,walletState,taskRows]=await Promise.all([listRewardsToday(selected.id),getStudentWallet(selected.id),listChildTaskAssignments(selected.id)]);if(alive){setRewards(today||[]);setWallet(walletState||{wallet_balance:0,lifetime_points:0});setTasks(taskRows||[]);}}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
   const gameCount=useMemo(()=>{const ids=new Set();for(const r of rewards){if(r.source_type==="game_session")ids.add(r.source_key||String(ids.size));else if(["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type))ids.add(r.source_type);}return Math.min(3,ids.size);},[rewards]);
   async function verifyParent(e){e.preventDefault();setBusy(true);setError("");try{const ok=await verifyChildModePin(pin);if(!ok)throw new Error();exitChildMode();setPin("");go("/family");}catch{setError("الرقم السري غير صحيح. لا يمكن الخروج من وضع الطفل.");}finally{setBusy(false);}}
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز عالمك...</p></div>;
@@ -37,7 +37,7 @@ setUser(current);const kids=await listChildren(current);if(!alive)return;const a
         <div className="aa-world-grid">{worlds.map(w=><Card key={w.path} className="aa-world-card" icon={w.icon} title={w.title} text={w.path==="/games"&&gameCount?`${gameCount}/٣ ألعاب اليوم • ${w.text}`:w.text} tone={w.tone} action="يلا" onClick={()=>go(w.path)}/>)}</div>
       </Section>
       <Section eyebrow="حاجاتي" title="أماكن تانية">
-        <div className="aa-mini-grid">{more.map(item=><Card key={item.path} icon={item.icon} title={item.title} text={item.text} tone={item.tone} onClick={()=>go(item.path)}/>)}</div>
+        <div className="aa-mini-grid">{more.map(item=>{const openTasks=tasks.filter(t=>t.status==="assigned"||t.status==="rejected").length;const text=item.path==="/challenges"&&openTasks?openTasks+" مهمة محتاجة شغل":item.text;return <Card key={item.path} icon={item.icon} title={item.title} text={text} tone={item.tone} badge={item.path==="/challenges"&&openTasks?String(openTasks):undefined} onClick={()=>go(item.path)}/>;})}</div>
         <button className="aa-daily" onClick={()=>go("/games")}><span><Icon name={gameCount===3?"circleCheck":"rocket"} size={28}/></span><span className="aa-daily-copy"><small>مغامرة اليوم</small><b>{gameCount===3?"برافو! خلصت ألعاب اليوم":"نكمل لعبة كمان؟"}</b></span><span className="aa-dots">{[0,1,2].map(i=><i key={i} className={i<gameCount?"is-done":""}/>)}</span></button>
       </Section>
     </>}
