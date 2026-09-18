@@ -2,6 +2,8 @@ import React,{useEffect,useState} from "react";
 import LoginPage from "./LoginPage.jsx";
 import HomePage from "./HomePage.jsx";
 import FamilyPage from "./FamilyPage.jsx";
+import NotificationsPage from "./NotificationsPage.jsx";
+import AdminPortal from "./AdminPortal.jsx";
 import LeaderboardPage from "./LeaderboardPage.jsx";
 import ReviewPage from "./ReviewPage.jsx";
 import ChallengesPage from "./ChallengesPage.jsx";
@@ -55,6 +57,8 @@ export default function RootRouter(){
   else if(path==="/")page=<HomePage/>;
   else if(path==="/family")page=<FamilyPage/>;
   else if(path==="/leaderboard")page=<LeaderboardPage/>;
+  else if(path==="/notifications")page=<NotificationsPage/>;
+  else if(path==="/admin"||path.startsWith("/admin/"))page=<AdminPortal/>;
   else if(path==="/quran")page=teacher?<TeacherQuranPreview/>:<QuranPage/>;
   else if(path==="/memorize")page=teacher?<TeacherLearningPreview type="memorize"/>:<MemorizePage/>;
   else if(path==="/review")page=teacher?<TeacherLearningPreview type="review"/>:<ReviewPage/>;
