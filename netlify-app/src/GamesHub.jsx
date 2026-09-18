@@ -109,6 +109,6 @@ export default function GamesHub(){
     {expansionGames.length>0&&<Section eyebrow="مغامرات إضافية" title={childMode?"جرّب حاجة مختلفة":"توسعة الألعاب"}><GameGrid games={expansionGames} {...gridProps}/></Section>}
     {classicGames.length>0&&<Section eyebrow="جولات خفيفة" title={childMode?"للعب السريع":"ألعاب إضافية"}><GameGrid games={classicGames} {...gridProps}/></Section>}
     {!childMode&&!teacher&&<Section eyebrow="الفهم" title="عالم فهم القرآن" description="المحتوى لا يظهر للطفل إلا بعد المراجعة والاعتماد."><Button kind="secondary" icon="quran" onClick={()=>go("/games/tafsir")}>دخول عالم الفهم</Button></Section>}
-    {!teacher&&!storeItems.length&&<Section eyebrow="Store V7" title="الأسعار لم تُفعّل بعد" description="كل الألعاب الحالية تظل متاحة كما هي. عندما تُضاف أسعار server-side تبدأ آلية الشراء الدائم تلقائيًا بدون تغيير GameEngine."/ >}
+    {!teacher&&!storeItems.length&&<Section eyebrow="Store V7" title="الأسعار لم تُفعّل بعد" description="كل الألعاب الحالية تظل متاحة كما هي. عندما تُضاف أسعار server-side تبدأ آلية الشراء الدائم تلقائيًا بدون تغيير GameEngine."/>}
   </AppShell>;
 }
