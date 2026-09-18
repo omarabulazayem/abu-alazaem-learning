@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {
   acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
-  listChildren,listParentEnrollments,setActiveChildId,setChildModePin,signOut,updateChild
+  listChildren,listParentEnrollments,listStudentWallets,setActiveChildId,setChildModePin,signOut,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
@@ -11,7 +11,7 @@ function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}
 const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]);
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]);
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
   const [pinReady,setPinReady]=useState(false),[pin,setPin]=useState(""),[pin2,setPin2]=useState("");
@@ -39,7 +39,7 @@ export default function FamilyPage(){
     const current=await getCurrentUser();if(!alive)return;
     if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
     setUser(current);
-    const [children,links,pinState]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)]);
+    const [children,links,pinState,walletRows]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])]);
     if(!alive)return;
     setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
     const active=getActiveChildId();
@@ -105,7 +105,7 @@ export default function FamilyPage(){
     {activeChild&&<div className="aa-metrics">
       <Metric icon="child" label="الطفل النشط" value={activeChild.display_name} tone="sky"/>
       <Metric icon="users" label="المعلمون المرتبطون" value={activeLinks.length} tone="mint"/>
-      <Metric icon="trophy" label="النقاط الحالية" value={activeChild.points||0} tone="gold"/>
+      <Metric icon="trophy" label="رصيد الألعاب" value={activeWallet.wallet_balance||0} tone="gold"/>
       <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
     </div>}
 
