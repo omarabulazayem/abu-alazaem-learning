@@ -24,6 +24,7 @@ export const TEACHER_MANAGE_NAV_ITEMS = [
   ["تقارير الألعاب", "/teacher/game-reports"],
   ["الدعوات", "/teacher/invites"],
   ["الطلاب", "/teacher/students"],
+  ["المهام", "/teacher/tasks"],
 ];
 
 export const TEACHER_PREVIEW_NAV_ITEMS = [
