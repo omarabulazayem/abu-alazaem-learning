@@ -474,6 +474,18 @@ export async function rescheduleSession(sessionId,newStart,teacherNote="") {
   });
 }
 
+export async function rescheduleSessionLocal(sessionId,localDate,localStartTime,teacherNote="") {
+  const date=String(localDate||"").trim();
+  const time=String(localStartTime||"").trim();
+  if(!date||!time)throw new Error("اختر التاريخ والوقت الجديدين.");
+  return rpc("reschedule_session_local",{
+    p_session_id:sessionId,
+    p_local_date:date,
+    p_local_start_time:time.length===5?time+":00":time,
+    p_teacher_note:String(teacherNote||"").trim()||null,
+  });
+}
+
 export async function waiveSessionCharge(entryId,reason) {
   return rpc("waive_session_charge",{p_billing_entry_id:entryId,p_reason:String(reason||"").trim()});
 }
