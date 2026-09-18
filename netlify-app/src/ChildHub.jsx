@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from "react";
-import {getActiveChildId,getCurrentUser,getStudentWallet,hasChildModePin,listChildTaskAssignments,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
+import {getActiveChildId,getCurrentUser,getStudentWallet,hasChildModePin,listChildTaskAssignments,listChildren,listParentEnrollments,listRewardsToday,listVisibleSessions,setActiveChildId,verifyChildModePin} from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,CHILD_NAV,Hero,Section,go} from "./ui-v4.jsx";
 
@@ -20,11 +20,11 @@ const more=[
 ];
 
 export default function ChildHub(){
-  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [wallet,setWallet]=useState({wallet_balance:0,lifetime_points:0});const [rewards,setRewards]=useState([]);const [tasks,setTasks]=useState([]);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [wallet,setWallet]=useState({wallet_balance:0,lifetime_points:0});const [rewards,setRewards]=useState([]);const [tasks,setTasks]=useState([]);const [nextLesson,setNextLesson]=useState(null);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
   useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current){exitChildMode();return go("/login");}if(current.accountType==="teacher"){exitChildMode();return go("/teacher");}
 const pinReady=await hasChildModePin().catch(()=>false);
 if(!pinReady){exitChildMode();return go("/family");}
-setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const [today,walletState,taskRows]=await Promise.all([listRewardsToday(selected.id),getStudentWallet(selected.id),listChildTaskAssignments(selected.id)]);if(alive){setRewards(today||[]);setWallet(walletState||{wallet_balance:0,lifetime_points:0});setTasks(taskRows||[]);}}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
+setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const to=new Date(Date.now()+60*86400000);const [today,walletState,taskRows,links,sessionRows]=await Promise.all([listRewardsToday(selected.id),getStudentWallet(selected.id),listChildTaskAssignments(selected.id),listParentEnrollments(),listVisibleSessions({from:new Date(),to})]);const childLinks=(links||[]).filter(e=>e.student_id===selected.id);const ids=new Set(childLinks.map(e=>e.id));const upcoming=(sessionRows||[]).filter(s=>ids.has(s.enrollment_id)&&s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date()).sort((a,b)=>new Date(a.scheduled_start_utc)-new Date(b.scheduled_start_utc));const lesson=upcoming[0]||null;const lessonLink=lesson?childLinks.find(e=>e.id===lesson.enrollment_id):null;if(alive){setRewards(today||[]);setWallet(walletState||{wallet_balance:0,lifetime_points:0});setTasks(taskRows||[]);setNextLesson(lesson?{...lesson,teacherName:lessonLink?.workspace?.display_name||"المعلم",timezone:lessonLink?.workspace?.timezone||""}:null);}}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
   const gameCount=useMemo(()=>{const ids=new Set();for(const r of rewards){if(r.source_type==="game_session")ids.add(r.source_key||String(ids.size));else if(["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type))ids.add(r.source_type);}return Math.min(3,ids.size);},[rewards]);
   async function verifyParent(e){e.preventDefault();setBusy(true);setError("");try{const ok=await verifyChildModePin(pin);if(!ok)throw new Error();exitChildMode();setPin("");go("/family");}catch{setError("الرقم السري غير صحيح. لا يمكن الخروج من وضع الطفل.");}finally{setBusy(false);}}
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز عالمك...</p></div>;
@@ -33,6 +33,9 @@ setUser(current);const kids=await listChildren(current);if(!alive)return;const a
     <Hero eyebrow="جاهز لمغامرة جديدة؟" title={`أهلًا ${child?.display_name||"يا بطل"}`} description="اختار حاجة واحدة نعملها دلوقتي، والباقي موجود لما تحب." icon="sparkle" tone="pink" aside={<div className="aa-child-score"><span><Icon name="flame" size={18}/>{child?.streak||0} يوم</span><span><Icon name="trophy" size={18}/>{wallet?.lifetime_points||0} إجمالي</span></div>}/>
     {error&&<div className="msg error">{error}</div>}
     {!showExit&&child&&<>
+      {nextLesson&&<Section eyebrow="الحصة القادمة" title="موعدك الجاي">
+        <Card icon="clock" title={new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(nextLesson.scheduled_start_utc))} text={(nextLesson.teacherName||"المعلم")+(nextLesson.timezone?" • توقيت المعلم "+nextLesson.timezone:"")} tone="sky" badge="قادمة"/>
+      </Section>}
       <Section eyebrow="الاختيارات الأساسية" title="هنعمل إيه دلوقتي؟" description="ثلاثة اختيارات كبيرة وواضحة بدون زحمة.">
         <div className="aa-world-grid">{worlds.map(w=><Card key={w.path} className="aa-world-card" icon={w.icon} title={w.title} text={w.path==="/games"&&gameCount?`${gameCount}/٣ ألعاب اليوم • ${w.text}`:w.text} tone={w.tone} action="يلا" onClick={()=>go(w.path)}/>)}</div>
       </Section>

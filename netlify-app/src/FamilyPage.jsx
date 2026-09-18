@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {
   acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
-  listChildTaskAssignments,listChildren,listParentEnrollments,listStudentWallets,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
+  listChildTaskAssignments,listChildren,listParentEnrollments,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
@@ -11,10 +11,12 @@ function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}
 function taskTypeLabel(v){return ({NEW_MEMORIZATION:"حفظ جديد",REVIEW:"مراجعة",RECITATION:"تسميع",BEHAVIOR:"سلوك"}[v]||v||"مهمة");}
 function taskStatusLabel(v){return ({assigned:"مطلوبة",pending_teacher_approval:"بانتظار المعلم",approved:"معتمدة",rejected:"تحتاج إعادة"}[v]||v||"");}
 function formatDate(value){if(!value)return "—";try{return new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}catch{return value;}}
+function sessionStatusLabel(v){return ({SCHEDULED:"مجدولة",COMPLETED:"مكتملة",STUDENT_NO_SHOW:"غياب الطالب",TEACHER_NO_SHOW:"غياب المعلم",EARLY_CANCELLATION:"إلغاء مبكر",LATE_CANCELLATION:"إلغاء متأخر",RESCHEDULED:"أعيدت جدولتها",CANCELLED:"ملغاة"}[v]||v||"");}
+function billingStatusLabel(v){return ({DUE:"مستحق",PAID:"مدفوع",WAIVED:"معفى"}[v]||v||"");}
 const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[tasks,setTasks]=useState([]);
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[tasks,setTasks]=useState([]),[sessions,setSessions]=useState([]),[billing,setBilling]=useState([]);
   const [taskNotes,setTaskNotes]=useState({});
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
@@ -29,10 +31,12 @@ export default function FamilyPage(){
 
   async function load(current=user){
     if(!current)return;
-    const [children,links,pinState,walletRows]=await Promise.all([
-      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])
+    const from=new Date(Date.now()-30*86400000),to=new Date(Date.now()+90*86400000);
+    const [children,links,pinState,walletRows,sessionRows,billingRows]=await Promise.all([
+      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[]),
+      listVisibleSessions({from,to}).catch(()=>[]),listSessionBillingEntries().catch(()=>[])
     ]);
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);setSessions(sessionRows||[]);setBilling(billingRows||[]);
     const active=getActiveChildId();
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
@@ -44,9 +48,13 @@ export default function FamilyPage(){
     const current=await getCurrentUser();if(!alive)return;
     if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
     setUser(current);
-    const [children,links,pinState,walletRows]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])]);
+    const from=new Date(Date.now()-30*86400000),to=new Date(Date.now()+90*86400000);
+    const [children,links,pinState,walletRows,sessionRows,billingRows]=await Promise.all([
+      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[]),
+      listVisibleSessions({from,to}).catch(()=>[]),listSessionBillingEntries().catch(()=>[])
+    ]);
     if(!alive)return;
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);setSessions(sessionRows||[]);setBilling(billingRows||[]);
     const active=getActiveChildId();
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
@@ -103,6 +111,11 @@ export default function FamilyPage(){
   const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
   const activeLinks=enrollments.filter(e=>e.student_id===activeChild?.id);
   const activeWallet=wallets.find(w=>w.student_id===activeChild?.id)||{wallet_balance:0,lifetime_points:0};
+  const activeEnrollmentIds=new Set(activeLinks.map(e=>e.id));
+  const childSessions=sessions.filter(s=>activeEnrollmentIds.has(s.enrollment_id));
+  const upcomingSessions=childSessions.filter(s=>s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date()).slice(0,5);
+  const childBilling=billing.filter(b=>activeEnrollmentIds.has(b.enrollment_id));
+  const dueTotal=childBilling.filter(b=>b.status==="DUE").reduce((sum,b)=>sum+Number(b.amount||0),0);
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
 
   return <AppShell mode="family" subtitle="حساب الأسرة" nav={FAMILY_NAV}
@@ -125,6 +138,15 @@ export default function FamilyPage(){
       <Metric icon="trophy" label="رصيد الألعاب" value={activeWallet.wallet_balance||0} tone="gold"/>
       <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
     </div>}
+
+    <Section eyebrow="الجدول" title="الحصص القادمة" description="المواعيد تُدار حسب توقيت المعلم وتظهر هنا كتوقيت فعلي للحصة.">
+      {upcomingSessions.length?<div className="aa-table-list">{upcomingSessions.map(row=>{
+        const link=enrollments.find(e=>e.id===row.enrollment_id);
+        return <article className="aa-table-row" key={row.id}>
+          <span><Icon name="clock" size={21}/></span><div><b>{formatDate(row.scheduled_start_utc)}</b><small>{link?.workspace?.display_name||"المعلم"} • {sessionStatusLabel(row.status)} • Teacher TZ: {link?.workspace?.timezone||"—"}</small></div><strong>{money(link?.session_rate||0)}</strong>
+        </article>;
+      })}</div>:<Empty icon="clock" title="لا توجد حصص قادمة لهذا الطفل"/>}
+    </Section>
 
     <Section eyebrow="متابعة التعلم" title="مهام المعلم" description="ولي الأمر يرسل الإنجاز، والمعلم هو من يراجع ويعتمد النقاط.">
       {activeChild?(tasks.length?<div className="aa-person-list">{tasks.map(row=><article className="aa-person-card" key={row.id}>
@@ -173,6 +195,20 @@ export default function FamilyPage(){
           </form>:<div style={{display:"flex",gap:8,flexWrap:"wrap"}}><Button kind={active===child.id?"soft":"secondary"} onClick={()=>{setActiveChildId(child.id);setInviteChild(child.id);listChildTaskAssignments(child.id).then(setTasks).catch(()=>setTasks([]));}}>{active===child.id?"الطفل النشط":"اختيار"}</Button><Button kind="ghost" onClick={()=>beginEdit(child)}>تعديل</Button></div>}
         </article>)}</div>:<Empty icon="child" title="لا يوجد أطفال بعد"/>}</section>
       </div>
+    </Section>
+
+    <Section eyebrow="Tuition CRM" title="كشف الاستحقاقات" description="الدفع يتم خارج المنصة. هنا فقط نتابع ما أصبح مستحقًا أو مدفوعًا أو تم إعفاؤه.">
+      <div className="aa-metrics" style={{marginBottom:18}}>
+        <Metric icon="clock" label="إجمالي المستحق" value={money(dueTotal)} tone="gold"/>
+        <Metric icon="list" label="عدد القيود" value={childBilling.length} tone="sky"/>
+      </div>
+      {childBilling.length?<div className="aa-table-list">{childBilling.map(entry=>{
+        const session=childSessions.find(s=>s.id===entry.session_id);
+        const link=enrollments.find(e=>e.id===entry.enrollment_id);
+        return <article className="aa-table-row" key={entry.id}>
+          <span><Icon name="chart" size={21}/></span><div><b>{money(entry.amount)} — {billingStatusLabel(entry.status)}</b><small>{link?.workspace?.display_name||"المعلم"} • {session?formatDate(session.scheduled_start_utc):"حصة"} • {sessionStatusLabel(entry.auto_charge_reason)}</small>{entry.override_reason&&<small>سبب الإعفاء: {entry.override_reason}</small>}</div><strong>{entry.status}</strong>
+        </article>;
+      })}</div>:<Empty icon="chart" title="لا توجد استحقاقات لهذا الطفل بعد"/>}
     </Section>
 
     <Section eyebrow="Enrollment" title="المعلمون المرتبطون" description="كل معلم له علاقة تعليمية مستقلة وسعر حصة مستقل، بينما ملف الطفل يظل ملك الأسرة.">
