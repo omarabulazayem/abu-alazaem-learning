@@ -22,7 +22,7 @@ export function canTeacherPreview(user) {
 export const TEACHER_MANAGE_NAV_ITEMS = [
   ["لوحة المعلم", "/teacher"],
   ["تقارير الألعاب", "/teacher/game-reports"],
-  ["الفصول", "/teacher/classes"],
+  ["الدعوات", "/teacher/invites"],
   ["الطلاب", "/teacher/students"],
 ];
 

@@ -27,7 +27,7 @@ export const FAMILY_NAV=[
 
 export const TEACHER_NAV=[
   {path:"/teacher",label:"نظرة عامة",icon:"teacher"},
-  {path:"/teacher/classes",label:"الفصول",icon:"books"},
+  {path:"/teacher/invites",label:"الدعوات",icon:"mail"},
   {path:"/teacher/students",label:"الطلاب",icon:"users"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
 ];

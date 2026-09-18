@@ -21,6 +21,7 @@ export default function Icon({ name, size = 28, className = "", title }) {
     board: <><rect {...common} x="3" y="4" width="18" height="13" rx="2"/><path {...common} d="M8 21h8M12 17v4M7 8h4M7 12h7"/></>,
     room: <><path {...common} d="m3 11 9-7 9 7"/><path {...common} d="M5 10v10h14V10"/><path {...common} d="M9 20v-6h6v6"/></>,
     gift: <><rect {...common} x="3" y="9" width="18" height="11" rx="2"/><path {...common} d="M12 9v11M3 13h18M12 9H8.2A2.2 2.2 0 1 1 10 5.5c1 1.1 2 3.5 2 3.5ZM12 9h3.8A2.2 2.2 0 1 0 14 5.5c-1 1.1-2 3.5-2 3.5Z"/></>,
+    mail: <><rect {...common} x="3" y="5" width="18" height="14" rx="2"/><path {...common} d="m4 7 8 6 8-6"/></>,
     user: <><circle {...common} cx="12" cy="8" r="4"/><path {...common} d="M4.5 21a7.5 7.5 0 0 1 15 0"/></>,
     child: <><circle {...common} cx="12" cy="9" r="4"/><path {...common} d="M5 21a7 7 0 0 1 14 0"/><path {...common} d="M8.5 5.5C9 3.8 10.3 3 12 3s3 .8 3.5 2.5"/></>,
     users: <><circle {...common} cx="9" cy="8" r="3"/><path {...common} d="M3 19a6 6 0 0 1 12 0"/><circle {...common} cx="17" cy="9" r="2.5"/><path {...common} d="M15 15.5a5 5 0 0 1 6 3.5"/></>,

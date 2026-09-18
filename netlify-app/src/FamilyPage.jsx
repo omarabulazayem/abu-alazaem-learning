@@ -1,30 +1,149 @@
 import React,{useEffect,useState} from "react";
-import {createChild,getActiveChildId,getCurrentUser,joinChildToClass,listChildren,setActiveChildId,signOut,updateChild} from "./api.js";
+import {
+  acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
+  listChildren,listParentEnrollments,setActiveChildId,setChildModePin,signOut,updateChild
+} from "./api.js";
 import Icon from "./Icon.jsx";
-import {AppShell,Button,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
+import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
 
 function genderLabel(v){return v==="male"?"ولد":v==="female"?"بنت":"غير محدد";}
+function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}).format(Number(v||0));}
+const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[name,setName]=useState(""),[age,setAge]=useState("7-9"),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified"),[codes,setCodes]=useState({}),[editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(""),[err,setErr]=useState("");
-  async function load(current=user){if(!current)return;const rows=await listChildren(current);setKids(rows||[]);const active=getActiveChildId();if(rows.length&&!rows.some(x=>x.id===active))setActiveChildId(rows[0].id);}
-  useEffect(()=>{let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current)return go("/login");setUser(current);const rows=await listChildren(current);if(!alive)return;setKids(rows||[]);const active=getActiveChildId();if(rows.length&&!rows.some(x=>x.id===active))setActiveChildId(rows[0].id);}catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}})();return()=>{alive=false;};},[]);
-  async function addChild(e){e.preventDefault();if(!user)return;setBusy(true);setErr("");setMsg("");try{const child=await createChild(user,{displayName:name.trim(),ageBand:age,ageYears:Number(ageYears),gender,avatar:null,customization:{}});setName("");if(child?.id)setActiveChildId(child.id);await load(user);setMsg("تمت إضافة الطفل.");}catch(e){setErr(e.message||"تعذر إضافة الطفل.");}finally{setBusy(false);}}
-  function beginEdit(child){setEditingId(child.id);setEditForm({displayName:child.display_name||"",ageBand:child.age_band||"7-9",ageYears:child.age_years||8,gender:child.gender||"unspecified",avatar:child.avatar||null,customization:child.customization||{}});setErr("");setMsg("");}
-  async function saveEdit(e){e.preventDefault();if(!editingId||!editForm)return;setBusy(true);setErr("");setMsg("");try{await updateChild(editingId,{...editForm,ageYears:Number(editForm.ageYears)});setEditingId(null);setEditForm(null);await load(user);setMsg("تم تحديث بيانات الطفل.");}catch(e){setErr(e.message||"تعذر تحديث بيانات الطفل.");}finally{setBusy(false);}}
-  async function join(childId){const code=(codes[childId]||"").trim();if(!code)return;setBusy(true);setErr("");setMsg("");try{await joinChildToClass(childId,code);setCodes(v=>({...v,[childId]:""}));setMsg("تم ربط الطفل بالفصل.");}catch(e){setErr(e.message||"تعذر ربط الطفل بالفصل.");}finally{setBusy(false);}}
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]);
+  const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
+  const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
+  const [pinReady,setPinReady]=useState(false),[pin,setPin]=useState(""),[pin2,setPin2]=useState("");
+  const [inviteToken,setInviteToken]=useState(()=>{
+    const token=new URLSearchParams(window.location.search).get("invite")||localStorage.getItem(PENDING_INVITE_KEY)||"";
+    if(token)localStorage.setItem(PENDING_INVITE_KEY,token);
+    return token;
+  });
+  const [inviteChild,setInviteChild]=useState("");
+  const [busy,setBusy]=useState(false),[msg,setMsg]=useState(""),[err,setErr]=useState("");
+
+  async function load(current=user){
+    if(!current)return;
+    const [children,links,pinState]=await Promise.all([
+      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)
+    ]);
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
+    const active=getActiveChildId();
+    const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
+    if(selected&&selected.id!==active)setActiveChildId(selected.id);
+    if(selected&&!inviteChild)setInviteChild(selected.id);
+  }
+
+  useEffect(()=>{let alive=true;(async()=>{try{
+    const current=await getCurrentUser();if(!alive)return;
+    if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
+    setUser(current);
+    const [children,links,pinState]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)]);
+    if(!alive)return;
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
+    const active=getActiveChildId();
+    const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
+    if(selected&&selected.id!==active)setActiveChildId(selected.id);
+    if(selected)setInviteChild(selected.id);
+  }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}})();return()=>{alive=false;};},[]);
+
+  async function addChild(e){e.preventDefault();if(!user)return;setBusy(true);setErr("");setMsg("");
+    try{
+      const years=Number(ageYears);const ageBand=years<=6?"3-6":years<=9?"7-9":"10-12";
+      const child=await createChild(user,{displayName:name.trim(),ageBand,ageYears:years,gender,avatar:null,customization:{}});
+      setName("");if(child?.id){setActiveChildId(child.id);setInviteChild(child.id);}await load(user);setMsg("تمت إضافة الطفل.");
+    }catch(e){setErr(e.message||"تعذر إضافة الطفل.");}finally{setBusy(false);}
+  }
+
+  function beginEdit(child){setEditingId(child.id);setEditForm({
+    displayName:child.display_name||"",ageBand:child.age_band||"7-9",ageYears:child.age_years||8,
+    gender:child.gender||"unspecified",avatar:child.avatar||null,customization:child.customization||{}
+  });}
+
+  async function saveEdit(e){e.preventDefault();setBusy(true);setErr("");setMsg("");
+    try{await updateChild(editingId,{...editForm,ageYears:Number(editForm.ageYears)});setEditingId(null);setEditForm(null);await load(user);setMsg("تم تحديث بيانات الطفل.");}
+    catch(e){setErr(e.message||"تعذر تحديث بيانات الطفل.");}finally{setBusy(false);}
+  }
+
+  async function savePin(e){e.preventDefault();setErr("");setMsg("");
+    if(!/^[0-9]{4}$/.test(pin)){setErr("الرقم السري يجب أن يكون 4 أرقام.");return;}
+    if(pin!==pin2){setErr("تأكيد الرقم السري غير مطابق.");return;}
+    setBusy(true);try{await setChildModePin(pin);setPin("");setPin2("");setPinReady(true);setMsg("تم حفظ الرقم السري لوضع الطفل.");}
+    catch(e){setErr(e.message||"تعذر حفظ الرقم السري.");}finally{setBusy(false);}
+  }
+
+  async function acceptInvite(e){e.preventDefault();if(!inviteToken||!inviteChild)return;
+    setBusy(true);setErr("");setMsg("");
+    try{
+      await acceptEnrollmentInvite(inviteToken,inviteChild);
+      setInviteToken("");localStorage.removeItem(PENDING_INVITE_KEY);history.replaceState({},"","/family");
+      await load(user);setMsg("تم ربط الطفل بالمعلم بنجاح.");
+    }catch(e){setErr(e.message||"تعذر قبول دعوة المعلم.");}finally{setBusy(false);}
+  }
+
   async function logout(){await signOut();go("/");}
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
-  const active=getActiveChildId();const activeChild=kids.find(k=>k.id===active)||kids[0]||null;
-  return <AppShell mode="family" subtitle="حساب الأسرة" nav={FAMILY_NAV} actions={<><Button kind="secondary" icon="child" onClick={()=>go("/child")} disabled={!activeChild}>وضع الطفل</Button><Button kind="ghost" icon="logout" onClick={logout}>خروج</Button></>} footer="أبو العزايم • الأسرة تتابع بدون ما تزاحم تجربة الطفل.">
-    <Hero eyebrow="حساب الأسرة" title={`أهلًا ${user?.name||"بك"}`} description="أضف الأطفال، اختار الطفل النشط، اربطه بفصل، وادخل إلى تجربته من مكان واحد." icon="family" tone="sky"/>
+
+  const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
+  const activeLinks=useMemo(()=>enrollments.filter(e=>e.student_id===activeChild?.id),[enrollments,activeChild?.id]);
+
+  return <AppShell mode="family" subtitle="حساب الأسرة" nav={FAMILY_NAV}
+    actions={<><Button kind="secondary" icon="child" onClick={()=>go("/child")} disabled={!activeChild||!pinReady}>وضع الطفل</Button><Button kind="ghost" icon="logout" onClick={logout}>خروج</Button></>}
+    footer="أبو العزايم • ولي الأمر يملك ملف الطفل والمعلم يرتبط به عبر Enrollment.">
+    <Hero eyebrow="حساب الأسرة" title={`أهلًا ${user?.name||"بك"}`}
+      description="ملف الطفل ملك للأسرة. اربطه بأكثر من معلم من خلال دعوات آمنة، وادخل وضع الطفل برقم سري مستقل." icon="family" tone="sky"/>
     {err&&<div className="msg error">{err}</div>}{msg&&<div className="msg ok">{msg}</div>}
-    {activeChild&&<div className="aa-metrics"><Metric icon="child" label="الطفل النشط" value={activeChild.display_name} tone="sky"/><Metric icon="trophy" label="نقاطه" value={activeChild.points||0} tone="gold"/><Metric icon="star" label="نجومه" value={activeChild.stars||0} tone="lavender"/><Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/></div>}
+
+    {inviteToken&&<Section eyebrow="دعوة معلم" title="اختر الطفل الذي سيدرس مع هذا المعلم" description="الدعوة لا تنشئ ملف طفل جديد؛ تضيف Enrollment للملف الذي تختاره.">
+      <form className="aa-learning-card aa-form" onSubmit={acceptInvite} style={{maxWidth:620}}>
+        {kids.length?<label>الطفل<select value={inviteChild} onChange={e=>setInviteChild(e.target.value)} required>{kids.map(k=><option key={k.id} value={k.id}>{k.display_name}</option>)}</select></label>:<Empty icon="child" title="أضف طفلًا أولًا" text="بعد إضافة الطفل ارجع إلى نفس رابط الدعوة."/>}
+        <Button type="submit" disabled={busy||!kids.length}>قبول الدعوة وربط الطفل</Button>
+      </form>
+    </Section>}
+
+    {activeChild&&<div className="aa-metrics">
+      <Metric icon="child" label="الطفل النشط" value={activeChild.display_name} tone="sky"/>
+      <Metric icon="users" label="المعلمون المرتبطون" value={activeLinks.length} tone="mint"/>
+      <Metric icon="trophy" label="النقاط الحالية" value={activeChild.points||0} tone="gold"/>
+      <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
+    </div>}
+
+    <Section eyebrow="الأمان" title="الرقم السري لوضع الطفل" description={pinReady?"تم إعداد PIN. يمكنك تغييره متى شئت.":"عيّن 4 أرقام أولًا؛ لن نسمح بدخول وضع الطفل قبل وجود PIN للخروج الآمن."}>
+      <form className="aa-learning-card aa-form" onSubmit={savePin} style={{maxWidth:620}}>
+        <label>PIN من 4 أرقام<input type="password" inputMode="numeric" pattern="[0-9]{4}" maxLength="4" value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,"").slice(0,4))} required/></label>
+        <label>تأكيد PIN<input type="password" inputMode="numeric" pattern="[0-9]{4}" maxLength="4" value={pin2} onChange={e=>setPin2(e.target.value.replace(/\D/g,"").slice(0,4))} required/></label>
+        <Button type="submit" disabled={busy}>{pinReady?"تغيير الرقم السري":"حفظ الرقم السري"}</Button>
+      </form>
+    </Section>
+
     <Section eyebrow="إدارة الأسرة" title="الأطفال">
       <div className="aa-dashboard-grid">
-        <aside className="aa-form-card"><h3 style={{marginTop:0}}>إضافة طفل</h3><p style={{color:"var(--aa-muted)",fontSize:12,lineHeight:1.7}}>ملف مستقل لكل طفل، من غير صور افتراضية أو زحمة إعدادات.</p><form className="aa-form" onSubmit={addChild}><label>اسم الطفل<input value={name} onChange={e=>setName(e.target.value)} required maxLength="60"/></label><label>العمر<input type="number" min="3" max="18" value={ageYears} onChange={e=>setAgeYears(e.target.value)} required/></label><label>الفئة العمرية<select value={age} onChange={e=>setAge(e.target.value)}><option value="3-6">٣–٦ سنوات</option><option value="7-9">٧–٩ سنوات</option><option value="10-12">١٠–١٢ سنة</option></select></label><label>الجنس<select value={gender} onChange={e=>setGender(e.target.value)}><option value="unspecified">غير محدد</option><option value="male">ولد</option><option value="female">بنت</option></select></label><Button type="submit" className="full" icon="plus" disabled={busy}>{busy?"جارٍ الإضافة...":"إضافة الطفل"}</Button></form></aside>
-        <div>{kids.length?<div className="aa-person-list">{kids.map(child=>{const selected=child.id===active,editing=editingId===child.id;return <article className="aa-person-card" key={child.id}><button className="aa-person-head" style={{border:0,background:"transparent",padding:0,textAlign:"right",cursor:"pointer"}} onClick={()=>setActiveChildId(child.id)}><span className="aa-avatar"><Icon name="child" size={28}/></span><div><b>{child.display_name}</b><small>{child.age_years?`${child.age_years} سنوات • `:""}{child.age_band||""} • {genderLabel(child.gender)} {selected?"• الطفل النشط":""}</small></div></button><div className="aa-person-stats"><span><b>{child.points||0}</b>نقطة</span><span><b>{child.stars||0}</b>نجمة</span><span><b>{child.streak||0}</b>يوم</span></div><div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:7}}><input value={codes[child.id]||""} onChange={e=>setCodes(v=>({...v,[child.id]:e.target.value}))} placeholder="كود الفصل"/><Button kind="secondary" disabled={busy} onClick={()=>join(child.id)}>ربط</Button></div><div style={{display:"flex",gap:7,flexWrap:"wrap"}}><Button kind="ghost" onClick={()=>editing?setEditingId(null):beginEdit(child)}>{editing?"إلغاء":"تعديل البيانات"}</Button>{selected&&<Button kind="soft" icon="child" onClick={()=>go("/child")}>دخول عالم الطفل</Button>}</div>{editing&&editForm&&<form className="aa-form" onSubmit={saveEdit}><label>الاسم<input value={editForm.displayName} onChange={e=>setEditForm(v=>({...v,displayName:e.target.value}))} required/></label><div className="aa-selection-grid"><label>العمر<input type="number" min="3" max="18" value={editForm.ageYears} onChange={e=>setEditForm(v=>({...v,ageYears:e.target.value}))}/></label><label>الفئة<select value={editForm.ageBand} onChange={e=>setEditForm(v=>({...v,ageBand:e.target.value}))}><option value="3-6">٣–٦</option><option value="7-9">٧–٩</option><option value="10-12">١٠–١٢</option></select></label></div><label>الجنس<select value={editForm.gender} onChange={e=>setEditForm(v=>({...v,gender:e.target.value}))}><option value="unspecified">غير محدد</option><option value="male">ولد</option><option value="female">بنت</option></select></label><Button type="submit" disabled={busy}>حفظ التعديلات</Button></form>}</article>})}</div>:<Empty icon="child" title="أضف أول طفل" text="بعد الإضافة تقدر تدخل وضع الطفل وتتابع النقاط والنجوم والتقدم."/>}</div>
+        <aside className="aa-form-card"><h3 style={{marginTop:0}}>إضافة طفل</h3>
+          <form className="aa-form" onSubmit={addChild}>
+            <label>اسم الطفل<input value={name} onChange={e=>setName(e.target.value)} required maxLength="60"/></label>
+            <label>العمر<input type="number" min="6" max="12" value={ageYears} onChange={e=>setAgeYears(e.target.value)} required/></label>
+            <label>النوع<select value={gender} onChange={e=>setGender(e.target.value)}><option value="unspecified">غير محدد</option><option value="male">ولد</option><option value="female">بنت</option></select></label>
+            <Button type="submit" disabled={busy}>إضافة الطفل</Button>
+          </form>
+        </aside>
+        <section>{kids.length?<div className="aa-person-list">{kids.map(child=><article className="aa-person-card" key={child.id}>
+          <div className="aa-person-head"><span className="aa-avatar"><Icon name="child" size={27}/></span><div><b>{child.display_name}</b><small>{child.age_years||"—"} سنة • {genderLabel(child.gender)}</small></div></div>
+          {editingId===child.id?<form className="aa-form" onSubmit={saveEdit}>
+            <label>الاسم<input value={editForm.displayName} onChange={e=>setEditForm(v=>({...v,displayName:e.target.value}))} required/></label>
+            <label>العمر<input type="number" min="6" max="12" value={editForm.ageYears} onChange={e=>setEditForm(v=>({...v,ageYears:e.target.value}))}/></label>
+            <div style={{display:"flex",gap:8}}><Button type="submit" disabled={busy}>حفظ</Button><Button kind="ghost" onClick={()=>{setEditingId(null);setEditForm(null);}}>إلغاء</Button></div>
+          </form>:<div style={{display:"flex",gap:8,flexWrap:"wrap"}}><Button kind={active===child.id?"soft":"secondary"} onClick={()=>{setActiveChildId(child.id);setInviteChild(child.id);}}>{active===child.id?"الطفل النشط":"اختيار"}</Button><Button kind="ghost" onClick={()=>beginEdit(child)}>تعديل</Button></div>}
+        </article>)}</div>:<Empty icon="child" title="لا يوجد أطفال بعد"/>}</section>
       </div>
+    </Section>
+
+    <Section eyebrow="Enrollment" title="المعلمون المرتبطون" description="كل معلم له علاقة تعليمية مستقلة وسعر حصة مستقل، بينما ملف الطفل يظل ملك الأسرة.">
+      {enrollments.length?<div className="aa-table-list">{enrollments.map(link=>{
+        const child=kids.find(k=>k.id===link.student_id);return <article className="aa-table-row" key={link.id}>
+          <span><Icon name="teacher" size={21}/></span><div><b>{link.workspace?.display_name||"معلم"}</b><small>{child?.display_name||"الطفل"} • {link.status==="active"?"نشط":link.status} • سعر الحصة {money(link.session_rate)}</small></div><strong>{link.workspace?.timezone||""}</strong>
+        </article>;
+      })}</div>:<Empty icon="users" title="لا توجد علاقات تعليمية بعد" text="عندما يرسل المعلم دعوة إلى بريدك، افتح الرابط واختر الطفل."/>}
     </Section>
   </AppShell>;
 }
