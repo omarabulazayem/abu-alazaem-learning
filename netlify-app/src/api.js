@@ -514,7 +514,9 @@ export async function updateLeaderboardSettings(workspaceId,{privacy,firstReward
 }
 
 export async function listNotifications(limit=100) {
-  return rest("/notifications?select=*&order=created_at.desc&limit="+Math.min(200,Math.max(1,Number(limit)||100)));
+  const userId=getStoredSession()?.user?.id;
+  if(!userId)return [];
+  return rest("/notifications?recipient_user_id=eq."+encodeURIComponent(userId)+"&select=*&order=created_at.desc&limit="+Math.min(200,Math.max(1,Number(limit)||100)));
 }
 
 export async function markNotificationRead(notificationId) {
