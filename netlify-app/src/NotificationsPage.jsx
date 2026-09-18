@@ -41,7 +41,7 @@ export default function NotificationsPage(){
       actions={unread?<Button kind="secondary" onClick={readAll} disabled={busy} icon="circleCheck">تحديد الكل كمقروء</Button>:null}/>
     {error&&<div className="msg error">{error}</div>}
     <Section eyebrow="آخر الأحداث" title="الوارد">
-      {rows.length?<div className="aa-person-list">{rows.map(row=><article className="aa-person-card" key={row.id} style={{opacity:row.read_at?.85:1}}>
+      {rows.length?<div className="aa-person-list">{rows.map(row=><article className="aa-person-card" key={row.id} style={{opacity:row.read_at?0.85:1}}>
         <div className="aa-person-head"><span className="aa-avatar"><Icon name={row.read_at?"mail":"sparkle"} size={23}/></span><div>
           <b>{row.title}</b><small>{TYPE_LABELS[row.event_type]||row.event_type} • {fmt(row.created_at)}</small>
         </div></div>
