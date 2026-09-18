@@ -38,7 +38,6 @@ export default function FamilyPage(){
   useEffect(()=>{let alive=true;(async()=>{try{
     const current=await getCurrentUser();if(!alive)return;
     if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
-    if(current.accountType==="teacher")return go("/teacher");
     setUser(current);
     const [children,links,pinState]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)]);
     if(!alive)return;
