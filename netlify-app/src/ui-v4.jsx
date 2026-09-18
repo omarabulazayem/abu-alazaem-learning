@@ -30,6 +30,8 @@ export const TEACHER_NAV=[
   {path:"/teacher/invites",label:"الدعوات",icon:"mail"},
   {path:"/teacher/students",label:"الطلاب",icon:"users"},
   {path:"/teacher/tasks",label:"المهام",icon:"target"},
+  {path:"/teacher/schedule",label:"الجدول",icon:"clock"},
+  {path:"/teacher/billing",label:"الاستحقاقات",icon:"chart"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
 ];
 
