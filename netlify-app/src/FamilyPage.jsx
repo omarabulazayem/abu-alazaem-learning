@@ -25,10 +25,10 @@ export default function FamilyPage(){
 
   async function load(current=user){
     if(!current)return;
-    const [children,links,pinState]=await Promise.all([
-      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)
+    const [children,links,pinState,walletRows]=await Promise.all([
+      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])
     ]);
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);
     const active=getActiveChildId();
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
@@ -41,7 +41,7 @@ export default function FamilyPage(){
     setUser(current);
     const [children,links,pinState,walletRows]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])]);
     if(!alive)return;
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);
     const active=getActiveChildId();
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
@@ -83,10 +83,10 @@ export default function FamilyPage(){
   }
 
   async function logout(){await signOut();go("/");}
-  if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
-
   const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
-  const activeLinks=useMemo(()=>enrollments.filter(e=>e.student_id===activeChild?.id),[enrollments,activeChild?.id]);
+  const activeLinks=enrollments.filter(e=>e.student_id===activeChild?.id);
+  const activeWallet=wallets.find(w=>w.student_id===activeChild?.id)||{wallet_balance:0,lifetime_points:0};
+  if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
 
   return <AppShell mode="family" subtitle="حساب الأسرة" nav={FAMILY_NAV}
     actions={<><Button kind="secondary" icon="child" onClick={()=>go("/child")} disabled={!activeChild||!pinReady}>وضع الطفل</Button><Button kind="ghost" icon="logout" onClick={logout}>خروج</Button></>}
