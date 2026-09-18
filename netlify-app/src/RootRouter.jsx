@@ -2,6 +2,7 @@ import React,{useEffect,useState} from "react";
 import LoginPage from "./LoginPage.jsx";
 import HomePage from "./HomePage.jsx";
 import FamilyPage from "./FamilyPage.jsx";
+import LeaderboardPage from "./LeaderboardPage.jsx";
 import ReviewPage from "./ReviewPage.jsx";
 import ChallengesPage from "./ChallengesPage.jsx";
 import RoomPage from "./RoomPage.jsx";
@@ -31,7 +32,7 @@ import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
 import {getCurrentUser} from "./api.js";
 import {isTeacherRestrictedRoute} from "./accessPolicy.js";
 
-const childSafeRoutes=new Set(["/child","/quran","/memorize","/review","/games","/achievements","/challenges","/room"]);
+const childSafeRoutes=new Set(["/child","/quran","/memorize","/review","/games","/achievements","/challenges","/room","/leaderboard"]);
 const teacherPreviewPages=new Set(["/quran","/memorize","/review","/achievements","/challenges"]);
 function readPath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path,replace=false){if(readPath()===path)return;if(replace)history.replaceState({},"",path);else history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}
@@ -53,6 +54,7 @@ export default function RootRouter(){
   else if(NewGame){const definition=gameByRoute(path);page=definition?.status==="live"?<NewGame/>:<NotFoundPage/>;}
   else if(path==="/")page=<HomePage/>;
   else if(path==="/family")page=<FamilyPage/>;
+  else if(path==="/leaderboard")page=<LeaderboardPage/>;
   else if(path==="/quran")page=teacher?<TeacherQuranPreview/>:<QuranPage/>;
   else if(path==="/memorize")page=teacher?<TeacherLearningPreview type="memorize"/>:<MemorizePage/>;
   else if(path==="/review")page=teacher?<TeacherLearningPreview type="review"/>:<ReviewPage/>;

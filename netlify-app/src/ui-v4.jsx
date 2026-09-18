@@ -23,6 +23,7 @@ export const FAMILY_NAV=[
   {path:"/family",label:"الأسرة",icon:"family"},
   {path:"/quran",label:"القرآن",icon:"quran"},
   {path:"/achievements",label:"الإنجازات",icon:"trophy"},
+  {path:"/leaderboard",label:"الترتيب",icon:"medal"},
 ];
 
 export const TEACHER_NAV=[
@@ -32,6 +33,7 @@ export const TEACHER_NAV=[
   {path:"/teacher/tasks",label:"المهام",icon:"target"},
   {path:"/teacher/schedule",label:"الجدول",icon:"clock"},
   {path:"/teacher/billing",label:"الاستحقاقات",icon:"chart"},
+  {path:"/teacher/leaderboard",label:"الترتيب",icon:"medal"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
 ];
 

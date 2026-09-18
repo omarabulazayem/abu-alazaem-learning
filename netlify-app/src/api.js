@@ -494,6 +494,25 @@ export async function markSessionChargePaid(entryId) {
   return rpc("mark_session_charge_paid",{p_billing_entry_id:entryId});
 }
 
+export async function getWorkspaceLeaderboard(workspaceId) {
+  if(!workspaceId)return null;
+  return rpc("get_workspace_leaderboard",{p_workspace_id:workspaceId});
+}
+
+export async function updateLeaderboardSettings(workspaceId,{privacy,firstReward,secondReward,thirdReward}) {
+  const rows=await rest("/teacher_settings?workspace_id=eq."+encodeURIComponent(workspaceId),{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({
+      leaderboard_privacy:privacy,
+      first_place_reward:Math.max(0,Number(firstReward)||0),
+      second_place_reward:Math.max(0,Number(secondReward)||0),
+      third_place_reward:Math.max(0,Number(thirdReward)||0),
+    }),
+  });
+  return rows?.[0]||null;
+}
+
 export async function teacherEnrollmentOverview(userId) {
   const [workspace,enrollments,invites] = await Promise.all([
     getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)

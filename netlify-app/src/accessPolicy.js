@@ -27,6 +27,7 @@ export const TEACHER_MANAGE_NAV_ITEMS = [
   ["المهام", "/teacher/tasks"],
   ["الجدول", "/teacher/schedule"],
   ["الاستحقاقات", "/teacher/billing"],
+  ["الترتيب", "/teacher/leaderboard"],
 ];
 
 export const TEACHER_PREVIEW_NAV_ITEMS = [

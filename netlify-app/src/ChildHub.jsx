@@ -17,6 +17,7 @@ const more=[
   {path:"/achievements",title:"جوائزي",text:"نجومي وميدالياتي",icon:"trophy",tone:"gold"},
   {path:"/challenges",title:"مهمتي",text:"مهمات اليوم",icon:"target",tone:"pink"},
   {path:"/room",title:"غرفتي",text:"ملخص رحلتي",icon:"room",tone:"sky"},
+  {path:"/leaderboard",title:"ترتيبي",text:"مسابقة أسبوعية مع طلاب معلمي",icon:"medal",tone:"gold"},
 ];
 
 export default function ChildHub(){

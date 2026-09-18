@@ -5,6 +5,7 @@ import {
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
+import {TeacherLeaderboardPanel} from "./LeaderboardPage.jsx";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Empty,Hero,Metric,ProgressBar,Section,TEACHER_NAV,go,routePath} from "./ui-v4.jsx";
 
@@ -241,6 +242,7 @@ export default function TeacherPortal(){
     else if(path==="/teacher/tasks")page=<Tasks data={data}/>;
     else if(path==="/teacher/schedule")page=<TeacherSchedulePanel data={data}/>;
     else if(path==="/teacher/billing")page=<TeacherBillingPanel data={data}/>;
+    else if(path==="/teacher/leaderboard")page=<TeacherLeaderboardPanel data={data}/>;
     else if(match)page=<StudentDetail user={user} data={data} studentId={match[1]} reloadOverview={reload}/>;
     else page=<Empty icon="target" title="الصفحة غير موجودة" action={<Button onClick={()=>go("/teacher")}>لوحة المعلم</Button>}/>;
   }
