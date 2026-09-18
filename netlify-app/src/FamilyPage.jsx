@@ -1,17 +1,21 @@
 import React,{useEffect,useState} from "react";
 import {
   acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
-  listChildren,listParentEnrollments,listStudentWallets,setActiveChildId,setChildModePin,signOut,updateChild
+  listChildTaskAssignments,listChildren,listParentEnrollments,listStudentWallets,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
 
 function genderLabel(v){return v==="male"?"ولد":v==="female"?"بنت":"غير محدد";}
 function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}).format(Number(v||0));}
+function taskTypeLabel(v){return ({NEW_MEMORIZATION:"حفظ جديد",REVIEW:"مراجعة",RECITATION:"تسميع",BEHAVIOR:"سلوك"}[v]||v||"مهمة");}
+function taskStatusLabel(v){return ({assigned:"مطلوبة",pending_teacher_approval:"بانتظار المعلم",approved:"معتمدة",rejected:"تحتاج إعادة"}[v]||v||"");}
+function formatDate(value){if(!value)return "—";try{return new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}catch{return value;}}
 const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]);
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[tasks,setTasks]=useState([]);
+  const [taskNotes,setTaskNotes]=useState({});
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
   const [pinReady,setPinReady]=useState(false),[pin,setPin]=useState(""),[pin2,setPin2]=useState("");
@@ -33,6 +37,7 @@ export default function FamilyPage(){
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
     if(selected&&!inviteChild)setInviteChild(selected.id);
+    setTasks(selected?await listChildTaskAssignments(selected.id).catch(()=>[]):[]);
   }
 
   useEffect(()=>{let alive=true;(async()=>{try{
@@ -46,6 +51,7 @@ export default function FamilyPage(){
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
     if(selected)setInviteChild(selected.id);
+    setTasks(selected?await listChildTaskAssignments(selected.id).catch(()=>[]):[]);
   }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}})();return()=>{alive=false;};},[]);
 
   async function addChild(e){e.preventDefault();if(!user)return;setBusy(true);setErr("");setMsg("");
@@ -82,6 +88,17 @@ export default function FamilyPage(){
     }catch(e){setErr(e.message||"تعذر قبول دعوة المعلم.");}finally{setBusy(false);}
   }
 
+  async function sendTask(assignmentId){
+    setBusy(true);setErr("");setMsg("");
+    try{
+      await submitTaskAssignment(assignmentId,taskNotes[assignmentId]||"");
+      if(activeChild)setTasks(await listChildTaskAssignments(activeChild.id));
+      setTaskNotes(v=>({...v,[assignmentId]:""}));
+      setMsg("تم إرسال إنجاز المهمة للمعلم للمراجعة. النقاط لن تُضاف قبل اعتماده.");
+    }catch(e){setErr(e.message||"تعذر إرسال المهمة.");}
+    finally{setBusy(false);}
+  }
+
   async function logout(){await signOut();go("/");}
   const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
   const activeLinks=enrollments.filter(e=>e.student_id===activeChild?.id);
@@ -109,6 +126,26 @@ export default function FamilyPage(){
       <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
     </div>}
 
+    <Section eyebrow="متابعة التعلم" title="مهام المعلم" description="ولي الأمر يرسل الإنجاز، والمعلم هو من يراجع ويعتمد النقاط.">
+      {activeChild?(tasks.length?<div className="aa-person-list">{tasks.map(row=><article className="aa-person-card" key={row.id}>
+        <div className="aa-person-head"><span className="aa-avatar"><Icon name={row.status==="approved"?"circleCheck":"target"} size={25}/></span><div>
+          <b>{row.task?.title||"مهمة"}</b>
+          <small>{taskTypeLabel(row.task?.task_type)} • {row.task?.points_reward||0} نقطة بعد اعتماد المعلم • التسليم {formatDate(row.due_at)}</small>
+        </div></div>
+        {row.task?.teacher_note&&<p style={{fontSize:12,margin:"8px 0"}}>ملاحظة المعلم: {row.task.teacher_note}</p>}
+        {row.status==="rejected"&&row.latestSubmission?.rejection_note&&<div className="msg error">سبب الرفض: {row.latestSubmission.rejection_note}</div>}
+        <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+          <strong>{taskStatusLabel(row.status)}</strong>
+          {(row.status==="assigned"||row.status==="rejected")&&<div style={{display:"grid",gap:8,minWidth:260,flex:"1 1 340px"}}>
+            <textarea rows="2" placeholder="ملاحظة اختيارية للمعلم" value={taskNotes[row.id]||""} onChange={e=>setTaskNotes(v=>({...v,[row.id]:e.target.value}))}/>
+            <Button onClick={()=>sendTask(row.id)} disabled={busy} icon="circleCheck">تم الإنجاز — أرسل للمعلم</Button>
+          </div>}
+          {row.status==="pending_teacher_approval"&&<span style={{fontSize:12,color:"var(--aa-muted)"}}>بانتظار قرار المعلم، ولا توجد نقاط مضافة حتى الآن.</span>}
+          {row.status==="approved"&&<span style={{fontSize:12}}>تم اعتماد المهمة وإضافة النقاط.</span>}
+        </div>
+      </article>)}</div>:<Empty icon="target" title="لا توجد مهام لهذا الطفل بعد" text="عندما يرسل المعلم مهمة ستظهر هنا تلقائيًا."/>):<Empty icon="child" title="اختر طفلًا أولًا"/>}
+    </Section>
+
     <Section eyebrow="الأمان" title="الرقم السري لوضع الطفل" description={pinReady?"تم إعداد PIN. يمكنك تغييره متى شئت.":"عيّن 4 أرقام أولًا؛ لن نسمح بدخول وضع الطفل قبل وجود PIN للخروج الآمن."}>
       <form className="aa-learning-card aa-form" onSubmit={savePin} style={{maxWidth:620}}>
         <label>PIN من 4 أرقام<input type="password" inputMode="numeric" pattern="[0-9]{4}" maxLength="4" value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,"").slice(0,4))} required/></label>
@@ -133,7 +170,7 @@ export default function FamilyPage(){
             <label>الاسم<input value={editForm.displayName} onChange={e=>setEditForm(v=>({...v,displayName:e.target.value}))} required/></label>
             <label>العمر<input type="number" min="6" max="12" value={editForm.ageYears} onChange={e=>setEditForm(v=>({...v,ageYears:e.target.value}))}/></label>
             <div style={{display:"flex",gap:8}}><Button type="submit" disabled={busy}>حفظ</Button><Button kind="ghost" onClick={()=>{setEditingId(null);setEditForm(null);}}>إلغاء</Button></div>
-          </form>:<div style={{display:"flex",gap:8,flexWrap:"wrap"}}><Button kind={active===child.id?"soft":"secondary"} onClick={()=>{setActiveChildId(child.id);setInviteChild(child.id);}}>{active===child.id?"الطفل النشط":"اختيار"}</Button><Button kind="ghost" onClick={()=>beginEdit(child)}>تعديل</Button></div>}
+          </form>:<div style={{display:"flex",gap:8,flexWrap:"wrap"}}><Button kind={active===child.id?"soft":"secondary"} onClick={()=>{setActiveChildId(child.id);setInviteChild(child.id);listChildTaskAssignments(child.id).then(setTasks).catch(()=>setTasks([]));}}>{active===child.id?"الطفل النشط":"اختيار"}</Button><Button kind="ghost" onClick={()=>beginEdit(child)}>تعديل</Button></div>}
         </article>)}</div>:<Empty icon="child" title="لا يوجد أطفال بعد"/>}</section>
       </div>
     </Section>

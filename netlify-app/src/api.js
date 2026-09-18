@@ -372,6 +372,50 @@ export async function listPointLedger(childId, limit = 50) {
   return rest(`/point_ledger?student_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${Math.min(100,Math.max(1,Number(limit)||50))}`);
 }
 
+async function hydrateTaskAssignments(assignments = []) {
+  if (!assignments.length) return [];
+  const taskIds=[...new Set(assignments.map(a=>a.task_id).filter(Boolean))];
+  const assignmentIds=[...new Set(assignments.map(a=>a.id).filter(Boolean))];
+  const [tasks,submissions]=await Promise.all([
+    taskIds.length?rest(`/tasks?or=(${taskIds.map(id=>`id.eq.${id}`).join(",")})&select=*`):[],
+    assignmentIds.length?rest(`/task_submissions?or=(${assignmentIds.map(id=>`assignment_id.eq.${id}`).join(",")})&select=*&order=submitted_at.desc`):[],
+  ]);
+  const taskMap=new Map((tasks||[]).map(t=>[t.id,t]));
+  const latestSubmission=new Map();
+  for(const s of submissions||[])if(!latestSubmission.has(s.assignment_id))latestSubmission.set(s.assignment_id,s);
+  return assignments.map(a=>({...a,task:taskMap.get(a.task_id)||null,latestSubmission:latestSubmission.get(a.id)||null}));
+}
+
+export async function listChildTaskAssignments(childId) {
+  if(!childId)return [];
+  const rows=await rest(`/task_assignments?student_id=eq.${encodeURIComponent(childId)}&select=*&order=due_at.asc`);
+  return hydrateTaskAssignments(rows||[]);
+}
+
+export async function listTeacherTaskAssignments() {
+  const rows=await rest("/task_assignments?select=*&order=updated_at.desc");
+  return hydrateTaskAssignments(rows||[]);
+}
+
+export async function createTaskAssignment({enrollmentId,title,type,points,dueAt,teacherNote=""}) {
+  return rpc("create_task_assignment",{
+    p_enrollment_id:enrollmentId,
+    p_title:String(title||"").trim(),
+    p_task_type:type,
+    p_points_reward:Math.max(0,Number(points)||0),
+    p_due_at:new Date(dueAt).toISOString(),
+    p_teacher_note:String(teacherNote||"").trim()||null,
+  });
+}
+
+export async function submitTaskAssignment(assignmentId,parentNote="") {
+  return rpc("submit_task_assignment",{p_assignment_id:assignmentId,p_parent_note:String(parentNote||"").trim()||null});
+}
+
+export async function reviewTaskAssignment(assignmentId,approve,note="") {
+  return rpc("review_task_assignment",{p_assignment_id:assignmentId,p_approve:Boolean(approve),p_note:String(note||"").trim()||null});
+}
+
 export async function teacherEnrollmentOverview(userId) {
   const [workspace,enrollments,invites] = await Promise.all([
     getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)
