@@ -24,6 +24,7 @@ export const FAMILY_NAV=[
   {path:"/quran",label:"القرآن",icon:"quran"},
   {path:"/achievements",label:"الإنجازات",icon:"trophy"},
   {path:"/leaderboard",label:"الترتيب",icon:"medal"},
+  {path:"/notifications",label:"الإشعارات",icon:"mail"},
 ];
 
 export const TEACHER_NAV=[
@@ -34,7 +35,13 @@ export const TEACHER_NAV=[
   {path:"/teacher/schedule",label:"الجدول",icon:"clock"},
   {path:"/teacher/billing",label:"الاستحقاقات",icon:"chart"},
   {path:"/teacher/leaderboard",label:"الترتيب",icon:"medal"},
+  {path:"/notifications",label:"الإشعارات",icon:"mail"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
+];
+
+export const ADMIN_NAV=[
+  {path:"/admin",label:"التشغيل",icon:"shield"},
+  {path:"/notifications",label:"الإشعارات",icon:"mail"},
 ];
 
 export function Brand({subtitle="للحفظ الممتع",onClick=()=>go("/")}){
