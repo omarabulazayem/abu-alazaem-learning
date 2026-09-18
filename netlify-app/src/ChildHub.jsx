@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from "react";
-import {getActiveChildId,getCurrentUser,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
+import {getActiveChildId,getCurrentUser,hasChildModePin,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,CHILD_NAV,Hero,Section,go} from "./ui-v4.jsx";
 
@@ -21,7 +21,10 @@ const more=[
 
 export default function ChildHub(){
   const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [rewards,setRewards]=useState([]);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
-  useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current){exitChildMode();return go("/login");}if(current.accountType==="teacher"){exitChildMode();return go("/teacher");}setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const today=await listRewardsToday(selected.id);if(alive)setRewards(today||[]);}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
+  useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current){exitChildMode();return go("/login");}if(current.accountType==="teacher"){exitChildMode();return go("/teacher");}
+const pinReady=await hasChildModePin().catch(()=>false);
+if(!pinReady){exitChildMode();return go("/family");}
+setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const today=await listRewardsToday(selected.id);if(alive)setRewards(today||[]);}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
   const gameCount=useMemo(()=>{const ids=new Set();for(const r of rewards){if(r.source_type==="game_session")ids.add(r.source_key||String(ids.size));else if(["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type))ids.add(r.source_type);}return Math.min(3,ids.size);},[rewards]);
   async function verifyParent(e){e.preventDefault();setBusy(true);setError("");try{const ok=await verifyChildModePin(pin);if(!ok)throw new Error();exitChildMode();setPin("");go("/family");}catch{setError("الرقم السري غير صحيح. لا يمكن الخروج من وضع الطفل.");}finally{setBusy(false);}}
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز عالمك...</p></div>;
