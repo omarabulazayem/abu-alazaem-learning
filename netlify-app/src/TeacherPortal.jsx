@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
-  claimReward,createEnrollmentInvite,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
-  recordReview,rest,signOut,teacherEnrollmentOverview
+  claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
+  listTeacherTaskAssignments,recordReview,rest,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import Icon from "./Icon.jsx";
@@ -9,6 +9,8 @@ import {AppShell,Button,Empty,Hero,Metric,ProgressBar,Section,TEACHER_NAV,go,rou
 
 function formatDate(value){if(!value)return "لا يوجد نشاط بعد";try{return new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}catch{return value;}}
 function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}).format(Number(v||0));}
+function taskTypeLabel(v){return ({NEW_MEMORIZATION:"حفظ جديد",REVIEW:"مراجعة",RECITATION:"تسميع",BEHAVIOR:"سلوك"}[v]||v||"مهمة");}
+function taskStatusLabel(v){return ({assigned:"مطلوبة",pending_teacher_approval:"بانتظار المراجعة",approved:"معتمدة",rejected:"مرفوضة"}[v]||v||"");}
 function Loading(){return <div className="center"><i className="spinner"/><p>جارٍ تجهيز بوابة المعلم...</p></div>;}
 function ErrorBox({text}){return text?<div className="msg error">{text}</div>:null;}
 
@@ -78,6 +80,101 @@ function Students({data}){
     </Section></>;
 }
 
+function Tasks({data}){
+  const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
+  const [message,setMessage]=useState(""),[error,setError]=useState("");
+  const [form,setForm]=useState({enrollmentId:"",title:"",type:"NEW_MEMORIZATION",points:10,dueAt:"",teacherNote:""});
+  const [decisionNotes,setDecisionNotes]=useState({});
+
+  async function load(){
+    setLoading(true);
+    try{setRows(await listTeacherTaskAssignments());setError("");}
+    catch(e){setError(e.message||"تعذر تحميل المهام.");}
+    finally{setLoading(false);}
+  }
+  useEffect(()=>{load();},[]);
+
+  const students=data.students.filter(s=>s.enrollmentStatus==="active");
+  useEffect(()=>{
+    if(!form.enrollmentId&&students[0]?.enrollmentId)setForm(v=>({...v,enrollmentId:students[0].enrollmentId}));
+  },[students.length,form.enrollmentId]);
+
+  const pending=rows.filter(r=>r.status==="pending_teacher_approval");
+  const recent=[...rows].sort((a,b)=>new Date(b.updated_at||b.assigned_at||0)-new Date(a.updated_at||a.assigned_at||0)).slice(0,20);
+  const studentName=id=>data.students.find(s=>s.id===id)?.display_name||"طالب";
+
+  async function create(e){
+    e.preventDefault();setBusy(true);setMessage("");setError("");
+    try{
+      await createTaskAssignment({
+        enrollmentId:form.enrollmentId,title:form.title,type:form.type,points:Number(form.points)||0,
+        dueAt:form.dueAt,teacherNote:form.teacherNote
+      });
+      setForm(v=>({...v,title:"",teacherNote:""}));
+      setMessage("تم إسناد المهمة للطالب.");await load();
+    }catch(e){setError(e.message||"تعذر إنشاء المهمة.");}
+    finally{setBusy(false);}
+  }
+
+  async function decide(row,approve){
+    const note=String(decisionNotes[row.id]||"").trim();
+    if(!approve&&!note){setError("سبب الرفض إلزامي.");return;}
+    setBusy(true);setMessage("");setError("");
+    try{
+      const result=await reviewTaskAssignment(row.id,approve,note);
+      setDecisionNotes(v=>({...v,[row.id]:""}));
+      setMessage(approve?`تم اعتماد المهمة وإضافة ${result?.points??row.task?.points_reward??0} نقطة.`:"تم رفض التسليم وإرسال السبب لولي الأمر.");
+      await load();
+    }catch(e){setError(e.message||"تعذر مراجعة المهمة.");}
+    finally{setBusy(false);}
+  }
+
+  return <>
+    <Hero eyebrow="Tasks V7" title="المهام والمراجعات" description="ولي الأمر يستطيع الإرسال فقط. النقاط لا تُضاف إلا بعد اعتمادك أنت." icon="target" tone="mint"/>
+    {message&&<div className="msg ok">{message}</div>}<ErrorBox text={error}/>
+    <div className="aa-dashboard-grid">
+      <aside className="aa-form-card"><h3 style={{marginTop:0}}>مهمة جديدة</h3>
+        {students.length?<form className="aa-form" onSubmit={create}>
+          <label>الطالب<select value={form.enrollmentId} onChange={e=>setForm(v=>({...v,enrollmentId:e.target.value}))} required>
+            {students.map(s=><option key={s.enrollmentId} value={s.enrollmentId}>{s.display_name}</option>)}
+          </select></label>
+          <label>عنوان المهمة<input value={form.title} onChange={e=>setForm(v=>({...v,title:e.target.value}))} required maxLength="160" placeholder="مثال: مراجعة سورة الملك"/></label>
+          <label>نوع المهمة<select value={form.type} onChange={e=>setForm(v=>({...v,type:e.target.value}))}>
+            <option value="NEW_MEMORIZATION">حفظ جديد</option><option value="REVIEW">مراجعة</option><option value="RECITATION">تسميع</option><option value="BEHAVIOR">سلوك</option>
+          </select></label>
+          <label>نقاط الاعتماد<input type="number" min="0" max="100000" value={form.points} onChange={e=>setForm(v=>({...v,points:e.target.value}))} required/></label>
+          <label>موعد التسليم<input type="datetime-local" value={form.dueAt} onChange={e=>setForm(v=>({...v,dueAt:e.target.value}))} required/></label>
+          <label>ملاحظة للطالب/الأسرة<textarea value={form.teacherNote} onChange={e=>setForm(v=>({...v,teacherNote:e.target.value}))} rows="3" maxLength="500"/></label>
+          <Button type="submit" disabled={busy}>{busy?"جارٍ الحفظ...":"إسناد المهمة"}</Button>
+        </form>:<Empty icon="users" title="لا يوجد Enrollment نشط" text="اربط طالبًا أولًا ثم أنشئ المهمة."/>}
+      </aside>
+      <section>
+        <Section eyebrow="تحتاج قرارك" title={`بانتظار المراجعة (${pending.length})`}>
+          {loading?<Loading/>:pending.length?<div className="aa-person-list">{pending.map(row=><article className="aa-person-card" key={row.id}>
+            <div className="aa-person-head"><span className="aa-avatar"><Icon name="target" size={24}/></span><div>
+              <b>{row.task?.title||"مهمة"}</b>
+              <small>{studentName(row.student_id)} • {taskTypeLabel(row.task?.task_type)} • {row.task?.points_reward||0} نقطة • أرسلها ولي الأمر {formatDate(row.latestSubmission?.submitted_at)}</small>
+            </div></div>
+            {row.latestSubmission?.parent_note&&<p style={{margin:"8px 0",fontSize:12}}>ملاحظة ولي الأمر: {row.latestSubmission.parent_note}</p>}
+            <label style={{display:"grid",gap:6,fontSize:12,fontWeight:800}}>ملاحظتك<textarea rows="2" value={decisionNotes[row.id]||""} onChange={e=>setDecisionNotes(v=>({...v,[row.id]:e.target.value}))} placeholder="مطلوبة في حالة الرفض"/></label>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
+              <Button onClick={()=>decide(row,true)} disabled={busy} icon="circleCheck">اعتماد وإضافة النقاط</Button>
+              <Button kind="secondary" onClick={()=>decide(row,false)} disabled={busy} icon="close">رفض</Button>
+            </div>
+          </article>)}</div>:<Empty icon="circleCheck" title="لا توجد مهام بانتظار المراجعة"/>}
+        </Section>
+      </section>
+    </div>
+    <Section eyebrow="السجل" title="آخر المهام">
+      {recent.length?<div className="aa-table-list">{recent.map(row=><article className="aa-table-row" key={row.id}>
+        <span><Icon name={row.status==="approved"?"circleCheck":"target"} size={21}/></span>
+        <div><b>{row.task?.title||"مهمة"}</b><small>{studentName(row.student_id)} • {taskTypeLabel(row.task?.task_type)} • موعد التسليم {formatDate(row.due_at)}</small></div>
+        <strong>{taskStatusLabel(row.status)}</strong>
+      </article>)}</div>:<Empty icon="target" title="لم تُنشأ مهام بعد"/>}
+    </Section>
+  </>;
+}
+
 function StudentDetail({user,data,studentId,reloadOverview}){
   const summary=data.students.find(s=>s.id===studentId);
   const [progress,setProgress]=useState([]),[reviews,setReviews]=useState([]),[score,setScore]=useState(100),[surahNumber,setSurahNumber]=useState(""),[notes,setNotes]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
@@ -140,6 +237,7 @@ export default function TeacherPortal(){
     if(path==="/teacher"||path==="/teacher/")page=<Dashboard data={data}/>;
     else if(path==="/teacher/invites"||path==="/teacher/classes")page=<Invites data={data} reload={reload}/>;
     else if(path==="/teacher/students")page=<Students data={data}/>;
+    else if(path==="/teacher/tasks")page=<Tasks data={data}/>;
     else if(match)page=<StudentDetail user={user} data={data} studentId={match[1]} reloadOverview={reload}/>;
     else page=<Empty icon="target" title="الصفحة غير موجودة" action={<Button onClick={()=>go("/teacher")}>لوحة المعلم</Button>}/>;
   }
