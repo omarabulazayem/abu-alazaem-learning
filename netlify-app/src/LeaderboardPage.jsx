@@ -58,7 +58,7 @@ export function LeaderboardBoard({workspaceId,viewerStudentId,workspaceName,onLo
         :"نتيجة الأسبوع السابق محفوظة، وبدأت فرصة جديدة من الصفر في Weekly Score."}
       icon={meClosed.rank<=3?"medal":"sparkle"} tone={meClosed.rank<=3?"gold":"sky"}/>}
     <div className="aa-metrics">
-      <Metric icon="calendar" label="الأسبوع الحالي" value={fmtWeek(current)} tone="sky"/>
+      <Metric icon="clock" label="الأسبوع الحالي" value={fmtWeek(current)} tone="sky"/>
       <Metric icon="teacher" label="المعلم" value={workspaceName||"مساحة المعلم"} tone="mint"/>
       <Metric icon="trophy" label="عدد المشاركين" value={(data.standings||[]).length} tone="gold"/>
       <Metric icon="clock" label="الإغلاق" value="الجمعة 11:59 م" tone="sky"/>
