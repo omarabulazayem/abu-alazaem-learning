@@ -25,6 +25,8 @@ export const TEACHER_MANAGE_NAV_ITEMS = [
   ["الدعوات", "/teacher/invites"],
   ["الطلاب", "/teacher/students"],
   ["المهام", "/teacher/tasks"],
+  ["الجدول", "/teacher/schedule"],
+  ["الاستحقاقات", "/teacher/billing"],
 ];
 
 export const TEACHER_PREVIEW_NAV_ITEMS = [
