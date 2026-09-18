@@ -212,7 +212,7 @@ export async function getCurrentUser() {
     accountType: profile.account_type,
   };
   if (redirectInfo && redirectInfo.type !== "recovery" && typeof location !== "undefined" && location.pathname === "/login") {
-    const target = result.accountType === "teacher" ? "/teacher" : "/family";
+    const target = result.accountType === "teacher" ? "/teacher" : result.accountType === "admin" ? "/admin" : "/family";
     history.replaceState({}, "", target);
     queueMicrotask(() => window.dispatchEvent(new PopStateEvent("popstate")));
   }
@@ -511,6 +511,38 @@ export async function updateLeaderboardSettings(workspaceId,{privacy,firstReward
     }),
   });
   return rows?.[0]||null;
+}
+
+export async function listNotifications(limit=100) {
+  return rest("/notifications?select=*&order=created_at.desc&limit="+Math.min(200,Math.max(1,Number(limit)||100)));
+}
+
+export async function markNotificationRead(notificationId) {
+  return rpc("mark_notification_read",{p_notification_id:notificationId});
+}
+
+export async function markAllNotificationsRead() {
+  return rpc("mark_all_notifications_read",{});
+}
+
+export async function adminTeacherOverview() {
+  return rpc("admin_teacher_overview",{});
+}
+
+export async function adminSetTeacherWorkspaceStatus(workspaceId,status,reason) {
+  return rpc("admin_set_teacher_workspace_status",{
+    p_workspace_id:workspaceId,
+    p_status:status,
+    p_reason:String(reason||"").trim(),
+  });
+}
+
+export async function listAuditLogs(limit=100) {
+  return rest("/audit_logs?select=*&order=created_at.desc&limit="+Math.min(300,Math.max(1,Number(limit)||100)));
+}
+
+export async function listNotificationDeliveries(limit=100) {
+  return rest("/notification_deliveries?select=*&order=created_at.desc&limit="+Math.min(300,Math.max(1,Number(limit)||100)));
 }
 
 export async function teacherEnrollmentOverview(userId) {
