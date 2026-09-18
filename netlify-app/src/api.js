@@ -344,6 +344,39 @@ export async function hasChildModePin() {
   return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
 }
 
+export async function teacherEnrollmentOverview(userId) {
+  const [workspace,enrollments,invites] = await Promise.all([
+    getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)
+  ]);
+  const settings = workspace ? await getTeacherSettings(workspace.id).catch(()=>null) : null;
+  const childIds = [...new Set(enrollments.map(e=>e.student_id).filter(Boolean))];
+  if (!childIds.length) return { workspace, settings, enrollments, invites, students: [], reviewsToday: 0 };
+  const progressFilter = childIds.map(id=>`child_id.eq.${id}`).join(",");
+  const [progress,reviews] = await Promise.all([
+    rest(`/learning_progress?or=(${progressFilter})&select=child_id,memorized_percent,review_percent,status,last_activity_at`),
+    (()=>{const d=new Date();d.setHours(0,0,0,0);return rest(`/review_events?or=(${progressFilter})&reviewed_at=gte.${encodeURIComponent(d.toISOString())}&select=child_id,reviewed_at`);})()
+  ]);
+  const students = enrollments.filter(e=>e.child).map(e=>{
+    const rows=(progress||[]).filter(p=>p.child_id===e.student_id);
+    const avg=key=>rows.length?Math.round(rows.reduce((sum,r)=>sum+Number(r[key]||0),0)/rows.length):0;
+    const progressLast=rows.map(r=>r.last_activity_at).filter(Boolean).sort().at(-1)||null;
+    return {
+      ...e.child,
+      enrollmentId:e.id,
+      enrollmentStatus:e.status,
+      sessionRate:Number(e.session_rate||0),
+      workspaceId:e.workspace_id,
+      memorizedAverage:avg("memorized_percent"),
+      reviewAverage:avg("review_percent"),
+      masteredCount:rows.filter(r=>r.status==="mastered").length,
+      surahCount:rows.length,
+      lastActivityAt:e.child.last_activity_at||progressLast,
+      classes:[],
+    };
+  });
+  return { workspace, settings, enrollments, invites, students, reviewsToday:(reviews||[]).length };
+}
+
 export async function getProgress(childId) {
   if (!childId) return [];
   return rest(`/learning_progress?child_id=eq.${encodeURIComponent(childId)}&select=*&order=surah_number.asc`);
