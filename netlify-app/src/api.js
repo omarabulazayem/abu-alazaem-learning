@@ -416,6 +416,72 @@ export async function reviewTaskAssignment(assignmentId,approve,note="") {
   return rpc("review_task_assignment",{p_assignment_id:assignmentId,p_approve:Boolean(approve),p_note:String(note||"").trim()||null});
 }
 
+export async function listRecurringScheduleRules() {
+  return rest("/recurring_schedule_rules?select=*&order=weekday.asc,local_start_time.asc");
+}
+
+export async function listVisibleSessions({from=null,to=null,status=null}={}) {
+  const parts=["select=*","order=scheduled_start_utc.asc"];
+  if(from)parts.push("scheduled_start_utc=gte."+encodeURIComponent(new Date(from).toISOString()));
+  if(to)parts.push("scheduled_start_utc=lte."+encodeURIComponent(new Date(to).toISOString()));
+  if(status)parts.push("status=eq."+encodeURIComponent(status));
+  return rest("/sessions?"+parts.join("&"));
+}
+
+export async function listSessionBillingEntries() {
+  return rest("/session_billing_entries?select=*&order=created_at.desc");
+}
+
+export async function createRecurringScheduleRule({enrollmentId,weekday,startTime,durationMinutes=45,weeksAhead=12}) {
+  const normalized=String(startTime||"").trim();
+  if(!normalized)throw new Error("اختر وقت الحصة.");
+  return rpc("create_recurring_schedule_rule",{
+    p_enrollment_id:enrollmentId,
+    p_weekday:Number(weekday),
+    p_local_start_time:normalized.length===5?normalized+":00":normalized,
+    p_duration_minutes:Number(durationMinutes)||45,
+    p_weeks_ahead:Number(weeksAhead)||12,
+  });
+}
+
+export async function setRecurringScheduleRuleActive(ruleId,active) {
+  return rpc("set_recurring_schedule_rule_active",{p_rule_id:ruleId,p_active:Boolean(active)});
+}
+
+export async function materializeScheduleRule(ruleId,weeksAhead=12) {
+  return rpc("materialize_schedule_rule",{p_rule_id:ruleId,p_weeks_ahead:Number(weeksAhead)||12});
+}
+
+export async function finalizeSession(sessionId,status,teacherNote="") {
+  return rpc("finalize_session",{
+    p_session_id:sessionId,
+    p_status:status,
+    p_teacher_note:String(teacherNote||"").trim()||null,
+  });
+}
+
+export async function cancelSession(sessionId,reason="") {
+  return rpc("cancel_session",{p_session_id:sessionId,p_reason:String(reason||"").trim()||null});
+}
+
+export async function rescheduleSession(sessionId,newStart,teacherNote="") {
+  const date=new Date(newStart);
+  if(Number.isNaN(date.getTime()))throw new Error("اختر موعدًا جديدًا صحيحًا.");
+  return rpc("reschedule_session",{
+    p_session_id:sessionId,
+    p_new_start_utc:date.toISOString(),
+    p_teacher_note:String(teacherNote||"").trim()||null,
+  });
+}
+
+export async function waiveSessionCharge(entryId,reason) {
+  return rpc("waive_session_charge",{p_billing_entry_id:entryId,p_reason:String(reason||"").trim()});
+}
+
+export async function markSessionChargePaid(entryId) {
+  return rpc("mark_session_charge_paid",{p_billing_entry_id:entryId});
+}
+
 export async function teacherEnrollmentOverview(userId) {
   const [workspace,enrollments,invites] = await Promise.all([
     getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)
