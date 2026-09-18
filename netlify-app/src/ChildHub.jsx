@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from "react";
-import {getActiveChildId,getCurrentUser,hasChildModePin,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
+import {getActiveChildId,getCurrentUser,getStudentWallet,hasChildModePin,listChildren,listRewardsToday,setActiveChildId,verifyChildModePin} from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,CHILD_NAV,Hero,Section,go} from "./ui-v4.jsx";
 
@@ -20,17 +20,17 @@ const more=[
 ];
 
 export default function ChildHub(){
-  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [rewards,setRewards]=useState([]);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
+  const [user,setUser]=useState(undefined);const [child,setChild]=useState(null);const [wallet,setWallet]=useState({wallet_balance:0,lifetime_points:0});const [rewards,setRewards]=useState([]);const [showExit,setShowExit]=useState(false);const [pin,setPin]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");
   useEffect(()=>{enterChildMode();let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current){exitChildMode();return go("/login");}if(current.accountType==="teacher"){exitChildMode();return go("/teacher");}
 const pinReady=await hasChildModePin().catch(()=>false);
 if(!pinReady){exitChildMode();return go("/family");}
-setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const today=await listRewardsToday(selected.id);if(alive)setRewards(today||[]);}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
+setUser(current);const kids=await listChildren(current);if(!alive)return;const active=getActiveChildId();const selected=kids.find(k=>k.id===active)||kids[0]||null;if(selected&&selected.id!==active)setActiveChildId(selected.id);setChild(selected);if(!selected){setError("لا يوجد ملف طفل بعد. اطلب من ولي الأمر إضافة طفل أولًا.");return;}const [today,walletState]=await Promise.all([listRewardsToday(selected.id),getStudentWallet(selected.id)]);if(alive){setRewards(today||[]);setWallet(walletState||{wallet_balance:0,lifetime_points:0});}}catch(e){if(alive)setError(e.message||"تعذر فتح وضع الطفل.");}})();return()=>{alive=false;};},[]);
   const gameCount=useMemo(()=>{const ids=new Set();for(const r of rewards){if(r.source_type==="game_session")ids.add(r.source_key||String(ids.size));else if(["memory_game","surah_order_game","surah_quiz_game"].includes(r.source_type))ids.add(r.source_type);}return Math.min(3,ids.size);},[rewards]);
   async function verifyParent(e){e.preventDefault();setBusy(true);setError("");try{const ok=await verifyChildModePin(pin);if(!ok)throw new Error();exitChildMode();setPin("");go("/family");}catch{setError("الرقم السري غير صحيح. لا يمكن الخروج من وضع الطفل.");}finally{setBusy(false);}}
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز عالمك...</p></div>;
-  const headerActions=<><div className="aa-child-score"><span><Icon name="star" size={17}/>{child?.stars||0}</span><span><Icon name="trophy" size={17}/>{child?.points||0}</span></div><Button kind="secondary" icon="lock" onClick={()=>{setShowExit(true);setError("");}}>ولي الأمر</Button></>;
+  const headerActions=<><div className="aa-child-score"><span><Icon name="star" size={17}/>{child?.stars||0}</span><span><Icon name="trophy" size={17}/>{wallet?.wallet_balance||0}</span></div><Button kind="secondary" icon="lock" onClick={()=>{setShowExit(true);setError("");}}>ولي الأمر</Button></>;
   return <AppShell mode="child" subtitle="عالمي الصغير" nav={CHILD_NAV} actions={headerActions} footer="أبو العزايم • خطوة صغيرة كل مرة.">
-    <Hero eyebrow="جاهز لمغامرة جديدة؟" title={`أهلًا ${child?.display_name||"يا بطل"}`} description="اختار حاجة واحدة نعملها دلوقتي، والباقي موجود لما تحب." icon="sparkle" tone="pink" aside={<div className="aa-child-score"><span><Icon name="flame" size={18}/>{child?.streak||0} يوم</span></div>}/>
+    <Hero eyebrow="جاهز لمغامرة جديدة؟" title={`أهلًا ${child?.display_name||"يا بطل"}`} description="اختار حاجة واحدة نعملها دلوقتي، والباقي موجود لما تحب." icon="sparkle" tone="pink" aside={<div className="aa-child-score"><span><Icon name="flame" size={18}/>{child?.streak||0} يوم</span><span><Icon name="trophy" size={18}/>{wallet?.lifetime_points||0} إجمالي</span></div>}/>
     {error&&<div className="msg error">{error}</div>}
     {!showExit&&child&&<>
       <Section eyebrow="الاختيارات الأساسية" title="هنعمل إيه دلوقتي؟" description="ثلاثة اختيارات كبيرة وواضحة بدون زحمة.">
@@ -41,6 +41,6 @@ setUser(current);const kids=await listChildren(current);if(!alive)return;const a
         <button className="aa-daily" onClick={()=>go("/games")}><span><Icon name={gameCount===3?"circleCheck":"rocket"} size={28}/></span><span className="aa-daily-copy"><small>مغامرة اليوم</small><b>{gameCount===3?"برافو! خلصت ألعاب اليوم":"نكمل لعبة كمان؟"}</b></span><span className="aa-dots">{[0,1,2].map(i=><i key={i} className={i<gameCount?"is-done":""}/>)}</span></button>
       </Section>
     </>}
-    {showExit&&<Section eyebrow="للكبار فقط" title="منطقة ولي الأمر" description="أدخل الرقم السري المكوّن من 4 أرقام للعودة إلى حساب الأسرة."><div className="aa-learning-card" style={{maxWidth:520,margin:"0 auto"}}><form className="aa-form" onSubmit={verifyParent}><label>الرقم السري لولي الأمر<input type="password" inputMode="numeric" pattern="[0-9]{4}" minLength="4" maxLength="4" autoFocus autoComplete="off" value={pin} onChange={e=>setPin(e.target.value.replace(/\\D/g,"").slice(0,4))} required/></label><Button type="submit" disabled={busy} className="full">{busy?"جارٍ التحقق...":"التحقق والخروج"}</Button><Button kind="ghost" onClick={()=>{setShowExit(false);setPin("");setError("");}}>ارجع لعالمي</Button></form></div></Section>}
+    {showExit&&<Section eyebrow="للكبار فقط" title="منطقة ولي الأمر" description="أدخل الرقم السري المكوّن من 4 أرقام للعودة إلى حساب الأسرة."><div className="aa-learning-card" style={{maxWidth:520,margin:"0 auto"}}><form className="aa-form" onSubmit={verifyParent}><label>الرقم السري لولي الأمر<input type="password" inputMode="numeric" pattern="[0-9]{4}" minLength="4" maxLength="4" autoFocus autoComplete="off" value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,"").slice(0,4))} required/></label><Button type="submit" disabled={busy} className="full">{busy?"جارٍ التحقق...":"التحقق والخروج"}</Button><Button kind="ghost" onClick={()=>{setShowExit(false);setPin("");setError("");}}>ارجع لعالمي</Button></form></div></Section>}
   </AppShell>;
 }

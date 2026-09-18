@@ -1,7 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {
   acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
-  listChildren,listParentEnrollments,setActiveChildId,setChildModePin,signOut,updateChild
+  listChildren,listParentEnrollments,listStudentWallets,setActiveChildId,setChildModePin,signOut,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
@@ -11,7 +11,7 @@ function money(v){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}
 const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]);
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]);
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
   const [pinReady,setPinReady]=useState(false),[pin,setPin]=useState(""),[pin2,setPin2]=useState("");
@@ -25,10 +25,10 @@ export default function FamilyPage(){
 
   async function load(current=user){
     if(!current)return;
-    const [children,links,pinState]=await Promise.all([
-      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)
+    const [children,links,pinState,walletRows]=await Promise.all([
+      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])
     ]);
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);
     const active=getActiveChildId();
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
@@ -39,9 +39,9 @@ export default function FamilyPage(){
     const current=await getCurrentUser();if(!alive)return;
     if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
     setUser(current);
-    const [children,links,pinState]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false)]);
+    const [children,links,pinState,walletRows]=await Promise.all([listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[])]);
     if(!alive)return;
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));
+    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);
     const active=getActiveChildId();
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
@@ -83,10 +83,10 @@ export default function FamilyPage(){
   }
 
   async function logout(){await signOut();go("/");}
-  if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
-
   const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
-  const activeLinks=useMemo(()=>enrollments.filter(e=>e.student_id===activeChild?.id),[enrollments,activeChild?.id]);
+  const activeLinks=enrollments.filter(e=>e.student_id===activeChild?.id);
+  const activeWallet=wallets.find(w=>w.student_id===activeChild?.id)||{wallet_balance:0,lifetime_points:0};
+  if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
 
   return <AppShell mode="family" subtitle="حساب الأسرة" nav={FAMILY_NAV}
     actions={<><Button kind="secondary" icon="child" onClick={()=>go("/child")} disabled={!activeChild||!pinReady}>وضع الطفل</Button><Button kind="ghost" icon="logout" onClick={logout}>خروج</Button></>}
@@ -105,7 +105,7 @@ export default function FamilyPage(){
     {activeChild&&<div className="aa-metrics">
       <Metric icon="child" label="الطفل النشط" value={activeChild.display_name} tone="sky"/>
       <Metric icon="users" label="المعلمون المرتبطون" value={activeLinks.length} tone="mint"/>
-      <Metric icon="trophy" label="النقاط الحالية" value={activeChild.points||0} tone="gold"/>
+      <Metric icon="trophy" label="رصيد الألعاب" value={activeWallet.wallet_balance||0} tone="gold"/>
       <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
     </div>}
 
