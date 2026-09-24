@@ -29,6 +29,7 @@ import TeacherGameReports from "./TeacherGameReports.jsx";
 import TeacherAccessBar from "./TeacherAccessBar.jsx";
 import TeacherLearningPreview from "./TeacherLearningPreview.jsx";
 import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
+import WhiteboardPage from "./WhiteboardPage.jsx";
 import {getCurrentUser} from "./api.js";
 import {isTeacherRestrictedRoute} from "./accessPolicy.js";
 
