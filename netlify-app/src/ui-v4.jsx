@@ -35,6 +35,7 @@ export const TEACHER_NAV=[
   {path:"/teacher/billing",label:"الاستحقاقات",icon:"chart"},
   {path:"/teacher/leaderboard",label:"الترتيب",icon:"medal"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
+  {path:"/teacher/whiteboard",label:"السبورة",icon:"edit"},
 ];
 
 export function Brand({subtitle="للحفظ الممتع",onClick=()=>go("/")}){
