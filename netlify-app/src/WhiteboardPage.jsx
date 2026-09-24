@@ -160,7 +160,17 @@ export default function WhiteboardPage(){
           {background==="video"&&videoUrl&&<video className="aa-whiteboard-video" src={videoUrl} controls autoPlay loop playsInline/>}
           {background==="timer"&&<div className="aa-whiteboard-big-timer">{mm}:{ss}</div>}
           {background==="focus"&&<div className="aa-whiteboard-focus"><strong>مساحة العرض</strong><span>شغّلي الفيديو أو المؤقت أو اعرضي المحتوى هنا</span></div>}
-          <div className="aa-whiteboard-effects" aria-live="polite">{effects.map(effect=><div key={effect.id} className={"aa-board-effect aa-effect-"+effect.type} aria-hidden="true">{({clap:"👏",heart:"♥",celebrate:"🎉",star:"★",trophy:"🏆",hammer:"🔨",alert:"⚠"}[effect.type])}</div>)}</div>
+          <div className="aa-whiteboard-effects" aria-live="polite">
+            {effects.map(effect=><div key={effect.id} className={"aa-board-effect aa-effect-"+effect.type} aria-hidden="true">
+              {effect.type==="clap"&&<><span className="aa-clap-hand aa-hand-a"/><span className="aa-clap-hand aa-hand-b"/><span className="aa-clap-lines"/></>}
+              {effect.type==="heart"&&<span className="aa-heart-shape">♥</span>}
+              {effect.type==="star"&&<span className="aa-star-shape">★</span>}
+              {effect.type==="trophy"&&<><span className="aa-trophy-cup"/><span className="aa-trophy-base"/></>}
+              {effect.type==="hammer"&&<><span className="aa-hammer-head"/><span className="aa-hammer-handle"/></>}
+              {effect.type==="alert"&&<><span className="aa-alert-sign">!</span><span className="aa-alert-ring"/></>}
+              {effect.type==="celebrate"&&<><span className="aa-confetti c1"/><span className="aa-confetti c2"/><span className="aa-confetti c3"/><span className="aa-confetti c4"/><span className="aa-confetti c5"/><span className="aa-confetti c6"/><span className="aa-celebrate-text">أحسنت!</span></>}
+            </div>)}
+          </div>
           <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}/>
           {locked&&<div className="aa-whiteboard-lock">تفاعل الطالب مقفول — المعلم وحده يستطيع التعديل</div>}
         </div>
