@@ -46,7 +46,7 @@ export default function RootRouter(){
   const path=usePath(),childMode=useChildMode(),accountType=useAccountType(),teacher=accountType==="teacher",teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
   useEffect(()=>{if(teacherRestricted)navigate("/teacher",true);},[teacherRestricted]);
   if(path==="/teacher/game-reports")return <TeacherGameReports/>;
-  if(path==="/teacher/whiteboard")return <WhiteboardPage/>;
+  if(path==="/teacher/whiteboard"&&teacher)return <WhiteboardPage/>;
   const isTeacherRoute=path==="/teacher"||path.startsWith("/teacher/");
   if(isTeacherRoute||teacherRestricted)return <TeacherPortal/>;
   if(!teacher&&path==="/child")return <ChildHub/>;
