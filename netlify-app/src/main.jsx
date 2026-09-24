@@ -15,6 +15,7 @@ import "./quran-game-batch4.css";
 import "./new-quran-game-pack.css";
 import "./adaptive-games.css";
 import "./tafsir-world.css";
+import "./whiteboard.css";
 
 /* Clean-sheet interface. UI v4 owns structure; brand identity owns color and tone. */
 import "./ui-v4-support.css";
