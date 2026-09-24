@@ -13,7 +13,8 @@ function pointFromEvent(canvas,e){
 export default function WhiteboardPage(){
   const canvasRef=useRef(null),drawingRef=useRef(false),historyRef=useRef([]),futureRef=useRef([]);
   const [tool,setTool]=useState("pen"),[color,setColor]=useState(COLORS[0]),[size,setSize]=useState(4);
-  const [locked,setLocked]=useState(false),[message,setMessage]=useState(""),[timer,setTimer]=useState(0);
+  const [locked,setLocked]=useState(false),[message,setMessage]=useState(""),[timer,setTimer]=useState(0),[savedAt,setSavedAt]=useState(""),[sessionCode,setSessionCode]=useState("");
+  const STORAGE_KEY="abu-al-azaem-whiteboard-v1";
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
@@ -46,6 +47,22 @@ export default function WhiteboardPage(){
   },[fitCanvas]);
 
   useEffect(()=>{if(!timerRunning)return;const id=setInterval(()=>setTimer(v=>v+1),1000);return()=>clearInterval(id);},[timerRunning]);
+  useEffect(()=>{
+    try{
+      const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode(saved.sessionCode||"");}
+    }catch{}
+  },[restore]);
+  const saveBoard=useCallback(()=>{
+    const canvas=snapshot();if(!canvas)return;
+    const payload={canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode};
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));setSavedAt(payload.savedAt);setMessage("تم حفظ حالة السبورة على هذا الجهاز.");
+  },[snapshot,ayah,timer,sessionCode]);
+  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
+  function newSession(){
+    const code=Math.random().toString(36).slice(2,7).toUpperCase();
+    setSessionCode(code);setTimer(0);setAyah(null);setMessage("بدأت جلسة سبورة جديدة: "+code);
+  }
 
   function start(e){
     if(locked)return;
@@ -84,10 +101,12 @@ export default function WhiteboardPage(){
             <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"⏸ إيقاف المؤقت":"▶ بدء المؤقت"}</button>
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
+            <button onClick={saveBoard}>💾 حفظ</button>
+            <button onClick={newSession}>＋ جلسة جديدة</button>
             <button onClick={exportBoard}>⬇ تصدير صورة</button>
           </div>
         </div>
-        <div className="aa-whiteboard-reference">
+        <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}</span></div>
           <div><b>مرجع الدرس</b><span>{ayah?("سورة "+ayah.surah+" — الآية "+ayah.number):"لم تحدد آية بعد"}</span></div>
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
