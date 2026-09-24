@@ -17,6 +17,7 @@ export default function WhiteboardPage(){
   const STORAGE_KEY="abu-al-azaem-whiteboard-v2";
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
   const [background,setBackground]=useState("paper"),[videoUrl,setVideoUrl]=useState(""),[presentation,setPresentation]=useState(false);
+  const [effects,setEffects]=useState([]);
   const audioRef=useRef(null);
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
@@ -66,7 +67,13 @@ export default function WhiteboardPage(){
     setSessionCode(code);setTimer(0);setAyah(null);setMessage("بدأت جلسة سبورة جديدة: "+code);
   }
 
+  function triggerEffect(type){
+    const id=Date.now()+Math.random();
+    setEffects(v=>[...v,{id,type}]);
+    window.setTimeout(()=>setEffects(v=>v.filter(x=>x.id!==id)),type==="celebrate"?2600:1800);
+  }
   function playSound(type){
+    triggerEffect(type);
     try{
       const C=window.AudioContext||window.webkitAudioContext;
       if(!C)return;
@@ -138,7 +145,7 @@ export default function WhiteboardPage(){
           </div>
           <div className="aa-whiteboard-tool-group aa-sound-group">
             <span className="aa-sound-title">أصوات سريعة</span>
-            {soundActions.map(([type,label])=><button key={type} onClick={()=>playSound(type)}>{label}</button>)}
+            {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
           </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}</span></div>
@@ -153,6 +160,7 @@ export default function WhiteboardPage(){
           {background==="video"&&videoUrl&&<video className="aa-whiteboard-video" src={videoUrl} controls autoPlay loop playsInline/>}
           {background==="timer"&&<div className="aa-whiteboard-big-timer">{mm}:{ss}</div>}
           {background==="focus"&&<div className="aa-whiteboard-focus"><strong>مساحة العرض</strong><span>شغّلي الفيديو أو المؤقت أو اعرضي المحتوى هنا</span></div>}
+          <div className="aa-whiteboard-effects" aria-live="polite">{effects.map(effect=><div key={effect.id} className={"aa-board-effect aa-effect-"+effect.type} aria-hidden="true">{({clap:"👏",heart:"♥",celebrate:"🎉",star:"★",trophy:"🏆",hammer:"🔨",alert:"⚠"}[effect.type])}</div>)}</div>
           <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}/>
           {locked&&<div className="aa-whiteboard-lock">تفاعل الطالب مقفول — المعلم وحده يستطيع التعديل</div>}
         </div>
