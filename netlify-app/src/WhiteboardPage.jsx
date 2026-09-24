@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from "react";
-import {Button,Card,Hero,Section,go} from "./ui-v4.jsx";
+import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go} from "./ui-v4.jsx";
 import {getSurah} from "./surahCatalog.js";
 
 const COLORS=["#1E6F5C","#4EA8DE","#8E7CC3","#E58AA8","#2B2D42","#E9C46A","#FFFFFF"];
@@ -63,7 +63,7 @@ export default function WhiteboardPage(){
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
 
-  return <div className="aa-whiteboard-page">
+  return <AppShell mode="teacher" subtitle="بوابة المعلم" nav={TEACHER_NAV} footer="أبو العزايم • السبورة أداة شرح داخل جلسة الحصة."><div className="aa-whiteboard-page">
     <Hero eyebrow="السبورة التفاعلية" title="مساحة شرح المعلم" description="سبورة سريعة للحصة: كتابة ورسم، ممحاة، تراجع، مؤقت، مرجع للآية، وقفل تفاعل الطالب. حالة السبورة مؤقتة لجلسة الحصة ولا تُحفظ كسجل دائم في MVP." icon="edit" tone="sky" actions={<Button kind="secondary" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button>}/>
     <Section>
       <div className="aa-whiteboard-shell">
@@ -106,5 +106,5 @@ export default function WhiteboardPage(){
       <Card><h3>أدوات الحصة</h3><p>استخدم السبورة للشرح والرسم وتحديد مواضع الأخطاء، ثم انتقل للمصحف أو اللعبة من أدوات المعلم دون تحويل السبورة إلى صفحة منفصلة عن الدرس.</p></Card>
       <Card><h3>حدود نسخة MVP</h3><p>هذه النسخة تنفذ أدوات السبورة محليًا داخل جلسة المتصفح. المزامنة الحية بين جهاز المعلم والطالب تحتاج قناة WebRTC/DataChannel أو خدمة Realtime ضمن Live Classroom، وهي خطوة مستقلة.</p></Card>
     </div>
-  </div>;
+  </div></AppShell>;
 }
