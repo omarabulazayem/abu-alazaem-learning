@@ -16,3 +16,22 @@
 .aa-whiteboard-lock{position:absolute;top:14px;left:14px;right:14px;text-align:center;padding:9px 12px;border-radius:12px;background:rgba(43,45,66,.9);color:#fff;font-weight:900;font-size:12px}
 .aa-whiteboard-support{margin-top:18px}
 @media(max-width:760px){.aa-whiteboard-toolbar{align-items:stretch}.aa-whiteboard-tool-group{width:100%}.aa-whiteboard-stage,.aa-whiteboard-stage canvas{min-height:420px;height:420px}}
+
+.aa-video-upload{position:relative;display:inline-flex;align-items:center;min-height:40px;border:1px solid var(--aa-border);background:#fff;border-radius:12px;padding:7px 11px;font:inherit;font-weight:800;cursor:pointer}
+.aa-video-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.aa-sound-group{width:100%;padding-top:8px;border-top:1px solid var(--aa-border)}
+.aa-sound-title{font-weight:900;font-size:12px;color:var(--aa-muted);margin-left:4px}
+.aa-bg-paper{background:#fffdf8}
+.aa-bg-soft{background:radial-gradient(circle at 20% 20%,rgba(142,124,195,.18),transparent 32%),radial-gradient(circle at 80% 30%,rgba(78,168,222,.16),transparent 30%),linear-gradient(135deg,#fbf8ff,#f8fcff 55%,#fffafc)}
+.aa-bg-focus{background:linear-gradient(135deg,#eef7f4,#f7fbff 50%,#fff7fb)}
+.aa-bg-timer{background:radial-gradient(circle at center,rgba(255,255,255,.12),transparent 45%),linear-gradient(135deg,#18283a,#273c55)}
+.aa-bg-video{background:#10151c}
+.aa-whiteboard-stage canvas{position:absolute;inset:0;z-index:3;background:transparent}
+.aa-whiteboard-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;background:#10151c}
+.aa-whiteboard-big-timer{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:clamp(72px,14vw,180px);font-weight:950;letter-spacing:.04em;font-variant-numeric:tabular-nums;z-index:2;text-shadow:0 8px 30px rgba(0,0,0,.25)}
+.aa-whiteboard-focus{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;z-index:1;color:#31414f}
+.aa-whiteboard-focus strong{font-size:clamp(28px,4vw,54px)}
+.aa-whiteboard-focus span{font-size:16px;color:#61707b}
+.aa-whiteboard-stage.is-presentation{min-height:620px}
+.aa-whiteboard-stage.is-presentation canvas{height:620px}
+@media(max-width:760px){.aa-whiteboard-stage.is-presentation,.aa-whiteboard-stage.is-presentation canvas{min-height:480px;height:480px}.aa-sound-group{overflow-x:auto;flex-wrap:nowrap}.aa-sound-group button{white-space:nowrap}}
