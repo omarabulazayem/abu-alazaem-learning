@@ -14,8 +14,10 @@ export default function WhiteboardPage(){
   const canvasRef=useRef(null),drawingRef=useRef(false),historyRef=useRef([]),futureRef=useRef([]);
   const [tool,setTool]=useState("pen"),[color,setColor]=useState(COLORS[0]),[size,setSize]=useState(4);
   const [locked,setLocked]=useState(false),[message,setMessage]=useState(""),[timer,setTimer]=useState(0),[savedAt,setSavedAt]=useState(""),[sessionCode,setSessionCode]=useState("");
-  const STORAGE_KEY="abu-al-azaem-whiteboard-v1";
+  const STORAGE_KEY="abu-al-azaem-whiteboard-v2";
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
+  const [background,setBackground]=useState("paper"),[videoUrl,setVideoUrl]=useState(""),[presentation,setPresentation]=useState(false);
+  const audioRef=useRef(null);
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -34,14 +36,14 @@ export default function WhiteboardPage(){
     const c=canvasRef.current;if(!c)return;
     const rect=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1),old=snapshot();
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
-    const ctx=c.getContext("2d");ctx.fillStyle="#fffdf8";ctx.fillRect(0,0,c.width,c.height);
+    const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     if(old)restore(old);
   },[restore,snapshot]);
 
   useEffect(()=>{const c=canvasRef.current;if(!c)return;
     const rect=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1);
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
-    const ctx=c.getContext("2d");ctx.fillStyle="#fffdf8";ctx.fillRect(0,0,c.width,c.height);
+    const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     const onResize=()=>fitCanvas();window.addEventListener("resize",onResize);
     return()=>window.removeEventListener("resize",onResize);
   },[fitCanvas]);
@@ -64,21 +66,45 @@ export default function WhiteboardPage(){
     setSessionCode(code);setTimer(0);setAyah(null);setMessage("بدأت جلسة سبورة جديدة: "+code);
   }
 
+  function playSound(type){
+    try{
+      const C=window.AudioContext||window.webkitAudioContext;
+      if(!C)return;
+      const ac=audioRef.current||new C();audioRef.current=ac;
+      if(ac.state==="suspended")ac.resume();
+      const now=ac.currentTime;
+      const tone=(freq,dur,offset=0,volume=.045,wave="sine")=>{
+        const o=ac.createOscillator(),g=ac.createGain();o.type=wave;o.frequency.setValueAtTime(freq,now+offset);g.gain.setValueAtTime(.0001,now+offset);g.gain.exponentialRampToValueAtTime(volume,now+offset+.01);g.gain.exponentialRampToValueAtTime(.0001,now+offset+dur);o.connect(g).connect(ac.destination);o.start(now+offset);o.stop(now+offset+dur+.02);
+      };
+      if(type==="clap"){for(let i=0;i<4;i++)tone(1700,0.045,i*.12,.025,"square");}
+      if(type==="heart"){tone(520,.11,0,.04);tone(700,.14,.13,.04);}
+      if(type==="celebrate"){[523,659,784,1047].forEach((n,i)=>tone(n,.22,i*.12,.045));}
+      if(type==="star"){[1047,1319,1568].forEach((n,i)=>tone(n,.18,i*.09,.035));}
+      if(type==="trophy"){[392,494,587,784].forEach((n,i)=>tone(n,.28,i*.16,.05));}
+      if(type==="hammer"){tone(115,.12,0,.09,"triangle");tone(72,.18,.1,.06,"triangle");}
+      if(type==="alert"){[880,660,880,660].forEach((n,i)=>tone(n,.16,i*.2,.055,"square"));}
+    }catch{}
+  }
+  const soundActions=[
+    ["clap","تصفيق"],["heart","قلب"],["celebrate","احتفال"],["star","نجمة"],
+    ["trophy","كأس"],["hammer","مطرقة"],["alert","إنذار"]
+  ];
   function start(e){
     if(locked)return;
     const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);
     pushHistory();drawingRef.current=true;ctx.beginPath();ctx.moveTo(p.x,p.y);
     ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(window.devicePixelRatio||1);
-    ctx.strokeStyle=tool==="eraser"?"#fffdf8":color;c.setPointerCapture?.(e.pointerId);
+    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;c.setPointerCapture?.(e.pointerId);
   }
   function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);ctx.lineTo(p.x,p.y);ctx.stroke();}
   function end(){drawingRef.current=false;}
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);}
   function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);}
-  function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟ لا يمكن التراجع بعد المسح الكامل."))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.fillStyle="#fffdf8";ctx.fillRect(0,0,c.width,c.height);setMessage("تم تنظيف السبورة.");}
+  function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);setMessage("تم تنظيف السبورة.");}
   function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}setAyah({surah:s.name,number:Number(ayahNumber)});setMessage("تم تجهيز موضع سورة "+s.name+"، الآية "+ayahNumber+". افتح المصحف لإظهار النص الموثق.");}
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
+  function handleVideo(e){const file=e.target.files?.[0];if(file){setVideoUrl(URL.createObjectURL(file));setBackground("video");}}
 
   return <AppShell mode="teacher" subtitle="بوابة المعلم" nav={TEACHER_NAV} footer="أبو العزايم • السبورة أداة شرح داخل جلسة الحصة."><div className="aa-whiteboard-page">
     <Hero eyebrow="السبورة التفاعلية" title="مساحة شرح المعلم" description="سبورة سريعة للحصة: كتابة ورسم، ممحاة، تراجع، مؤقت، مرجع للآية، وقفل تفاعل الطالب. حالة السبورة مؤقتة لجلسة الحصة ولا تُحفظ كسجل دائم في MVP." icon="edit" tone="sky" actions={<Button kind="secondary" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button>}/>
@@ -97,13 +123,22 @@ export default function WhiteboardPage(){
             <select value={size} onChange={e=>setSize(Number(e.target.value))} aria-label="حجم القلم">{SIZES.map(v=><option key={v} value={v}>{v}px</option>)}</select>
           </div>
           <div className="aa-whiteboard-tool-group">
+            <select value={background} onChange={e=>setBackground(e.target.value)} aria-label="خلفية السبورة">
+              <option value="paper">خلفية كتابة</option><option value="soft">خلفية هادئة</option><option value="focus">خلفية عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
+            </select>
+            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>
+            <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
             <button onClick={()=>setLocked(v=>!v)}>{locked?"🔓 فتح تفاعل الطالب":"🔒 قفل تفاعل الطالب"}</button>
             <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"⏸ إيقاف المؤقت":"▶ بدء المؤقت"}</button>
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
             <button onClick={saveBoard}>💾 حفظ</button>
             <button onClick={newSession}>＋ جلسة جديدة</button>
-            <button onClick={exportBoard}>⬇ تصدير صورة</button>
+            <button onClick={exportBoard}>تصدير صورة</button>
+          </div>
+          <div className="aa-whiteboard-tool-group aa-sound-group">
+            <span className="aa-sound-title">أصوات سريعة</span>
+            {soundActions.map(([type,label])=><button key={type} onClick={()=>playSound(type)}>{label}</button>)}
           </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}</span></div>
@@ -114,9 +149,12 @@ export default function WhiteboardPage(){
             <Button kind="secondary" onClick={addAyah}>تجهيز المرجع</Button>
           </div>
         </div>
-        <div className={"aa-whiteboard-stage "+(locked?"is-locked":"")}>
+        <div className={"aa-whiteboard-stage aa-bg-"+background+(presentation?" is-presentation":"")+(locked?" is-locked":"")}>
+          {background==="video"&&videoUrl&&<video className="aa-whiteboard-video" src={videoUrl} controls autoPlay loop playsInline/>}
+          {background==="timer"&&<div className="aa-whiteboard-big-timer">{mm}:{ss}</div>}
+          {background==="focus"&&<div className="aa-whiteboard-focus"><strong>مساحة العرض</strong><span>شغّلي الفيديو أو المؤقت أو اعرضي المحتوى هنا</span></div>}
           <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}/>
-          {locked&&<div className="aa-whiteboard-lock">🔒 تفاعل الطالب مقفول — المعلم وحده يستطيع التعديل</div>}
+          {locked&&<div className="aa-whiteboard-lock">تفاعل الطالب مقفول — المعلم وحده يستطيع التعديل</div>}
         </div>
         {message&&<div className="msg ok">{message}</div>}
       </div>
