@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from "react";
-import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go} from "./ui-v4.jsx";
+import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go,getLessonContext,saveLessonContext} from "./ui-v4.jsx";
 import {getSurah} from "./surahCatalog.js";
 import Peer from "peerjs";
 
@@ -36,7 +36,7 @@ export default function WhiteboardPage(){
   const [effects,setEffects]=useState([]);
   const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null),mediaCallRef=useRef(null),videoRef=useRef(null),screenStreamRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
-  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");\n  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(null);
+  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");\n  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -197,7 +197,8 @@ export default function WhiteboardPage(){
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});setMessage("تم تنظيف السبورة.");}
-  function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}const context={surah:s.name,number:Number(ayahNumber),surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
+  function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}const context={surah:s.name,number:Number(ayahNumber),surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);saveLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
+  function openLessonSection(path){saveLessonContext(lessonContext);go(path);}
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
   function handleVideo(e){const file=e.target.files?.[0];if(file){setVideoUrl(URL.createObjectURL(file));setBackground("video");}}
@@ -243,7 +244,7 @@ export default function WhiteboardPage(){
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
             <label>الآية<input inputMode="numeric" value={ayahNumber} onChange={e=>setAyahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
-            <Button kind="secondary" onClick={addAyah}>تثبيت مرجع الحصة</Button><Button kind="secondary" onClick={()=>go("/quran")}>فتح المصحف</Button><Button kind="secondary" onClick={()=>go("/games")}>فتح الألعاب</Button>
+            <Button kind="secondary" onClick={addAyah}>تثبيت مرجع الحصة</Button><Button kind="secondary" onClick={()=>openLessonSection("/quran")}>فتح المصحف</Button><Button kind="secondary" onClick={()=>openLessonSection("/games")}>فتح الألعاب</Button>
           </div>
         </div>
         <div className={"aa-whiteboard-stage aa-bg-"+background+(presentation?" is-presentation":"")+(locked?" is-locked":"")}>
