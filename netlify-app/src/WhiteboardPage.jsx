@@ -36,7 +36,7 @@ export default function WhiteboardPage(){
   const [effects,setEffects]=useState([]);
   const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null),mediaCallRef=useRef(null),videoRef=useRef(null),screenStreamRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
-  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
+  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");\n  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(null);
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -71,15 +71,15 @@ export default function WhiteboardPage(){
   useEffect(()=>{
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode(saved.sessionCode||"");}
+      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode(saved.sessionCode||"");setLessonContext(saved.lessonContext||saved.ayah||null);setLessonPhase(saved.lessonPhase||"شرح");}
     }catch{}
   },[restore]);
   const saveBoard=useCallback(()=>{
     const canvas=snapshot();if(!canvas)return;
-    const payload={canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode};
+    const payload={canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase};
     localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));setSavedAt(payload.savedAt);setMessage("تم حفظ حالة السبورة على هذا الجهاز.");
   },[snapshot,ayah,timer,sessionCode]);
-  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
+  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
   function stopMediaShare(){
     try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
@@ -132,11 +132,11 @@ export default function WhiteboardPage(){
       peer.on("connection",conn=>{
         if(connRef.current?.open)connRef.current.close();
         connRef.current=conn;setConnectionState("connected");
-        conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode:code,timerRunning}));
+        conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode:code,timerRunning,lessonContext,lessonPhase}));
         conn.on("data",data=>{
           if(data?.type==="student-stroke"&&studentCanWrite){drawRemoteStroke(canvasRef.current,data.stroke);}
           if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
-          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
+          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);\n          if(data?.type==="lesson-context"){setLessonContext(data.context||null);setAyah(data.context||null);setLessonPhase(data.phase||"شرح");}
           if(data?.type==="ping")conn.send({type:"pong"});
         });
         conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;stopMediaShare();setConnectionState("waiting");}});
@@ -145,7 +145,7 @@ export default function WhiteboardPage(){
       setMessage("تم إنشاء جلسة مباشرة. أرسلي الكود للطالب: "+code);
     }catch{setConnectionState("error");setMessage("تعذر تشغيل الاتصال المباشر على هذا المتصفح.");}
   }
-  useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode,timerRunning});},[studentCanWrite,background,sessionCode,snapshot]);
+  useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode,timerRunning,lessonContext,lessonPhase});},[studentCanWrite,background,sessionCode,lessonContext,lessonPhase,snapshot]);
   useEffect(()=>{sendRealtime({type:"timer",timer,timerRunning});},[timer,timerRunning]);
 
   function triggerEffect(type){
@@ -197,7 +197,7 @@ export default function WhiteboardPage(){
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});setMessage("تم تنظيف السبورة.");}
-  function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}setAyah({surah:s.name,number:Number(ayahNumber)});setMessage("تم تجهيز موضع سورة "+s.name+"، الآية "+ayahNumber+". افتح المصحف لإظهار النص الموثق.");}
+  function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}const context={surah:s.name,number:Number(ayahNumber),surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
   function handleVideo(e){const file=e.target.files?.[0];if(file){setVideoUrl(URL.createObjectURL(file));setBackground("video");}}
@@ -239,11 +239,11 @@ export default function WhiteboardPage(){
           </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
-          <div><b>مرجع الدرس</b><span>{ayah?("سورة "+ayah.surah+" — الآية "+ayah.number):"لم تحدد آية بعد"}</span></div>
+          <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span><label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{setLessonPhase(e.target.value);sendRealtime({type:"lesson-context",context:lessonContext,phase:e.target.value});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة</option><option>تطبيق</option></select></label></div>
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
             <label>الآية<input inputMode="numeric" value={ayahNumber} onChange={e=>setAyahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
-            <Button kind="secondary" onClick={addAyah}>تجهيز المرجع</Button>
+            <Button kind="secondary" onClick={addAyah}>تثبيت مرجع الحصة</Button><Button kind="secondary" onClick={()=>go("/quran")}>فتح المصحف</Button><Button kind="secondary" onClick={()=>go("/games")}>فتح الألعاب</Button>
           </div>
         </div>
         <div className={"aa-whiteboard-stage aa-bg-"+background+(presentation?" is-presentation":"")+(locked?" is-locked":"")}>
@@ -267,7 +267,7 @@ export default function WhiteboardPage(){
         {message&&<div className="msg ok">{message}</div>}
       </div>
     </Section>
-    <div className="aa-dashboard-grid aa-whiteboard-support">
+    <div className="aa-lesson-context-bar"><strong>سياق الحصة:</strong><span>{lessonPhase}</span>{lessonContext&&<span>سورة {lessonContext.surah} — الآية {lessonContext.number}</span>}<Button kind="secondary" onClick={()=>go("/teacher")}>لوحة المعلم</Button><Button kind="secondary" onClick={()=>go("/quran")}>المصحف</Button><Button kind="secondary" onClick={()=>go("/games")}>الألعاب</Button></div><div className="aa-dashboard-grid aa-whiteboard-support">
       <Card><h3>أدوات الحصة</h3><p>استخدم السبورة للشرح والرسم وتحديد مواضع الأخطاء، ثم انتقل للمصحف أو اللعبة من أدوات المعلم دون تحويل السبورة إلى صفحة منفصلة عن الدرس.</p></Card>
       <Card><h3>الجلسة المباشرة</h3><p>الجلسة تستخدم اتصالًا مباشرًا بين المتصفحين عبر WebRTC من خلال PeerJS. المعلم ينشئ الجلسة، والطالب يدخل بالكود، ويمكن للمعلم التبديل بين المشاهدة فقط والكتابة، أو فصل الطالب من الجلسة.</p></Card>
     </div>
