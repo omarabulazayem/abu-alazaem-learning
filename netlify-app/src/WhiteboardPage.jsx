@@ -93,7 +93,7 @@ export default function WhiteboardPage(){
         connRef.current=conn;setConnectionState("connected");
         conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked,timer,background,sessionCode:code}));
         conn.on("data",data=>{
-          if(data?.type==="student-stroke"&&!locked){drawRemoteStroke(canvasRef.current,data.stroke);sendRealtime({type:"stroke",stroke:data.stroke});}
+          if(data?.type==="student-stroke"&&!locked){drawRemoteStroke(canvasRef.current,data.stroke);}
           if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
           if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
           if(data?.type==="ping")conn.send({type:"pong"});
