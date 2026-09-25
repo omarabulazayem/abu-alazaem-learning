@@ -94,3 +94,10 @@
 .aa-remote-media{position:relative;display:grid;gap:8px;padding:10px;border:1px solid var(--aa-border);border-radius:18px;background:#10151c;overflow:hidden}
 .aa-remote-media-label{position:absolute;top:12px;right:12px;z-index:2;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.9);font-size:12px;font-weight:900;color:#2b2d42}
 .aa-remote-video{display:block;width:100%;max-height:520px;min-height:240px;object-fit:contain;background:#10151c;border-radius:12px}
+
+
+.aa-student-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.aa-student-tools label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:900;color:var(--aa-muted)}
+.aa-student-tools input[type=color]{width:34px;height:30px;padding:2px;border:1px solid var(--aa-border);border-radius:8px;background:#fff}
+.aa-student-tools select{height:30px;border:1px solid var(--aa-border);border-radius:8px;background:#fff;font-weight:800}
+.aa-rejoin-hint{padding:10px 14px;border-radius:12px;background:#fffaf0;color:#735b2b;font-size:12px;font-weight:800;text-align:center}
