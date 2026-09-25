@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from "react";
 import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go} from "./ui-v4.jsx";
 import {getSurah} from "./surahCatalog.js";
+import Peer from "peerjs";
 
 const COLORS=["#1E6F5C","#4EA8DE","#8E7CC3","#E58AA8","#2B2D42","#E9C46A","#FFFFFF"];
 const SIZES=[2,4,7,11,16];
@@ -18,7 +19,8 @@ export default function WhiteboardPage(){
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
   const [background,setBackground]=useState("paper"),[videoUrl,setVideoUrl]=useState(""),[presentation,setPresentation]=useState(false);
   const [effects,setEffects]=useState([]);
-  const audioRef=useRef(null);
+  const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null);
+  const [connectionState,setConnectionState]=useState("offline");
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -62,10 +64,29 @@ export default function WhiteboardPage(){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));setSavedAt(payload.savedAt);setMessage("تم حفظ حالة السبورة على هذا الجهاز.");
   },[snapshot,ayah,timer,sessionCode]);
   useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
-  function newSession(){
-    const code=Math.random().toString(36).slice(2,7).toUpperCase();
-    setSessionCode(code);setTimer(0);setAyah(null);setMessage("بدأت جلسة سبورة جديدة: "+code);
+  function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
+  function startTeacherSession(){
+    try{
+      peerRef.current?.destroy();
+      const code=Math.random().toString(36).slice(2,7).toUpperCase();
+      const peer=new Peer("abu-board-"+code);
+      peerRef.current=peer;setSessionCode(code);setTimer(0);setAyah(null);setConnectionState("waiting");
+      peer.on("open",()=>setConnectionState("waiting"));
+      peer.on("connection",conn=>{
+        if(connRef.current?.open)connRef.current.close();
+        connRef.current=conn;setConnectionState("connected");
+        conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked,timer,background,sessionCode:code}));
+        conn.on("data",data=>{
+          if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
+          if(data?.type==="ping")conn.send({type:"pong"});
+        });
+        conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;setConnectionState("waiting");}});
+      });
+      peer.on("error",()=>{setConnectionState("error");setMessage("تعذر فتح جلسة المشاركة. جربي بدء جلسة جديدة.");});
+      setMessage("تم إنشاء جلسة مباشرة. أرسلي الكود للطالب: "+code);
+    }catch{setConnectionState("error");setMessage("تعذر تشغيل الاتصال المباشر على هذا المتصفح.");}
   }
+  useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});},[locked,timer,background,sessionCode,snapshot]);
 
   function triggerEffect(type){
     const id=Date.now()+Math.random();
@@ -104,7 +125,7 @@ export default function WhiteboardPage(){
     ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;c.setPointerCapture?.(e.pointerId);
   }
   function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);ctx.lineTo(p.x,p.y);ctx.stroke();}
-  function end(){drawingRef.current=false;}
+  function end(){if(!drawingRef.current)return;drawingRef.current=false;sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);}
   function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);}
   function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);setMessage("تم تنظيف السبورة.");}
@@ -140,7 +161,7 @@ export default function WhiteboardPage(){
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
             <button onClick={saveBoard}>💾 حفظ</button>
-            <button onClick={newSession}>＋ جلسة جديدة</button>
+            <button onClick={startTeacherSession}>＋ جلسة جديدة</button>
             <button onClick={exportBoard}>تصدير صورة</button>
           </div>
           <div className="aa-whiteboard-tool-group aa-sound-group">
@@ -148,7 +169,7 @@ export default function WhiteboardPage(){
             {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
           </div>
         </div>
-        <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}</span></div>
+        <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span></div>
           <div><b>مرجع الدرس</b><span>{ayah?("سورة "+ayah.surah+" — الآية "+ayah.number):"لم تحدد آية بعد"}</span></div>
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
