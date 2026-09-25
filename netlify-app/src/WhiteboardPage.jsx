@@ -34,9 +34,9 @@ export default function WhiteboardPage(){
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
   const [background,setBackground]=useState("paper"),[videoUrl,setVideoUrl]=useState(""),[presentation,setPresentation]=useState(false);
   const [effects,setEffects]=useState([]);
-  const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null);
+  const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null),mediaCallRef=useRef(null),videoRef=useRef(null),screenStreamRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
-  const [studentCanWrite,setStudentCanWrite]=useState(false);
+  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -81,7 +81,45 @@ export default function WhiteboardPage(){
   },[snapshot,ayah,timer,sessionCode]);
   useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
-  function disconnectStudent(){if(connRef.current){try{connRef.current.send({type:"disconnect",reason:"تم إنهاء الجلسة من المعلم."});}catch{}connRef.current.close();connRef.current=null;}setConnectionState(sessionCode?"waiting":"offline");setMessage("تم فصل الطالب من الجلسة.");}
+  function stopMediaShare(){
+    try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
+    screenStreamRef.current=null;
+    try{mediaCallRef.current?.close?.();}catch{}
+    mediaCallRef.current=null;
+    setSharingMedia(false);setMediaKind("");
+    sendRealtime({type:"media-stop"});
+    setMessage("تم إيقاف مشاركة المحتوى.");
+  }
+  async function startScreenShare(){
+    if(!connRef.current?.open){setMessage("ابدئي جلسة واتصال الطالب أولًا.");return;}
+    try{
+      const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+      screenStreamRef.current=stream;
+      const call=peerRef.current.call(connRef.current.peer,stream);
+      mediaCallRef.current=call;
+      setSharingMedia(true);setMediaKind("screen");
+      sendRealtime({type:"media-start",kind:"screen"});
+      const track=stream.getVideoTracks?.()[0];
+      if(track)track.onended=()=>stopMediaShare();
+      setMessage("تم بدء مشاركة الشاشة مع الطالب.");
+    }catch{setMessage("لم يتم بدء مشاركة الشاشة. تأكدي من السماح للمتصفح بالمشاركة.");}
+  }
+  function shareUploadedVideo(){
+    if(!connRef.current?.open){setMessage("ابدئي جلسة واتصال الطالب أولًا.");return;}
+    const video=videoRef.current;
+    if(!video){setMessage("أضيفي فيديو أولًا ثم اضغطي مشاركة الفيديو.");return;}
+    try{
+      const stream=video.captureStream?.()||video.mozCaptureStream?.();
+      if(!stream)throw new Error("captureStream unsupported");
+      screenStreamRef.current=stream;
+      const call=peerRef.current.call(connRef.current.peer,stream);
+      mediaCallRef.current=call;
+      setSharingMedia(true);setMediaKind("video");
+      sendRealtime({type:"media-start",kind:"video"});
+      setMessage("تمت مشاركة الفيديو مع الطالب.");
+    }catch{setMessage("هذا المتصفح لا يدعم مشاركة ملف الفيديو بهذه الطريقة. استخدمي مشاركة الشاشة بدلًا منه.");}
+  }
+  function disconnectStudent(){stopMediaShare();if(connRef.current){try{connRef.current.send({type:"disconnect",reason:"تم إنهاء الجلسة من المعلم."});}catch{}connRef.current.close();connRef.current=null;}setConnectionState(sessionCode?"waiting":"offline");setMessage("تم فصل الطالب من الجلسة.");}
   function syncPermission(canWrite){setStudentCanWrite(canWrite);setLocked(!canWrite);sendRealtime({type:"permission",canWrite});}
   async function copyStudentLink(){try{await navigator.clipboard.writeText(window.location.origin+"/whiteboard/join");setMessage("تم نسخ رابط دخول الطالب. أرسليه للطالب مع كود الجلسة.");}catch{setMessage("رابط دخول الطالب: "+window.location.origin+"/whiteboard/join");}}
   function startTeacherSession(){
@@ -101,7 +139,7 @@ export default function WhiteboardPage(){
           if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
           if(data?.type==="ping")conn.send({type:"pong"});
         });
-        conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;setConnectionState("waiting");}});
+        conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;stopMediaShare();setConnectionState("waiting");}});
       });
       peer.on("error",()=>{setConnectionState("error");setMessage("تعذر فتح جلسة المشاركة. جربي بدء جلسة جديدة.");});
       setMessage("تم إنشاء جلسة مباشرة. أرسلي الكود للطالب: "+code);
@@ -184,7 +222,7 @@ export default function WhiteboardPage(){
             <select value={background} onChange={e=>setBackground(e.target.value)} aria-label="خلفية السبورة">
               <option value="paper">خلفية كتابة</option><option value="soft">خلفية هادئة</option><option value="focus">خلفية عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
             </select>
-            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>
+            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>▶ مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"⏹ إيقاف المشاركة":"🖥️ مشاركة الشاشة"}</button>
             <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
             <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"🔒 جعل الطالب مشاهدة فقط":"✍️ السماح للطالب بالكتابة"}</button>
             {sessionCode&&connectionState==="connected"&&<button onClick={disconnectStudent}>فصل الطالب</button>}
@@ -209,7 +247,7 @@ export default function WhiteboardPage(){
           </div>
         </div>
         <div className={"aa-whiteboard-stage aa-bg-"+background+(presentation?" is-presentation":"")+(locked?" is-locked":"")}>
-          {background==="video"&&videoUrl&&<video className="aa-whiteboard-video" src={videoUrl} controls autoPlay loop playsInline/>}
+          {background==="video"&&videoUrl&&<video ref={videoRef} className="aa-whiteboard-video" src={videoUrl} controls autoPlay loop playsInline/>}
           {background==="timer"&&<div className="aa-whiteboard-big-timer">{mm}:{ss}</div>}
           {background==="focus"&&<div className="aa-whiteboard-focus"><strong>مساحة العرض</strong><span>شغّلي الفيديو أو المؤقت أو اعرضي المحتوى هنا</span></div>}
           <div className="aa-whiteboard-effects" aria-live="polite">
