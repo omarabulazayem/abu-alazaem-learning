@@ -30,6 +30,7 @@ import TeacherAccessBar from "./TeacherAccessBar.jsx";
 import TeacherLearningPreview from "./TeacherLearningPreview.jsx";
 import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
 import WhiteboardPage from "./WhiteboardPage.jsx";
+import WhiteboardJoinPage from "./WhiteboardJoinPage.jsx";
 import {getCurrentUser} from "./api.js";
 import {isTeacherRestrictedRoute} from "./accessPolicy.js";
 
@@ -47,6 +48,7 @@ export default function RootRouter(){
   useEffect(()=>{if(teacherRestricted)navigate("/teacher",true);},[teacherRestricted]);
   if(path==="/teacher/game-reports")return <TeacherGameReports/>;
   if(path==="/teacher/whiteboard"&&teacher)return <WhiteboardPage/>;
+  if(path==="/whiteboard/join"&&!teacher)return <WhiteboardJoinPage/>;
   const isTeacherRoute=path==="/teacher"||path.startsWith("/teacher/");
   if(isTeacherRoute||teacherRestricted)return <TeacherPortal/>;
   if(!teacher&&path==="/child")return <ChildHub/>;
