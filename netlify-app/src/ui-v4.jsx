@@ -1,6 +1,10 @@
 import React from "react";
 import Icon from "./Icon.jsx";
 
+export const LESSON_CONTEXT_KEY="abu-alazaem-lesson-context-v1";
+export function getLessonContext(){try{return JSON.parse(localStorage.getItem(LESSON_CONTEXT_KEY)||"null");}catch{return null;}}
+export function setLessonContext(context){try{if(context)localStorage.setItem(LESSON_CONTEXT_KEY,JSON.stringify(context));else localStorage.removeItem(LESSON_CONTEXT_KEY);}catch{}}
+
 export function routePath(){
   return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;
 }
