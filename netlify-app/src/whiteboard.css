@@ -87,3 +87,10 @@
 .aa-join-form input{height:48px;border:1px solid var(--aa-border);border-radius:14px;padding:0 14px;font-size:22px;font-weight:950;letter-spacing:.18em;text-align:center;text-transform:uppercase}
 .aa-join-status{padding:12px 16px;border-radius:14px;background:#f3f8f7;color:#36524b;font-weight:800;text-align:center}
 @media(max-width:600px){.aa-join-form{display:grid}.aa-join-form input{width:100%}}
+
+
+.aa-join-session-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--aa-border);border-radius:16px;background:#f9fbfa}
+.aa-join-session-bar span{font-size:12px;color:var(--aa-muted);font-weight:800}
+.aa-remote-media{position:relative;display:grid;gap:8px;padding:10px;border:1px solid var(--aa-border);border-radius:18px;background:#10151c;overflow:hidden}
+.aa-remote-media-label{position:absolute;top:12px;right:12px;z-index:2;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.9);font-size:12px;font-weight:900;color:#2b2d42}
+.aa-remote-video{display:block;width:100%;max-height:520px;min-height:240px;object-fit:contain;background:#10151c;border-radius:12px}
