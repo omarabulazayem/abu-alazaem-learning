@@ -125,7 +125,7 @@ export default function WhiteboardPage(){
   function startTeacherSession(){
     try{
       peerRef.current?.destroy();
-      const code=Math.random().toString(36).slice(2,7).toUpperCase();
+      const code=Math.random().toString(36).slice(2,10).toUpperCase();
       const peer=new Peer("abu-board-"+code);
       peerRef.current=peer;setSessionCode(code);setTimer(0);setAyah(null);setConnectionState("waiting");
       peer.on("open",()=>setConnectionState("waiting"));
