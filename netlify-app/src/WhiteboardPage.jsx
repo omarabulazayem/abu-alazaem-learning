@@ -65,6 +65,7 @@ export default function WhiteboardPage(){
   },[snapshot,ayah,timer,sessionCode]);
   useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
+  async function copyStudentLink(){try{await navigator.clipboard.writeText(window.location.origin+"/whiteboard/join");setMessage("تم نسخ رابط دخول الطالب. أرسليه للطالب مع كود الجلسة.");}catch{setMessage("رابط دخول الطالب: "+window.location.origin+"/whiteboard/join");}}
   function startTeacherSession(){
     try{
       peerRef.current?.destroy();
@@ -135,7 +136,7 @@ export default function WhiteboardPage(){
   function handleVideo(e){const file=e.target.files?.[0];if(file){setVideoUrl(URL.createObjectURL(file));setBackground("video");}}
 
   return <AppShell mode="teacher" subtitle="بوابة المعلم" nav={TEACHER_NAV} footer="أبو العزايم • السبورة أداة شرح داخل جلسة الحصة."><div className="aa-whiteboard-page">
-    <Hero eyebrow="السبورة التفاعلية" title="مساحة شرح المعلم" description="سبورة سريعة للحصة: كتابة ورسم، ممحاة، تراجع، مؤقت، مرجع للآية، وقفل تفاعل الطالب. حالة السبورة مؤقتة لجلسة الحصة ولا تُحفظ كسجل دائم في MVP." icon="edit" tone="sky" actions={<Button kind="secondary" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button>}/>
+    <Hero eyebrow="السبورة التفاعلية" title="مساحة شرح المعلم" description="سبورة سريعة للحصة: كتابة ورسم، ممحاة، تراجع، مؤقت، مرجع للآية، وقفل تفاعل الطالب. يمكن إنشاء جلسة مباشرة وإعطاء الطالب كودًا للدخول، مع تحكم المعلم في الكتابة أو المشاهدة." icon="edit" tone="sky" actions={<Button kind="secondary" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button>}/>
     <Section>
       <div className="aa-whiteboard-shell">
         <div className="aa-whiteboard-toolbar">
@@ -169,7 +170,7 @@ export default function WhiteboardPage(){
             {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
           </div>
         </div>
-        <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span></div>
+        <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
           <div><b>مرجع الدرس</b><span>{ayah?("سورة "+ayah.surah+" — الآية "+ayah.number):"لم تحدد آية بعد"}</span></div>
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
@@ -200,7 +201,7 @@ export default function WhiteboardPage(){
     </Section>
     <div className="aa-dashboard-grid aa-whiteboard-support">
       <Card><h3>أدوات الحصة</h3><p>استخدم السبورة للشرح والرسم وتحديد مواضع الأخطاء، ثم انتقل للمصحف أو اللعبة من أدوات المعلم دون تحويل السبورة إلى صفحة منفصلة عن الدرس.</p></Card>
-      <Card><h3>حدود نسخة MVP</h3><p>هذه النسخة تنفذ أدوات السبورة محليًا داخل جلسة المتصفح. المزامنة الحية بين جهاز المعلم والطالب تحتاج قناة WebRTC/DataChannel أو خدمة Realtime ضمن Live Classroom، وهي خطوة مستقلة.</p></Card>
+      <Card><h3>الجلسة المباشرة</h3><p>الجلسة تستخدم اتصالًا مباشرًا بين المتصفحين عبر WebRTC من خلال PeerJS. المعلم ينشئ الجلسة، والطالب يدخل بالكود، وتنتقل حالة السبورة بعد كل تعديل مكتمل. صلاحية الكتابة يحددها المعلم.</p></Card>
     </div>
   </div></AppShell>;
 }
