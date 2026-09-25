@@ -36,6 +36,7 @@ export default function WhiteboardPage(){
   const [effects,setEffects]=useState([]);
   const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
+  const [studentCanWrite,setStudentCanWrite]=useState(false);
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -80,6 +81,8 @@ export default function WhiteboardPage(){
   },[snapshot,ayah,timer,sessionCode]);
   useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
+  function disconnectStudent(){if(connRef.current){try{connRef.current.send({type:"disconnect",reason:"تم إنهاء الجلسة من المعلم."});}catch{}connRef.current.close();connRef.current=null;}setConnectionState(sessionCode?"waiting":"offline");setMessage("تم فصل الطالب من الجلسة.");}
+  function syncPermission(canWrite){setStudentCanWrite(canWrite);setLocked(!canWrite);sendRealtime({type:"permission",canWrite});}
   async function copyStudentLink(){try{await navigator.clipboard.writeText(window.location.origin+"/whiteboard/join");setMessage("تم نسخ رابط دخول الطالب. أرسليه للطالب مع كود الجلسة.");}catch{setMessage("رابط دخول الطالب: "+window.location.origin+"/whiteboard/join");}}
   function startTeacherSession(){
     try{
@@ -91,9 +94,9 @@ export default function WhiteboardPage(){
       peer.on("connection",conn=>{
         if(connRef.current?.open)connRef.current.close();
         connRef.current=conn;setConnectionState("connected");
-        conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked,timer,background,sessionCode:code}));
+        conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode:code,timerRunning}));
         conn.on("data",data=>{
-          if(data?.type==="student-stroke"&&!locked){drawRemoteStroke(canvasRef.current,data.stroke);}
+          if(data?.type==="student-stroke"&&studentCanWrite){drawRemoteStroke(canvasRef.current,data.stroke);}
           if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
           if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
           if(data?.type==="ping")conn.send({type:"pong"});
@@ -104,7 +107,8 @@ export default function WhiteboardPage(){
       setMessage("تم إنشاء جلسة مباشرة. أرسلي الكود للطالب: "+code);
     }catch{setConnectionState("error");setMessage("تعذر تشغيل الاتصال المباشر على هذا المتصفح.");}
   }
-  useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});},[locked,timer,background,sessionCode,snapshot]);
+  useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode,timerRunning});},[studentCanWrite,background,sessionCode,snapshot]);
+  useEffect(()=>{sendRealtime({type:"timer",timer,timerRunning});},[timer,timerRunning]);
 
   function triggerEffect(type){
     const id=Date.now()+Math.random();
@@ -182,7 +186,8 @@ export default function WhiteboardPage(){
             </select>
             <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>
             <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
-            <button onClick={()=>setLocked(v=>!v)}>{locked?"🔓 فتح تفاعل الطالب":"🔒 قفل تفاعل الطالب"}</button>
+            <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"🔒 جعل الطالب مشاهدة فقط":"✍️ السماح للطالب بالكتابة"}</button>
+            {sessionCode&&connectionState==="connected"&&<button onClick={disconnectStudent}>فصل الطالب</button>}
             <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"⏸ إيقاف المؤقت":"▶ بدء المؤقت"}</button>
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
@@ -226,7 +231,7 @@ export default function WhiteboardPage(){
     </Section>
     <div className="aa-dashboard-grid aa-whiteboard-support">
       <Card><h3>أدوات الحصة</h3><p>استخدم السبورة للشرح والرسم وتحديد مواضع الأخطاء، ثم انتقل للمصحف أو اللعبة من أدوات المعلم دون تحويل السبورة إلى صفحة منفصلة عن الدرس.</p></Card>
-      <Card><h3>الجلسة المباشرة</h3><p>الجلسة تستخدم اتصالًا مباشرًا بين المتصفحين عبر WebRTC من خلال PeerJS. المعلم ينشئ الجلسة، والطالب يدخل بالكود، وتنتقل حالة السبورة بعد كل تعديل مكتمل. صلاحية الكتابة يحددها المعلم.</p></Card>
+      <Card><h3>الجلسة المباشرة</h3><p>الجلسة تستخدم اتصالًا مباشرًا بين المتصفحين عبر WebRTC من خلال PeerJS. المعلم ينشئ الجلسة، والطالب يدخل بالكود، ويمكن للمعلم التبديل بين المشاهدة فقط والكتابة، أو فصل الطالب من الجلسة.</p></Card>
     </div>
   </div></AppShell>;
 }
