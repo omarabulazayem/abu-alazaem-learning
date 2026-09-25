@@ -11,8 +11,23 @@ function pointFromEvent(canvas,e){
   return {x:(e.clientX-rect.left)*(canvas.width/rect.width),y:(e.clientY-rect.top)*(canvas.height/rect.height)};
 }
 
+function drawRemoteStroke(canvas,stroke){
+  if(!canvas||!stroke?.points?.length)return;
+  const ctx=canvas.getContext("2d");
+  ctx.save();
+  ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.lineWidth=stroke.size;
+  ctx.globalCompositeOperation=stroke.tool==="eraser"?"destination-out":"source-over";
+  ctx.strokeStyle=stroke.color||"#1E6F5C";
+  ctx.beginPath();
+  ctx.moveTo(stroke.points[0].x,stroke.points[0].y);
+  for(const p of stroke.points.slice(1))ctx.lineTo(p.x,p.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export default function WhiteboardPage(){
-  const canvasRef=useRef(null),drawingRef=useRef(false),historyRef=useRef([]),futureRef=useRef([]);
+  const canvasRef=useRef(null),drawingRef=useRef(false),historyRef=useRef([]),futureRef=useRef([]),strokeRef=useRef([]);
   const [tool,setTool]=useState("pen"),[color,setColor]=useState(COLORS[0]),[size,setSize]=useState(4);
   const [locked,setLocked]=useState(false),[message,setMessage]=useState(""),[timer,setTimer]=useState(0),[savedAt,setSavedAt]=useState(""),[sessionCode,setSessionCode]=useState("");
   const STORAGE_KEY="abu-al-azaem-whiteboard-v2";
@@ -78,7 +93,9 @@ export default function WhiteboardPage(){
         connRef.current=conn;setConnectionState("connected");
         conn.on("open",()=>conn.send({type:"state",canvas:snapshot(),locked,timer,background,sessionCode:code}));
         conn.on("data",data=>{
+          if(data?.type==="student-stroke"&&!locked){drawRemoteStroke(canvasRef.current,data.stroke);sendRealtime({type:"stroke",stroke:data.stroke});}
           if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
+          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
           if(data?.type==="ping")conn.send({type:"pong"});
         });
         conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;setConnectionState("waiting");}});
@@ -94,8 +111,9 @@ export default function WhiteboardPage(){
     setEffects(v=>[...v,{id,type}]);
     window.setTimeout(()=>setEffects(v=>v.filter(x=>x.id!==id)),type==="celebrate"?2600:1800);
   }
-  function playSound(type){
+  function playSound(type,broadcast=true){
     triggerEffect(type);
+    if(broadcast)sendRealtime({type:"effect",effect:type});
     try{
       const C=window.AudioContext||window.webkitAudioContext;
       if(!C)return;
@@ -121,15 +139,22 @@ export default function WhiteboardPage(){
   function start(e){
     if(locked)return;
     const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);
-    pushHistory();drawingRef.current=true;ctx.beginPath();ctx.moveTo(p.x,p.y);
+    pushHistory();drawingRef.current=true;strokeRef.current=[p];ctx.beginPath();ctx.moveTo(p.x,p.y);
     ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(window.devicePixelRatio||1);
     ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;c.setPointerCapture?.(e.pointerId);
   }
-  function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);ctx.lineTo(p.x,p.y);ctx.stroke();}
-  function end(){if(!drawingRef.current)return;drawingRef.current=false;sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
-  function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);}
-  function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);}
-  function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);setMessage("تم تنظيف السبورة.");}
+  function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);strokeRef.current.push(p);ctx.lineTo(p.x,p.y);ctx.stroke();}
+  function end(){
+    if(!drawingRef.current)return;
+    drawingRef.current=false;
+    const points=strokeRef.current;strokeRef.current=[];
+    if(points.length){
+      sendRealtime({type:"stroke",stroke:{points,tool,color,size:size*(window.devicePixelRatio||1)}});
+    }
+}
+  function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
+  function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
+  function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});setMessage("تم تنظيف السبورة.");}
   function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}setAyah({surah:s.name,number:Number(ayahNumber)});setMessage("تم تجهيز موضع سورة "+s.name+"، الآية "+ayahNumber+". افتح المصحف لإظهار النص الموثق.");}
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
