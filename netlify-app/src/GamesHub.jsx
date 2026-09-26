@@ -4,14 +4,14 @@ import {isChildModeActive} from "./ChildHub.jsx";
 import {loadLearningViewer,learningActorReady} from "./learningViewer.js";
 import {GameEngine} from "./gameEngine.js";
 import {liveGamesByPack,PLANNED_GAME_DEFINITIONS,BLOCKED_CONTENT_GAME_DEFINITIONS} from "./gameRegistry.js";
-import {AppShell,Button,Card,CHILD_NAV,FAMILY_NAV,Hero,Metric,Section,TEACHER_NAV,go} from "./ui-v4.jsx";
+import {AppShell,Button,Card,CHILD_NAV,FAMILY_NAV,Hero,Metric,Section,TEACHER_NAV,getLessonContext,saveLessonContext,go} from "./ui-v4.jsx";
 
 const coreGames=liveGamesByPack("quran-core").filter(g=>g.engineIntegrated);
 const expansionGames=liveGamesByPack("quran-expansion").filter(g=>g.engineIntegrated);
 const classicGames=liveGamesByPack("classic").filter(g=>g.engineIntegrated);
 const toneByCategory={memorization:"sky",review:"mint",tajweed:"mint",understanding:"gold",classic:"sky"};
 
-function GameGrid({games,progress,viewer,childMode,storeMap,unlocked,onPurchase}){
+function GameGrid({games,progress,viewer,childMode,storeMap,unlocked,onPurchase,onLaunch}){
   const teacher=Boolean(viewer?.teacherPreview);
   return <div className="aa-game-grid">{games.map(game=>{
     const p=progress.find(x=>x.game_id===game.id);
@@ -24,7 +24,7 @@ function GameGrid({games,progress,viewer,childMode,storeMap,unlocked,onPurchase}
       : ready?"العب الآن":"غير متاحة";
     const click=locked
       ? childMode?()=>onPurchase(game,item):()=>go("/child")
-      : ready?()=>go(game.route):undefined;
+      : ready?()=>onLaunch(game):undefined;
     const badge=teacher?"معاينة":owned?"مملوكة":locked?"مقفلة":p?.best_stars?`${p.best_stars}/3 نجوم`:childMode?"جاهزة":"ابدأ";
     return <Card key={game.id} className="aa-game-card" icon={locked?"lock":game.icon||"game"} title={game.title}
       text={locked?(childMode?"افتح اللعبة مرة واحدة وتفضل ملكك دائمًا.":"شراء اللعبة يتم من وضع الطفل."):childMode?"جولة قصيرة. جرّب، العب، واجمع نجومك.":game.description}
@@ -38,6 +38,7 @@ export default function GamesHub(){
   const [viewer,setViewer]=useState(undefined),[progress,setProgress]=useState([]),[wallet,setWallet]=useState({wallet_balance:0,lifetime_points:0});
   const [storeItems,setStoreItems]=useState([]),[unlocks,setUnlocks]=useState([]),[busyGame,setBusyGame]=useState("");
   const [error,setError]=useState(""),[message,setMessage]=useState("");
+  const [lessonContext,setLessonContext]=useState(()=>getLessonContext());
 
   async function refreshAccess(childId){
     if(!childId)return;
@@ -70,6 +71,7 @@ export default function GamesHub(){
   const lockedCount=teacher?0:all.filter(g=>storeMap.has(g.id)&&!unlocked.has(g.id)).length;
   const available=all.length-lockedCount;
 
+  function launchGame(game){if(teacher){saveLessonContext(lessonContext);setLessonContext(getLessonContext());}go(game.route);}
   async function logout(){await signOut();go("/");}
   async function buy(game,item){
     if(!child?.id||busyGame)return;
@@ -92,13 +94,14 @@ export default function GamesHub(){
     {!childMode&&<Button kind="ghost" icon="logout" onClick={logout}>خروج</Button>}
   </>;
 
-  const gridProps={progress,viewer,childMode,storeMap,unlocked,onPurchase:buy};
+  const gridProps={progress,viewer,childMode,storeMap,unlocked,onPurchase:buy,onLaunch:launchGame};
   return <AppShell mode={mode} subtitle="عالم الألعاب" nav={nav} actions={actions} footer="أبو العزايم • الألعاب المشتراة تظل مملوكة لملف الطفل عبر كل المعلمين.">
     <Hero eyebrow={teacher?"معاينة المعلم":childMode?"اختار مغامرتك":"ألعاب مرتبطة بالتقدم"}
       title={teacher?"استكشف الألعاب قبل الطلاب":childMode?`جاهز نلعب يا ${child?.display_name||"بطلنا"}؟`:`أهلًا ${child?.display_name||"بطلنا"} في عالم الألعاب`}
       description={teacher?"المعلم يتجاوز Store Lock أثناء الاستخدام التعليمي؛ المعاينة لا تخصم من رصيد الطفل.":childMode?"الألعاب المجانية تبدأ فورًا، والألعاب المدفوعة تفتحها مرة واحدة من رصيدك وتفضل ملكك.":"تابع الألعاب والتقدم. شراء الألعاب يتم من وضع الطفل."}
       icon="game" tone="mint"/>
     {error&&<div className="msg error">{error}</div>}{message&&<div className="msg ok">{message}</div>}
+    {teacher&&lessonContext&&<div className="aa-lesson-context-bar"><strong>سياق الحصة</strong><span>سورة {lessonContext.surah||"غير محددة"}{lessonContext.number?" — الآية "+lessonContext.number:""}{lessonContext.phase?" — "+lessonContext.phase:""}</span><Button kind="secondary" onClick={()=>go("/teacher/whiteboard")}>العودة للسبورة</Button><Button kind="secondary" onClick={()=>go("/quran")}>المصحف</Button></div>}
     <div className="aa-metrics">
       <Metric icon="game" label="ألعاب متاحة" value={available} tone="mint"/>
       <Metric icon="lock" label="تحتاج فتح" value={lockedCount} tone="sky"/>
