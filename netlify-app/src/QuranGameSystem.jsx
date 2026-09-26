@@ -5,6 +5,7 @@ import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
 import { getSurahAyahs, loadQuranData } from "./quranCorpus.js";
 import { GameEngine, gameResultSummary } from "./gameEngine.js";
 import { SoundEngine } from "./soundEngine.js";
+import { getLessonContext } from "./ui-v4.jsx";
 
 function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
 function navigate(path){if(routePath()!==path){history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}}
@@ -23,15 +24,15 @@ function Stars({count=0}){return <div className="result-stars" aria-label={`${co
 function ResultPanel({session,onAgain}){const r=gameResultSummary(session);if(!r)return null;return <section className="qgame-result"><span className="qgame-result-icon"><Icon name="trophy" size={42}/></span><h2>أحسنت، اكتملت الجولة</h2><Stars count={r.stars}/><div className="qgame-result-stats"><div><b>{r.score}</b><small>نقطة</small></div><div><b>{r.accuracy}%</b><small>دقة</small></div><div><b>{r.correct}</b><small>إجابة صحيحة</small></div><div><b>{r.wrong}</b><small>محاولة خاطئة</small></div></div>{session?.reward_awarded===false&&<p>تم حفظ أفضل نتيجتك، لكن مكافأة هذه اللعبة لليوم حصلت عليها مسبقًا.</p>}<div className="row" style={{justifyContent:"center"}}><button className="secondary" onClick={()=>navigate("/games")}>عالم الألعاب</button><button className="primary" onClick={onAgain}>العب جولة جديدة</button></div></section>;}
 
 function useQuranGame(gameId){
-  const [viewer,setViewer]=useState(undefined); const [quran,setQuran]=useState(null); const [surahChoices,setSurahChoices]=useState([]); const [difficulty,setDifficulty]=useState("easy"); const [error,setError]=useState("");
-  useEffect(()=>{let alive=true;(async()=>{try{const context=await loadLearningViewer();if(!alive)return;if(!context.user)return navigate("/login");const data=await loadQuranData();if(!alive)return;let choices=SAFE_SHORT_SURAHS;if(!context.teacherPreview&&context.child?.id){const progress=await getProgress(context.child.id);const studied=(progress||[]).filter(p=>Number(p.memorized_percent||0)>0).map(p=>Number(p.surah_number));if(studied.length)choices=[...new Set(studied)];}setViewer(context);setQuran(data);setSurahChoices(choices.filter(n=>data.surahs.some(s=>s.number===n)));}catch(e){if(alive)setError(e.message||"تعذر تجهيز اللعبة.");}})();return()=>{alive=false;};},[gameId]);
+  const [viewer,setViewer]=useState(undefined); const [quran,setQuran]=useState(null); const [surahChoices,setSurahChoices]=useState([]); const [difficulty,setDifficulty]=useState("easy"); const [error,setError]=useState(""); const [lessonContext]=useState(()=>getLessonContext());
+  useEffect(()=>{let alive=true;(async()=>{try{const context=await loadLearningViewer();if(!alive)return;if(!context.user)return navigate("/login");const data=await loadQuranData();if(!alive)return;let choices=SAFE_SHORT_SURAHS;if(!context.teacherPreview&&context.child?.id){const progress=await getProgress(context.child.id);const studied=(progress||[]).filter(p=>Number(p.memorized_percent||0)>0).map(p=>Number(p.surah_number));if(studied.length)choices=[...new Set(studied)];}setViewer(context);setQuran(data);const lessonSurah=Number(lessonContext?.surahNumber||0);const scopedChoices=lessonSurah&&data.surahs.some(s=>s.number===lessonSurah)?[lessonSurah]:choices;setSurahChoices(scopedChoices.filter(n=>data.surahs.some(s=>s.number===n)));}catch(e){if(alive)setError(e.message||"تعذر تجهيز اللعبة.");}})();return()=>{alive=false;};},[gameId]);
   function engine(){return new GameEngine({childId:viewer?.child?.id,gameId,teacherPreview:Boolean(viewer?.teacherPreview)});}
   return {viewer,quran,surahChoices,difficulty,setDifficulty,error,setError,engine};
 }
 
 function Difficulty({value,onChange}){return <div className="difficulty-tabs">{[["easy","سهل"],["medium","متوسط"],["hard","متقدم"]].map(([v,label])=><button key={v} className={value===v?"active":""} onClick={()=>onChange(v)}>{label}</button>)}</div>;}
 
-function QuranGameShell({title,subtitle,children}){return <div className="app quran-game-system" dir="rtl"><GameHeader title={title} subtitle={subtitle}/><main className="wrap page qgame-page">{children}</main><footer><div className="wrap">النص القرآني في الألعاب من QuranData الموثق بمصدر Tanzil، ولا يتم توليده داخل اللعبة.</div></footer></div>;}
+function QuranGameShell({title,subtitle,children}){const context=getLessonContext();return <div className="app quran-game-system" dir="rtl"><GameHeader title={title} subtitle={subtitle}/><main className="wrap page qgame-page">{context&&<div className="aa-lesson-context-bar"><strong>سياق الحصة</strong><span>سورة {context.surah||"غير محددة"}{context.number?" — الآية "+context.number:""}{context.phase?" — "+context.phase:""}</span></div>}{children}</main><footer><div className="wrap">النص القرآني في الألعاب من QuranData الموثق بمصدر Tanzil، ولا يتم توليده داخل اللعبة.</div></footer></div>;}
 
 export function QuranWheelGame(){
   const runtime=useQuranGame("quran-wheel"); const {viewer,surahChoices,difficulty,setDifficulty,error,setError}=runtime;
