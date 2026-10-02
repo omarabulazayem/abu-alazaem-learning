@@ -25,11 +25,13 @@ function drawRemoteStroke(canvas,stroke){
   ctx.lineCap="round";ctx.lineJoin="round";
   ctx.lineWidth=stroke.size;
   ctx.globalCompositeOperation=stroke.tool==="eraser"?"destination-out":"source-over";
+  ctx.globalAlpha=stroke.tool==="highlighter"?0.24:1;
   ctx.strokeStyle=stroke.color||"#1E6F5C";
   ctx.beginPath();
   ctx.moveTo(stroke.points[0].x,stroke.points[0].y);
   for(const p of stroke.points.slice(1))ctx.lineTo(p.x,p.y);
   ctx.stroke();
+  ctx.globalAlpha=1;
   ctx.restore();
 }
 
@@ -86,8 +88,8 @@ export default function WhiteboardPage(){
     const canvas=snapshot();if(!canvas)return;
     const payload={canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase};
     localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));setSavedAt(payload.savedAt);setMessage("تم حفظ حالة السبورة على هذا الجهاز.");
-  },[snapshot,ayah,timer,sessionCode]);
-  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
+  },[snapshot,ayah,timer,sessionCode,lessonContext,lessonPhase]);
+  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,lessonContext,lessonPhase,snapshot]);
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
   function stopMediaShare(){
     try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
