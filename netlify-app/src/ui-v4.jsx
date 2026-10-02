@@ -49,6 +49,20 @@ export function Brand({subtitle="للحفظ الممتع",onClick=()=>go("/")}){
   </button>;
 }
 
+function TeacherLessonDock(){
+  const context=getLessonContext();
+  if(!context)return null;
+  const surah=context.surah||"غير محددة";
+  const ayah=context.number||context.ayah||null;
+  return <div className="aa-teacher-lesson-dock" role="region" aria-label="أدوات الحصة">
+    <div className="aa-teacher-lesson-current"><span><Icon name="teacher" size={18}/></span><div><small>الحصة الحالية</small><b>سورة {surah}{ayah?" • الآية "+ayah:""}</b></div></div>
+    <div className="aa-teacher-lesson-actions">
+      <button onClick={()=>go("/teacher/whiteboard")} className={routePath()==="/teacher/whiteboard"?"is-active":""}><Icon name="edit" size={17}/><span>السبورة</span></button>
+      <button onClick={()=>go("/teacher/quran")} className={routePath()==="/teacher/quran"?"is-active":""}><Icon name="quran" size={17}/><span>المصحف</span></button>
+      <button onClick={()=>go("/games")} className={routePath()==="/games"?"is-active":""}><Icon name="game" size={17}/><span>الألعاب</span></button>
+    </div>
+  </div>;
+}
 export function AppShell({mode="public",subtitle,nav=[],actions,children,footer="رحلة هادئة وواضحة مع القرآن.",hideNav=false}){
   const current=routePath();
   return <div className={`aa-app aa-mode-${mode}`} dir="rtl">
@@ -61,7 +75,7 @@ export function AppShell({mode="public",subtitle,nav=[],actions,children,footer=
         <div className="aa-header-actions">{actions}</div>
       </div>
     </header>
-    <main className="aa-main">{children}</main>
+    <main className="aa-main">{mode==="teacher"&&<TeacherLessonDock/>}{children}</main>
     <footer className="aa-footer"><div>{footer}</div></footer>
     {mode==="child"&&<nav className="aa-bottom-nav" aria-label="تنقل الطفل">{CHILD_NAV.map(item=><button key={item.path} className={current===item.path?"is-active":""} onClick={()=>go(item.path)}><Icon name={item.icon} size={22}/><span>{item.label}</span></button>)}</nav>}
   </div>;
