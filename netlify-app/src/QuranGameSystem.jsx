@@ -32,7 +32,7 @@ function useQuranGame(gameId){
 
 function Difficulty({value,onChange}){return <div className="difficulty-tabs">{[["easy","سهل"],["medium","متوسط"],["hard","متقدم"]].map(([v,label])=><button key={v} className={value===v?"active":""} onClick={()=>onChange(v)}>{label}</button>)}</div>;}
 
-function QuranGameShell({title,subtitle,children}){const context=getLessonContext();return <div className="app quran-game-system" dir="rtl"><GameHeader title={title} subtitle={subtitle}/><main className="wrap page qgame-page">{context&&<div className="aa-lesson-context-bar"><strong>سياق الحصة</strong><span>سورة {context.surah||"غير محددة"}{context.number?" — الآية "+context.number:""}{context.phase?" — "+context.phase:""}</span></div>}{children}</main><footer><div className="wrap">النص القرآني في الألعاب من QuranData الموثق بمصدر Tanzil، ولا يتم توليده داخل اللعبة.</div></footer></div>;}
+function QuranGameShell({title,subtitle,children}){const context=getLessonContext();return <div className="app quran-game-system" dir="rtl"><GameHeader title={title} subtitle={subtitle}/><main className="wrap page qgame-page">{context&&<div className="aa-lesson-context-bar"><strong>سياق الحصة</strong><span>سورة {context.surah||"غير محددة"}{context.number?" — الآية "+context.number:""}{context.phase?" — "+context.phase:""}{context.gameTitle?" — "+context.gameTitle:""}</span></div>}{children}</main><footer><div className="wrap">النص القرآني في الألعاب من QuranData الموثق بمصدر Tanzil، ولا يتم توليده داخل اللعبة.</div></footer></div>;}
 
 export function QuranWheelGame(){
   const runtime=useQuranGame("quran-wheel"); const {viewer,surahChoices,difficulty,setDifficulty,error,setError}=runtime;
