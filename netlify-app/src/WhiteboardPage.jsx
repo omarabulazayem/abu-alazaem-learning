@@ -3,8 +3,14 @@ import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go,getLessonContext,saveLe
 import {getSurah} from "./surahCatalog.js";
 import Peer from "peerjs";
 
-const COLORS=["#1E6F5C","#4EA8DE","#8E7CC3","#E58AA8","#2B2D42","#E9C46A","#FFFFFF"];
-const SIZES=[2,4,7,11,16];
+const COLORS=["#1E6F5C","#4EA8DE","#E9C46A","#2B2D42","#FFFFFF"];
+const TAJWEED_COLORS=[
+  {key:"ghunna",label:"غنة / إدغام",color:"#1E6F5C"},
+  {key:"qalqala",label:"قلقلة",color:"#4EA8DE"},
+  {key:"madd",label:"مدود",color:"#D94A4A"},
+  {key:"ikhfa",label:"إخفاء",color:"#E58A3A"}
+];
+const SIZES=[2,4,7,11,16,24];
 
 function pointFromEvent(canvas,e){
   const rect=canvas.getBoundingClientRect();
@@ -183,12 +189,13 @@ export default function WhiteboardPage(){
     const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);
     pushHistory();drawingRef.current=true;strokeRef.current=[p];ctx.beginPath();ctx.moveTo(p.x,p.y);
     ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(window.devicePixelRatio||1);
-    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;c.setPointerCapture?.(e.pointerId);
+    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;ctx.globalAlpha=tool==="highlighter"?0.24:1;ctx.lineWidth=(tool==="eraser"?Math.max(size*2,18):size)*(window.devicePixelRatio||1);c.setPointerCapture?.(e.pointerId);
   }
   function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);strokeRef.current.push(p);ctx.lineTo(p.x,p.y);ctx.stroke();}
   function end(){
     if(!drawingRef.current)return;
     drawingRef.current=false;
+    const ctx=canvasRef.current?.getContext("2d");if(ctx)ctx.globalAlpha=1;
     const points=strokeRef.current;strokeRef.current=[];
     if(points.length){
       sendRealtime({type:"stroke",stroke:{points,tool,color,size:size*(window.devicePixelRatio||1)}});
@@ -210,18 +217,23 @@ export default function WhiteboardPage(){
         <div className="aa-whiteboard-toolbar">
           <div className="aa-whiteboard-tool-group">
             <button className={tool==="pen"?"is-active":""} onClick={()=>setTool("pen")}>✎ قلم</button>
-            <button className={tool==="eraser"?"is-active":""} onClick={()=>setTool("eraser")}>⌫ ممحاة</button>
+            <button className={tool==="highlighter"?"is-active":""} onClick={()=>setTool("highlighter")}>▰ تمييز</button>
+            <button className={tool==="eraser"?"is-active":""} onClick={()=>setTool("eraser")}>⌫ ممحاة ذكية</button>
             <button onClick={undo} disabled={!historyRef.current.length}>↶ تراجع</button>
             <button onClick={redo} disabled={!futureRef.current.length}>↷ إعادة</button>
             <button onClick={clearBoard}>مسح الكل</button>
           </div>
           <div className="aa-whiteboard-tool-group">
-            {COLORS.map(c=><button key={c} className={color===c?"aa-color is-active":"aa-color"} style={{background:c}} onClick={()=>{setColor(c);setTool("pen");}} aria-label="لون"/>)}
+            <span className="aa-tool-caption">ألوان الكتابة</span>{COLORS.map(c=><button key={c} className={color===c?"aa-color is-active":"aa-color"} style={{background:c}} onClick={()=>{setColor(c);setTool("pen");}} aria-label="لون"/>)}
             <select value={size} onChange={e=>setSize(Number(e.target.value))} aria-label="حجم القلم">{SIZES.map(v=><option key={v} value={v}>{v}px</option>)}</select>
+          </div>
+          <div className="aa-whiteboard-tool-group aa-tajweed-tools">
+            <span className="aa-tool-caption">ألوان التجويد</span>
+            {TAJWEED_COLORS.map(t=><button key={t.key} className={color===t.color&&tool==="pen"?"aa-tajweed-color is-active":"aa-tajweed-color"} style={{"--tajweed-color":t.color}} onClick={()=>{setColor(t.color);setTool("pen");}}>{t.label}</button>)}
           </div>
           <div className="aa-whiteboard-tool-group">
             <select value={background} onChange={e=>setBackground(e.target.value)} aria-label="خلفية السبورة">
-              <option value="paper">خلفية كتابة</option><option value="soft">خلفية هادئة</option><option value="focus">خلفية عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
+              <option value="paper">ورق دافئ</option><option value="clouds">سحاب وسماء</option><option value="greenboard">سبورة خضراء</option><option value="grid">شبكة بيضاء</option><option value="islamic">زخرفة هادئة</option><option value="focus">مساحة عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
             </select>
             <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>▶ مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"⏹ إيقاف المشاركة":"🖥️ مشاركة الشاشة"}</button>
             <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
