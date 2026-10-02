@@ -250,5 +250,4 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aa-mode-child .aa-table-row:hover,.aa-mode-family .aa-table-row:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(43,45,66,.07)}
 .aa-mode-child .aa-table-row>span:first-child,.aa-mode-family .aa-table-row>span:first-child{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#FFF5D9}
 .aa-mode-child .aa-table-row strong,.aa-mode-family .aa-table-row strong{color:#9A7514}
-.aa-mode-teacher .aa-mode-teacher .aa-table-row{background:#FFFDF8}
 @media(max-width:650px){.aa-mode-teacher .aa-form-card.aa-form>div{grid-template-columns:1fr!important}.aa-mode-child .aa-table-row,.aa-mode-family .aa-table-row{grid-template-columns:auto 1fr!important}.aa-mode-child .aa-table-row>strong,.aa-mode-family .aa-table-row>strong{grid-column:2}}
