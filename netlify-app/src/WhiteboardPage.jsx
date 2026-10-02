@@ -203,7 +203,8 @@ export default function WhiteboardPage(){
     const ctx=canvasRef.current?.getContext("2d");if(ctx)ctx.globalAlpha=1;
     const points=strokeRef.current;strokeRef.current=[];
     if(points.length){
-      sendRealtime({type:"stroke",stroke:{points,tool,color,size:size*(window.devicePixelRatio||1)}});
+      const stroke={points,tool,color,size:size*(window.devicePixelRatio||1)};
+      sendRealtime({type:"stroke",stroke});
     }
 }
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
