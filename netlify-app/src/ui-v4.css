@@ -173,3 +173,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aa-lesson-context-bar strong{padding:6px 10px;border-radius:999px;background:#E7F3EE;color:#1E6F5C;font-size:11px}
 @media(max-width:650px){.aa-game-grid{grid-template-columns:1fr 1fr;gap:12px}.aa-game-grid .aa-game-card{min-height:210px;padding:15px}}
 @media(max-width:450px){.aa-game-grid{grid-template-columns:1fr}}
+
+/* Quran journey v2 */
+.aa-surah-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:15px}
+.aa-surah-card{position:relative;min-height:205px;padding:19px!important;border-radius:26px!important;border:2px solid #E5E1D8!important;background:linear-gradient(180deg,#FFFDF8,#F8FAF7)!important;box-shadow:0 9px 22px rgba(43,45,66,.055);overflow:hidden}
+.aa-surah-card:before{content:"";position:absolute;top:0;right:0;left:0;height:5px;background:linear-gradient(90deg,#4EA8DE,#1E6F5C,#E9C46A);opacity:.75}
+.aa-surah-card:hover{transform:translateY(-4px);box-shadow:0 16px 30px rgba(43,45,66,.1)}
+.aa-surah-num{display:grid!important;place-items:center;width:42px;height:42px;border-radius:14px!important;background:#EDF5F1!important;color:#1E6F5C!important;font-weight:950!important}
+.aa-surah-card h3{font-size:19px!important;margin:12px 0 4px!important}
+.aa-surah-card small{color:var(--aa-muted)}
+.aa-surah-card .aa-progress{margin-top:10px}
+.aa-surah-card .aa-btn{margin-top:auto}
+.aa-quran-toolbar{border-radius:20px!important;border:2px solid #E5E1D8!important;background:#F7F6F0!important;padding:12px!important}
+.aa-quran-toolbar input,.aa-quran-toolbar select{border-radius:14px!important;background:#FFFDF8!important}
