@@ -58,7 +58,7 @@ function TeacherLessonDock(){
     <div className="aa-teacher-lesson-current"><span><Icon name="teacher" size={18}/></span><div><small>الحصة الحالية</small><b>سورة {surah}{ayah?" • الآية "+ayah:""}</b></div></div>
     <div className="aa-teacher-lesson-actions">
       <button onClick={()=>go("/teacher/whiteboard")} className={routePath()==="/teacher/whiteboard"?"is-active":""}><Icon name="edit" size={17}/><span>السبورة</span></button>
-      <button onClick={()=>go("/teacher/quran")} className={routePath()==="/teacher/quran"?"is-active":""}><Icon name="quran" size={17}/><span>المصحف</span></button>
+      <button onClick={()=>go("/quran")} className={routePath()==="/quran"?"is-active":""}><Icon name="quran" size={17}/><span>المصحف</span></button>
       <button onClick={()=>go("/games")} className={routePath()==="/games"?"is-active":""}><Icon name="game" size={17}/><span>الألعاب</span></button>
     </div>
   </div>;
