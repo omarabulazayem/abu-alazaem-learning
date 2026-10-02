@@ -42,7 +42,8 @@ export default function WhiteboardPage(){
   const [effects,setEffects]=useState([]);
   const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null),mediaCallRef=useRef(null),videoRef=useRef(null),screenStreamRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
-  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");\n  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
+  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
+  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -142,7 +143,8 @@ export default function WhiteboardPage(){
         conn.on("data",data=>{
           if(data?.type==="student-stroke"&&studentCanWrite){drawRemoteStroke(canvasRef.current,data.stroke);}
           if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
-          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);\n          if(data?.type==="lesson-context"){setLessonContext(data.context||null);setAyah(data.context||null);setLessonPhase(data.phase||"شرح");}
+          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
+          if(data?.type==="lesson-context"){setLessonContext(data.context||null);setAyah(data.context||null);setLessonPhase(data.phase||"شرح");}
           if(data?.type==="ping")conn.send({type:"pong"});
         });
         conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;stopMediaShare();setConnectionState("waiting");}});
