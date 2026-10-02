@@ -55,7 +55,7 @@ function TeacherLessonDock(){
   const surah=context.surah||"غير محددة";
   const ayah=context.number||context.ayah||null;
   return <div className="aa-teacher-lesson-dock" role="region" aria-label="أدوات الحصة">
-    <div className="aa-teacher-lesson-current"><span><Icon name="teacher" size={18}/></span><div><small>الحصة الحالية</small><b>سورة {surah}{ayah?" • الآية "+ayah:""}</b></div></div>
+    <div className="aa-teacher-lesson-current"><span><Icon name="teacher" size={18}/></span><div><small>الحصة الحالية</small><b>سورة {surah}{ayah?" • الآية "+ayah:""}{context.gameTitle?" • "+context.gameTitle:""}</b></div></div>
     <div className="aa-teacher-lesson-actions">
       <button onClick={()=>go("/teacher/whiteboard")} className={routePath()==="/teacher/whiteboard"?"is-active":""}><Icon name="edit" size={17}/><span>السبورة</span></button>
       <button onClick={()=>go("/quran")} className={routePath()==="/quran"?"is-active":""}><Icon name="quran" size={17}/><span>المصحف</span></button>
