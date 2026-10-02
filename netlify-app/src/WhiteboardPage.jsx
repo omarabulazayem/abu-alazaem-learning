@@ -240,7 +240,7 @@ export default function WhiteboardPage(){
             </select>
             <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>▶ مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"إيقاف المشاركة":"مشاركة الشاشة"}</button>
             <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
-            <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"🔒 جعل الطالب مشاهدة فقط":"✍️ السماح للطالب بالكتابة"}</button>
+            <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"جعل الطالب مشاهدة فقط":"السماح للطالب بالكتابة"}</button>
             {sessionCode&&connectionState==="connected"&&<button onClick={disconnectStudent}>فصل الطالب</button>}
             <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"⏸ إيقاف المؤقت":"▶ بدء المؤقت"}</button>
             <strong className="aa-board-timer">{mm}:{ss}</strong>
