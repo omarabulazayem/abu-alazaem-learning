@@ -29,7 +29,7 @@ export class GameEngine {
     return this.session;
   }
 
-  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [] } = {}) {
+  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = null } = {}) {
     if (this.teacherPreview) {
       this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: surahNumber, selected_ayahs: ayahNumbers, preview: true };
       return this.session;
@@ -45,6 +45,7 @@ export class GameEngine {
       p_selected_ayahs: ayahNumbers,
     });
     this.session = Array.isArray(result) ? result[0] : result;
+    if (lessonContext && this.session) this.session.lesson_context = lessonContext;
     return this.session;
   }
 
