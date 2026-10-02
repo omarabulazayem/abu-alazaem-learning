@@ -269,7 +269,7 @@ export default function WhiteboardPage(){
           <div className="aa-whiteboard-effects" aria-live="polite">
             {effects.map(effect=><div key={effect.id} className={"aa-board-effect aa-effect-"+effect.type} aria-hidden="true">
               {effect.type==="clap"&&<><span className="aa-clap-hand aa-hand-a"/><span className="aa-clap-hand aa-hand-b"/><span className="aa-clap-lines"/></>}
-              {effect.type==="heart"&&<span className="aa-heart-shape">♥</span>}
+              {effect.type==="heart"&&<span className="aa-heart-shape" aria-hidden="true"/>}
               {effect.type==="star"&&<span className="aa-star-shape">★</span>}
               {effect.type==="trophy"&&<><span className="aa-trophy-cup"/><span className="aa-trophy-base"/></>}
               {effect.type==="hammer"&&<><span className="aa-hammer-head"/><span className="aa-hammer-handle"/></>}
