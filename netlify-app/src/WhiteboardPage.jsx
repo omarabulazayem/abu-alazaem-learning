@@ -245,7 +245,7 @@ export default function WhiteboardPage(){
             <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"إيقاف المؤقت":"بدء المؤقت"}</button>
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
-            <button onClick={saveBoard}>💾 حفظ</button>
+            <button onClick={saveBoard}>حفظ</button>
             <button onClick={startTeacherSession}>＋ جلسة جديدة</button>
             <button onClick={exportBoard}>تصدير صورة</button>
           </div>
