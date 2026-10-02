@@ -35,6 +35,13 @@ function Dashboard({data}){
       <Metric icon="review" label="مراجعات اليوم" value={data.reviewsToday} tone="sky"/>
       <Metric icon="clock" label="المنطقة الزمنية" value={data.workspace?.timezone||"—"} tone="gold"/>
     </div>
+    <Section eyebrow="غرفة الحصة" title="ابدئي الحصة من مكان واحد" action={<Button kind="secondary" onClick={()=>go("/teacher/whiteboard")}>فتح السبورة</Button>}>
+      <div className="aa-lesson-room-grid">
+        <button className="aa-lesson-room-card aa-room-board" onClick={()=>go("/teacher/whiteboard")}><span className="aa-room-icon">✎</span><div><b>السبورة</b><small>شرح، تجويد، تمييز، ومشاركة مباشرة</small></div><strong>ابدئي</strong></button>
+        <button className="aa-lesson-room-card aa-room-quran" onClick={()=>go("/quran")}><span className="aa-room-icon">۞</span><div><b>المصحف</b><small>افتحي الآيات ومرجع الحصة بسرعة</small></div><strong>فتح</strong></button>
+        <button className="aa-lesson-room-card aa-room-games" onClick={()=>go("/games")}><span className="aa-room-icon">★</span><div><b>الألعاب</b><small>انقلي الطالب من الشرح إلى التطبيق</small></div><strong>لعب</strong></button>
+      </div>
+    </Section>
     <Section eyebrow="الأولوية" title="آخر الطلاب نشاطًا" action={<Button kind="secondary" icon="users" onClick={()=>go("/teacher/students")}>كل الطلاب</Button>}>
       {recent.length?<div className="aa-table-list">{recent.map(s=><StudentRow key={s.enrollmentId} student={s}/>)}</div>:
         <Empty icon="users" title="لا يوجد طلاب مرتبطون بعد" text="أرسل دعوة إلى بريد ولي الأمر، وبعد قبولها يظهر الطفل هنا." action={<Button onClick={()=>go("/teacher/invites")}>إرسال دعوة</Button>}/>}
