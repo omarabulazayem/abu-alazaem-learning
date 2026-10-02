@@ -63,14 +63,14 @@ export default function WhiteboardPage(){
 
   const fitCanvas=useCallback(()=>{
     const c=canvasRef.current;if(!c)return;
-    const rect=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1),old=snapshot();
+    const rect=c.getBoundingClientRect(),ratio=Math.min(2,Math.max(1,window.devicePixelRatio||1)),old=snapshot();
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
     const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     if(old)restore(old);
   },[restore,snapshot]);
 
   useEffect(()=>{const c=canvasRef.current;if(!c)return;
-    const rect=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1);
+    const rect=c.getBoundingClientRect(),ratio=Math.min(2,Math.max(1,window.devicePixelRatio||1));
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
     const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     const onResize=()=>fitCanvas();window.addEventListener("resize",onResize);
