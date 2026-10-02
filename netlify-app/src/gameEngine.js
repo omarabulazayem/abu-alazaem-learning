@@ -6,6 +6,7 @@ export class GameEngine {
     this.childId = childId || null;
     this.gameId = gameId;
     this.teacherPreview = Boolean(teacherPreview);
+    this.lessonContext = (()=>{try{return JSON.parse(localStorage.getItem("abu-alazaem-lesson-context-v1")||"null");}catch{return null;}})();
     this.definition = gameDefinition(gameId);
     if (!this.definition) throw new Error(`Unknown game definition: ${gameId}`);
     if (this.definition.status !== "live") throw new Error(`Game is not live: ${gameId}`);
@@ -29,7 +30,7 @@ export class GameEngine {
     return this.session;
   }
 
-  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = null } = {}) {
+  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = this.lessonContext } = {}) {
     if (this.teacherPreview) {
       this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: surahNumber, selected_ayahs: ayahNumbers, preview: true };
       return this.session;
