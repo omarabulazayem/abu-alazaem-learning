@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from "react";
 import Peer from "peerjs";
 import {AppShell,Button,Hero,Section,go} from "./ui-v4.jsx";
+import Icon from "./Icon.jsx";
 function pointFromEvent(canvas,e){const rect=canvas.getBoundingClientRect();return {x:(e.clientX-rect.left)*(canvas.width/rect.width),y:(e.clientY-rect.top)*(canvas.height/rect.height)};}
 function drawStroke(canvas,stroke){if(!canvas||!stroke?.points?.length)return;const ctx=canvas.getContext("2d");ctx.save();ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=stroke.size;ctx.globalCompositeOperation=stroke.tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=stroke.color||"#4EA8DE";ctx.beginPath();ctx.moveTo(stroke.points[0].x,stroke.points[0].y);for(const p of stroke.points.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();}
 export default function WhiteboardJoinPage(){
