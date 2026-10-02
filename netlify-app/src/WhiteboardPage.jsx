@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from "react";
 import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go,getLessonContext,saveLessonContext} from "./ui-v4.jsx";
+import Icon from "./Icon.jsx";
 import {getSurah} from "./surahCatalog.js";
 import Peer from "peerjs";
 
