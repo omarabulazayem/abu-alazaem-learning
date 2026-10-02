@@ -149,3 +149,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aa-game-meta{padding-top:10px;border-top:1px dashed #E5E1D8}
 @media(max-width:850px){.aa-mode-child .aa-world-grid{grid-template-columns:1fr}.aa-mode-child .aa-mini-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.aa-mode-child .aa-mini-grid{grid-template-columns:1fr 1fr}.aa-mode-child .aa-world-card{min-height:240px;padding:22px}}
+
+/* Unified lesson room */
+.aa-lesson-room-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.aa-lesson-room-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;min-height:112px;padding:18px;text-align:right;border:2px solid #E5E1D8;border-radius:26px;background:#FFFDF8;box-shadow:0 9px 24px rgba(43,45,66,.055);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.aa-lesson-room-card:hover{transform:translateY(-4px);box-shadow:0 16px 30px rgba(43,45,66,.1)}
+.aa-room-icon{width:58px;height:58px;display:grid;place-items:center;border-radius:20px;font-size:28px;font-weight:950}
+.aa-lesson-room-card div{display:grid;gap:5px}.aa-lesson-room-card b{font-size:18px}.aa-lesson-room-card small{font-size:11px;line-height:1.7;color:var(--aa-muted)}
+.aa-lesson-room-card>strong{font-size:11px;padding:7px 11px;border-radius:999px;background:#F7F6F0;color:#1E6F5C}
+.aa-room-board .aa-room-icon{background:#E7F3EE;color:#1E6F5C}.aa-room-quran .aa-room-icon{background:#EAF5FB;color:#4EA8DE}.aa-room-games .aa-room-icon{background:#FFF5D9;color:#A47718}
+@media(max-width:800px){.aa-lesson-room-grid{grid-template-columns:1fr}}
