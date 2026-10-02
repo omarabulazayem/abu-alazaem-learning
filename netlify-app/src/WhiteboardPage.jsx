@@ -238,7 +238,7 @@ export default function WhiteboardPage(){
             <select value={background} onChange={e=>setBackground(e.target.value)} aria-label="خلفية السبورة">
               <option value="paper">ورق دافئ</option><option value="clouds">سحاب وسماء</option><option value="greenboard">سبورة خضراء</option><option value="grid">شبكة بيضاء</option><option value="islamic">زخرفة هادئة</option><option value="focus">مساحة عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
             </select>
-            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>▶ مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"إيقاف المشاركة":"مشاركة الشاشة"}</button>
+            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"إيقاف المشاركة":"مشاركة الشاشة"}</button>
             <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
             <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"جعل الطالب مشاهدة فقط":"السماح للطالب بالكتابة"}</button>
             {sessionCode&&connectionState==="connected"&&<button onClick={disconnectStudent}>فصل الطالب</button>}
