@@ -159,3 +159,17 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .aa-lesson-room-card>strong{font-size:11px;padding:7px 11px;border-radius:999px;background:#F7F6F0;color:#1E6F5C}
 .aa-room-board .aa-room-icon{background:#E7F3EE;color:#1E6F5C}.aa-room-quran .aa-room-icon{background:#EAF5FB;color:#4EA8DE}.aa-room-games .aa-room-icon{background:#FFF5D9;color:#A47718}
 @media(max-width:800px){.aa-lesson-room-grid{grid-template-columns:1fr}}
+
+/* Game center v2 */
+.aa-game-grid{grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:18px}
+.aa-game-grid .aa-game-card{min-height:235px;padding:20px;background:linear-gradient(180deg,#FFFDF8 0%,#F9FAF7 100%);border:2px solid #E5E1D8}
+.aa-game-grid .aa-game-card:after{content:"";position:absolute;right:-32px;bottom:-45px;width:115px;height:115px;border-radius:50%;background:rgba(78,168,222,.07);pointer-events:none}
+.aa-game-grid .aa-game-card:hover{border-color:#BFD8D0;box-shadow:0 18px 36px rgba(43,45,66,.11)}
+.aa-game-grid .aa-game-card .aa-card-icon{background:#EDF5F1}
+.aa-game-grid .aa-game-card:nth-child(3n) .aa-card-icon{background:#EAF5FB}
+.aa-game-grid .aa-game-card:nth-child(4n) .aa-card-icon{background:#FFF5D9}
+.aa-game-grid .aa-game-card .aa-card-action{border-radius:999px}
+.aa-lesson-context-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border:2px solid #E5E1D8;border-radius:20px;background:#FFFDF8;box-shadow:0 8px 20px rgba(43,45,66,.05)}
+.aa-lesson-context-bar strong{padding:6px 10px;border-radius:999px;background:#E7F3EE;color:#1E6F5C;font-size:11px}
+@media(max-width:650px){.aa-game-grid{grid-template-columns:1fr 1fr;gap:12px}.aa-game-grid .aa-game-card{min-height:210px;padding:15px}}
+@media(max-width:450px){.aa-game-grid{grid-template-columns:1fr}}
