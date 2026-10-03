@@ -20,6 +20,8 @@ const checks=[
   [migration,"TUITION_STATUS_CHANGED","tuition event"],
   [migration,"POINTS_CHANGED","points event"],
   [migration,"notifications_select_own","notifications RLS"],
+  [migration,"revoke execute on function public.notification_parent_for_child(uuid)","internal helper revoke"],
+  [migration,"revoke execute on function public.notify_task_assignment_created()","task trigger revoke"],
   [api,"export async function listNotifications","notification list API"],
   [api,"export async function markNotificationRead","notification read API"],
   [api,"export async function markAllNotificationsRead","notification bulk read API"],
