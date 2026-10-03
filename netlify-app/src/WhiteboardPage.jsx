@@ -188,8 +188,7 @@ export default function WhiteboardPage(){
     }catch{}
   }
   const soundActions=[
-    ["clap","تصفيق"],["heart","قلب"],["celebrate","احتفال"],["star","نجمة"],
-    ["trophy","كأس"],["hammer","مطرقة"],["alert","إنذار"]
+    ["clap","تصفيق"],["trophy","كأس"],["celebrate","احتفال"],["star","نجمة"],["hammer","طرق"]
   ];
   function start(e){
     if(locked)return;
@@ -259,10 +258,6 @@ export default function WhiteboardPage(){
             <button onClick={startTeacherSession}>＋ جلسة جديدة</button>
             <button onClick={exportBoard}>تصدير صورة</button>
           </div>
-          <div className="aa-whiteboard-tool-group aa-sound-group">
-            <span className="aa-sound-title">أصوات سريعة</span>
-            {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
-          </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
           <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span><label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{const phase=e.target.value;setLessonPhase(phase);const next={...(lessonContext||{}),phase};setLessonContext(next);saveLessonContext(next);sendRealtime({type:"lesson-context",context:next,phase});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة تطبيقية</option><option>تطبيق</option></select></label></div>
@@ -289,6 +284,10 @@ export default function WhiteboardPage(){
           </div>
           <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}/>
           {locked&&<div className="aa-whiteboard-lock">تفاعل الطالب مقفول — المعلم وحده يستطيع التعديل</div>}
+        </div>
+        <div className="aa-whiteboard-reactions" aria-label="تفاعلات الحصة">
+          <span className="aa-sound-title">تفاعلات الحصة</span>
+          {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
         </div>
         {message&&<div className="msg ok">{message}</div>}
       </div>
