@@ -344,6 +344,18 @@ export async function hasChildModePin() {
   return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
 }
 
+export async function listTeacherGameSessions(childId, limit = 20) {
+  if (!childId) return [];
+  const bounded = Math.max(1, Math.min(100, Number(limit) || 20));
+  return rest(`/game_sessions?child_id=eq.${encodeURIComponent(childId)}&completed=eq.true&select=*&order=updated_at.desc.nullslast,created_at.desc&limit=${bounded}`);
+}
+
+export async function listTeacherGameEvents(childId, limit = 100) {
+  if (!childId) return [];
+  const bounded = Math.max(1, Math.min(200, Number(limit) || 100));
+  return rest(`/game_ayah_events?child_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${bounded}`);
+}
+
 export async function getStudentWallet(childId) {
   if (!childId) return { wallet_balance: 0, lifetime_points: 0 };
   const rows = await rest(`/student_wallets?student_id=eq.${encodeURIComponent(childId)}&select=student_id,wallet_balance,lifetime_points,updated_at&limit=1`);
@@ -367,9 +379,49 @@ export async function purchaseGameUnlock(childId, gameId) {
   return rpc("purchase_game_unlock", { p_child_id: childId, p_game_id: gameId });
 }
 
+export async function listNotifications(userId, limit = 30) {
+  if (!userId) return [];
+  const bounded=Math.max(1,Math.min(100,Number(limit)||30));
+  return rest(`/notifications?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc&limit=${bounded}`);
+}
+
+export async function markNotificationRead(notificationId) {
+  if (!notificationId) return null;
+  const rows=await rest(`/notifications?id=eq.${encodeURIComponent(notificationId)}`,{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({read_at:new Date().toISOString()})
+  });
+  return rows?.[0]||null;
+}
+
+export async function markAllNotificationsRead(userId) {
+  if (!userId) return [];
+  return rest(`/notifications?user_id=eq.${encodeURIComponent(userId)}&read_at=is.null`,{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({read_at:new Date().toISOString()})
+  });
+}
+
 export async function listPointLedger(childId, limit = 50) {
   if (!childId) return [];
   return rest(`/point_ledger?student_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${Math.min(100,Math.max(1,Number(limit)||50))}`);
+}
+
+export async function grantTeacherBonus(enrollmentId, points, reason) {
+  return rpc("grant_teacher_bonus", {
+    p_enrollment_id: enrollmentId,
+    p_points: Math.max(1, Math.min(100000, Number(points) || 0)),
+    p_reason: String(reason || "").trim(),
+  });
+}
+
+export async function reversePointTransaction(transactionId, reason) {
+  return rpc("reverse_point_transaction", {
+    p_transaction_id: transactionId,
+    p_reason: String(reason || "").trim(),
+  });
 }
 
 async function hydrateTaskAssignments(assignments = []) {

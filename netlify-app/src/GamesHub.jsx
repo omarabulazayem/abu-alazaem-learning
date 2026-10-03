@@ -71,7 +71,7 @@ export default function GamesHub(){
   const lockedCount=teacher?0:all.filter(g=>storeMap.has(g.id)&&!unlocked.has(g.id)).length;
   const available=all.length-lockedCount;
 
-  function launchGame(game){if(teacher){saveLessonContext(lessonContext);setLessonContext(getLessonContext());}go(game.route);}
+  function launchGame(game){if(teacher){const next={...(lessonContext||{}),phase:"لعبة تطبيقية",gameId:game.id,gameTitle:game.title,gameRoute:game.route};saveLessonContext(next);setLessonContext(next);}go(game.route);}
   async function logout(){await signOut();go("/");}
   async function buy(game,item){
     if(!child?.id||busyGame)return;
@@ -101,7 +101,7 @@ export default function GamesHub(){
       description={teacher?"المعلم يتجاوز Store Lock أثناء الاستخدام التعليمي؛ المعاينة لا تخصم من رصيد الطفل.":childMode?"الألعاب المجانية تبدأ فورًا، والألعاب المدفوعة تفتحها مرة واحدة من رصيدك وتفضل ملكك.":"تابع الألعاب والتقدم. شراء الألعاب يتم من وضع الطفل."}
       icon="game" tone="mint"/>
     {error&&<div className="msg error">{error}</div>}{message&&<div className="msg ok">{message}</div>}
-    {teacher&&lessonContext&&<div className="aa-lesson-context-bar"><strong>سياق الحصة</strong><span>سورة {lessonContext.surah||"غير محددة"}{lessonContext.number?" — الآية "+lessonContext.number:""}{lessonContext.phase?" — "+lessonContext.phase:""}</span><Button kind="secondary" onClick={()=>go("/teacher/whiteboard")}>العودة للسبورة</Button><Button kind="secondary" onClick={()=>go("/quran")}>المصحف</Button></div>}
+    {teacher&&lessonContext&&<div className="aa-lesson-context-bar"><strong>سياق الحصة</strong><span>سورة {lessonContext.surah||"غير محددة"}{lessonContext.number?" — الآية "+lessonContext.number:""}{lessonContext.phase?" — "+lessonContext.phase:""}{lessonContext.gameTitle?" — "+lessonContext.gameTitle:""}</span><Button kind="secondary" onClick={()=>go("/teacher/whiteboard")}>العودة للسبورة</Button><Button kind="secondary" onClick={()=>go("/quran")}>المصحف</Button></div>}
     <div className="aa-metrics">
       <Metric icon="game" label="ألعاب متاحة" value={available} tone="mint"/>
       <Metric icon="lock" label="تحتاج فتح" value={lockedCount} tone="sky"/>

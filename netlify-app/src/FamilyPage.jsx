@@ -1,9 +1,10 @@
 import React,{useEffect,useState} from "react";
 import {
   acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
-  listChildTaskAssignments,listChildren,listParentEnrollments,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
+  listChildTaskAssignments,listChildren,listParentEnrollments,listPointLedger,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
+import NotificationsPanel from "./NotificationsPanel.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
 
 function genderLabel(v){return v==="male"?"ولد":v==="female"?"بنت":"غير محدد";}
@@ -16,7 +17,7 @@ function billingStatusLabel(v){return ({DUE:"مستحق",PAID:"مدفوع",WAIVE
 const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[tasks,setTasks]=useState([]),[sessions,setSessions]=useState([]),[billing,setBilling]=useState([]);
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[pointLedger,setPointLedger]=useState([]),[tasks,setTasks]=useState([]),[sessions,setSessions]=useState([]),[billing,setBilling]=useState([]);
   const [taskNotes,setTaskNotes]=useState({});
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
@@ -41,7 +42,8 @@ export default function FamilyPage(){
     const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
     if(selected&&!inviteChild)setInviteChild(selected.id);
-    setTasks(selected?await listChildTaskAssignments(selected.id).catch(()=>[]):[]);
+    const [selectedTasks,selectedLedger]=selected?await Promise.all([listChildTaskAssignments(selected.id).catch(()=>[]),listPointLedger(selected.id,30).catch(()=>[])]):[[],[]];
+    setTasks(selectedTasks||[]);setPointLedger(selectedLedger||[]);
   }
 
   useEffect(()=>{let alive=true;(async()=>{try{
@@ -123,6 +125,8 @@ export default function FamilyPage(){
     footer="أبو العزايم • ولي الأمر يملك ملف الطفل والمعلم يرتبط به عبر Enrollment.">
     <Hero eyebrow="حساب الأسرة" title={`أهلًا ${user?.name||"بك"}`}
       description="ملف الطفل ملك للأسرة. اربطه بأكثر من معلم من خلال دعوات آمنة، وادخل وضع الطفل برقم سري مستقل." icon="family" tone="sky"/>
+    <NotificationsPanel userId={user?.id} title="تنبيهات الأسرة" limit={6} mode="family"/>
+
     {err&&<div className="msg error">{err}</div>}{msg&&<div className="msg ok">{msg}</div>}
 
     {inviteToken&&<Section eyebrow="دعوة معلم" title="اختر الطفل الذي سيدرس مع هذا المعلم" description="الدعوة لا تنشئ ملف طفل جديد؛ تضيف Enrollment للملف الذي تختاره.">
@@ -138,6 +142,14 @@ export default function FamilyPage(){
       <Metric icon="trophy" label="رصيد الألعاب" value={activeWallet.wallet_balance||0} tone="gold"/>
       <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
     </div>}
+
+    <Section eyebrow="حركة الرصيد" title="سجل نقاط الطفل" description="يوضح من أين جاءت النقاط ومتى استُخدمت أو سُحبت.">
+      {pointLedger.length?<div className="aa-table-list">{pointLedger.slice(0,12).map((row,index)=>{
+        const delta=Number(row.wallet_delta||0);
+        const labels={TASK_APPROVED:"اعتماد مهمة",TEACHER_BONUS:"مكافأة معلم",GAME_PURCHASE:"شراء لعبة",WEEKLY_REWARD:"مكافأة أسبوعية",POINT_REVERSAL:"سحب نقاط",ADMIN_ADJUSTMENT:"تعديل إداري",LEGACY_REWARD:"مكافأة قديمة",LEGACY_BALANCE_IMPORT:"ترحيل رصيد"};
+        return <article className="aa-table-row" key={row.id||index}><span><Icon name={delta<0?"arrow":"star"} size={20}/></span><div><b>{labels[row.transaction_type]||row.transaction_type||"حركة نقاط"}</b><small>{formatDate(row.created_at)}{row.reason?" • "+row.reason:""}</small></div><strong>{delta>0?"+":""}{delta} نقطة</strong></article>;
+      })}</div>:<Empty icon="star" title="لا توجد حركة نقاط بعد" text="تظهر هنا المكافآت واعتمادات المهام وعمليات شراء الألعاب وسحب النقاط."/>}
+    </Section>
 
     <Section eyebrow="الجدول" title="الحصص القادمة" description="المواعيد تُدار حسب توقيت المعلم وتظهر هنا كتوقيت فعلي للحصة.">
       {upcomingSessions.length?<div className="aa-table-list">{upcomingSessions.map(row=>{

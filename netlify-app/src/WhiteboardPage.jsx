@@ -1,10 +1,20 @@
 import React,{useCallback,useEffect,useRef,useState} from "react";
 import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go,getLessonContext,saveLessonContext} from "./ui-v4.jsx";
+import Icon from "./Icon.jsx";
 import {getSurah} from "./surahCatalog.js";
+import {finalizeSession,grantTeacherBonus} from "./api.js";
 import Peer from "peerjs";
 
-const COLORS=["#1E6F5C","#4EA8DE","#8E7CC3","#E58AA8","#2B2D42","#E9C46A","#FFFFFF"];
-const SIZES=[2,4,7,11,16];
+const COLORS=["#1E6F5C","#4EA8DE","#E9C46A","#2B2D42","#FFFFFF"];
+const TAJWEED_COLORS=[
+  {key:"ghunna",label:"غنة / إدغام",color:"#1E6F5C"},
+  {key:"qalqala",label:"قلقلة",color:"#4EA8DE"},
+  {key:"madd",label:"مدود",color:"#D94A4A"},
+  {key:"ikhfa",label:"إخفاء",color:"#E58A3A"}
+];
+const SIZES=[2,4,7,11,16,24];
+
+function pixelRatio(){return Math.min(2,Math.max(1,window.devicePixelRatio||1));}
 
 function pointFromEvent(canvas,e){
   const rect=canvas.getBoundingClientRect();
@@ -18,11 +28,13 @@ function drawRemoteStroke(canvas,stroke){
   ctx.lineCap="round";ctx.lineJoin="round";
   ctx.lineWidth=stroke.size;
   ctx.globalCompositeOperation=stroke.tool==="eraser"?"destination-out":"source-over";
+  ctx.globalAlpha=stroke.tool==="highlighter"?0.24:1;
   ctx.strokeStyle=stroke.color||"#1E6F5C";
   ctx.beginPath();
   ctx.moveTo(stroke.points[0].x,stroke.points[0].y);
   for(const p of stroke.points.slice(1))ctx.lineTo(p.x,p.y);
   ctx.stroke();
+  ctx.globalAlpha=1;
   ctx.restore();
 }
 
@@ -33,10 +45,12 @@ export default function WhiteboardPage(){
   const STORAGE_KEY="abu-al-azaem-whiteboard-v2";
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
   const [background,setBackground]=useState("paper"),[videoUrl,setVideoUrl]=useState(""),[presentation,setPresentation]=useState(false);
-  const [effects,setEffects]=useState([]);
+  const [effects,setEffects]=useState([]),autoStartRef=useRef(false);
   const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null),mediaCallRef=useRef(null),videoRef=useRef(null),screenStreamRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
-  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");\n  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
+  const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
+  const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
+  const [bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[bonusBusy,setBonusBusy]=useState(false),[finishBusy,setFinishBusy]=useState(false),[finishNote,setFinishNote]=useState("");
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -53,14 +67,14 @@ export default function WhiteboardPage(){
 
   const fitCanvas=useCallback(()=>{
     const c=canvasRef.current;if(!c)return;
-    const rect=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1),old=snapshot();
+    const rect=c.getBoundingClientRect(),ratio=pixelRatio(),old=snapshot();
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
     const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     if(old)restore(old);
   },[restore,snapshot]);
 
   useEffect(()=>{const c=canvasRef.current;if(!c)return;
-    const rect=c.getBoundingClientRect(),ratio=Math.max(1,window.devicePixelRatio||1);
+    const rect=c.getBoundingClientRect(),ratio=pixelRatio();
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
     const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     const onResize=()=>fitCanvas();window.addEventListener("resize",onResize);
@@ -71,15 +85,53 @@ export default function WhiteboardPage(){
   useEffect(()=>{
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode(saved.sessionCode||"");setLessonContext(saved.lessonContext||saved.ayah||null);setLessonPhase(saved.lessonPhase||"شرح");}
+      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode("");setLessonContext(saved.lessonContext||saved.ayah||null);setLessonPhase(saved.lessonPhase||"شرح");}
     }catch{}
   },[restore]);
   const saveBoard=useCallback(()=>{
     const canvas=snapshot();if(!canvas)return;
     const payload={canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase};
     localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));setSavedAt(payload.savedAt);setMessage("تم حفظ حالة السبورة على هذا الجهاز.");
-  },[snapshot,ayah,timer,sessionCode]);
-  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,snapshot]);
+  },[snapshot,ayah,timer,sessionCode,lessonContext,lessonPhase]);
+  useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,lessonContext,lessonPhase,snapshot]);
+  async function grantBonusFromBoard(){
+    if(!lessonContext?.enrollmentId)return;
+    const reason=String(bonusReason||"").trim();
+    if(!reason){setMessage("اكتبي سبب المكافأة أولًا.");return;}
+    setBonusBusy(true);setMessage("");
+    try{
+      await grantTeacherBonus(lessonContext.enrollmentId,bonusPoints,reason);
+      setBonusReason("");
+      setMessage("تمت إضافة المكافأة لـ "+(lessonContext.studentName||"الطالب")+" وتسجيلها.");
+    }catch(e){setMessage(e.message||"تعذر إضافة المكافأة.");}
+    finally{setBonusBusy(false);}
+  }
+  async function finishLesson(){
+    if(!lessonContext?.sessionId){setMessage("اربط السبورة بحصة مجدولة من الجدول أولًا.");return;}
+    if(!window.confirm("إنهاء الحصة الحالية؟ ستصبح الحصة مكتملة وستُغلق مساحة السبورة المؤقتة على هذا الجهاز."))return;
+    setFinishBusy(true);setMessage("");setTimerRunning(false);
+    try{
+      await finalizeSession(lessonContext.sessionId,"COMPLETED",String(finishNote||"").trim()||"تم إنهاء الحصة من غرفة التدريس.");
+      try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
+      screenStreamRef.current=null;
+      try{mediaCallRef.current?.close?.();}catch{}
+      mediaCallRef.current=null;
+      try{connRef.current?.send({type:"disconnect",reason:"تم إنهاء الحصة من المعلم."});}catch{}
+      try{connRef.current?.close?.();}catch{}
+      connRef.current=null;
+      try{peerRef.current?.destroy?.();}catch{}
+      peerRef.current=null;
+      const canvas=canvasRef.current;
+      if(canvas){const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);}
+      historyRef.current=[];futureRef.current=[];strokeRef.current=[];
+      setSharingMedia(false);setMediaKind("");setConnectionState("offline");setSessionCode("");setStudentCanWrite(false);setLocked(false);setTimer(0);setAyah(null);setSavedAt("");
+      setLessonContext(null);setLessonPhase("شرح");saveLessonContext(null);
+      localStorage.removeItem(STORAGE_KEY);
+      setMessage("تم إنهاء الحصة بنجاح وتصفير مساحة السبورة.");
+    }catch(e){setMessage(e.message||"تعذر إنهاء الحصة.");}
+    finally{setFinishBusy(false);}
+  }
+
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
   function stopMediaShare(){
     try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
@@ -136,7 +188,8 @@ export default function WhiteboardPage(){
         conn.on("data",data=>{
           if(data?.type==="student-stroke"&&studentCanWrite){drawRemoteStroke(canvasRef.current,data.stroke);}
           if(data?.type==="student-snapshot"&&!locked&&data.canvas){restore(data.canvas);sendRealtime({type:"state",canvas:data.canvas,locked,timer,background,sessionCode:code});}
-          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);\n          if(data?.type==="lesson-context"){setLessonContext(data.context||null);setAyah(data.context||null);setLessonPhase(data.phase||"شرح");}
+          if(data?.type==="effect"&&data.effect)playSound(data.effect,false);
+          if(data?.type==="lesson-context"){setLessonContext(data.context||null);setAyah(data.context||null);setLessonPhase(data.phase||"شرح");}
           if(data?.type==="ping")conn.send({type:"pong"});
         });
         conn.on("close",()=>{if(connRef.current===conn){connRef.current=null;stopMediaShare();setConnectionState("waiting");}});
@@ -145,6 +198,13 @@ export default function WhiteboardPage(){
       setMessage("تم إنشاء جلسة مباشرة. أرسلي الكود للطالب: "+code);
     }catch{setConnectionState("error");setMessage("تعذر تشغيل الاتصال المباشر على هذا المتصفح.");}
   }
+  useEffect(()=>{
+    const autoStart=new URLSearchParams(window.location.search).get("autostart")==="1";
+    if(!autoStart||autoStartRef.current||!lessonContext?.sessionId)return;
+    autoStartRef.current=true;
+    try{window.history.replaceState({},document.title,"/teacher/whiteboard");}catch{}
+    window.setTimeout(()=>startTeacherSession(),0);
+  },[lessonContext?.sessionId]);
   useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode,timerRunning,lessonContext,lessonPhase});},[studentCanWrite,background,sessionCode,lessonContext,lessonPhase,snapshot]);
   useEffect(()=>{sendRealtime({type:"timer",timer,timerRunning});},[timer,timerRunning]);
 
@@ -175,29 +235,35 @@ export default function WhiteboardPage(){
     }catch{}
   }
   const soundActions=[
-    ["clap","تصفيق"],["heart","قلب"],["celebrate","احتفال"],["star","نجمة"],
-    ["trophy","كأس"],["hammer","مطرقة"],["alert","إنذار"]
+    ["clap","تصفيق"],["trophy","كأس"],["celebrate","احتفال"],["star","نجمة"],["hammer","طرق"]
   ];
   function start(e){
     if(locked)return;
     const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);
     pushHistory();drawingRef.current=true;strokeRef.current=[p];ctx.beginPath();ctx.moveTo(p.x,p.y);
-    ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(window.devicePixelRatio||1);
-    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;c.setPointerCapture?.(e.pointerId);
+    ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(pixelRatio());
+    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;ctx.globalAlpha=tool==="highlighter"?0.24:1;ctx.lineWidth=(tool==="eraser"?Math.max(size*2,18):size)*(pixelRatio());c.setPointerCapture?.(e.pointerId);
   }
   function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);strokeRef.current.push(p);ctx.lineTo(p.x,p.y);ctx.stroke();}
   function end(){
     if(!drawingRef.current)return;
     drawingRef.current=false;
+    const ctx=canvasRef.current?.getContext("2d");if(ctx)ctx.globalAlpha=1;
     const points=strokeRef.current;strokeRef.current=[];
     if(points.length){
-      sendRealtime({type:"stroke",stroke:{points,tool,color,size:size*(window.devicePixelRatio||1)}});
+      const stroke={points,tool,color,size:size*(pixelRatio())};
+      sendRealtime({type:"stroke",stroke});
     }
 }
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});setMessage("تم تنظيف السبورة.");}
-  function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}const context={surah:s.name,number:Number(ayahNumber),surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);saveLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
+  function addAyah(){
+    const s=getSurah(Number(surahNumber));
+    if(!s){setMessage("رقم السورة غير صحيح.");return;}
+    const number=Math.min(s.ayahs,Math.max(1,Number(ayahNumber)||1));
+    setAyahNumber(String(number));
+    const context={...(lessonContext||{}),surah:s.name,number,surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);saveLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
   function openLessonSection(path){saveLessonContext(lessonContext);go(path);}
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
@@ -210,37 +276,51 @@ export default function WhiteboardPage(){
         <div className="aa-whiteboard-toolbar">
           <div className="aa-whiteboard-tool-group">
             <button className={tool==="pen"?"is-active":""} onClick={()=>setTool("pen")}>✎ قلم</button>
-            <button className={tool==="eraser"?"is-active":""} onClick={()=>setTool("eraser")}>⌫ ممحاة</button>
+            <button className={tool==="highlighter"?"is-active":""} onClick={()=>setTool("highlighter")}>▰ تمييز</button>
+            <button className={tool==="eraser"?"is-active":""} onClick={()=>setTool("eraser")}>⌫ ممحاة ذكية</button>
             <button onClick={undo} disabled={!historyRef.current.length}>↶ تراجع</button>
             <button onClick={redo} disabled={!futureRef.current.length}>↷ إعادة</button>
             <button onClick={clearBoard}>مسح الكل</button>
           </div>
           <div className="aa-whiteboard-tool-group">
-            {COLORS.map(c=><button key={c} className={color===c?"aa-color is-active":"aa-color"} style={{background:c}} onClick={()=>{setColor(c);setTool("pen");}} aria-label="لون"/>)}
+            <span className="aa-tool-caption">ألوان الكتابة</span>{COLORS.map(c=><button key={c} className={color===c?"aa-color is-active":"aa-color"} style={{background:c}} onClick={()=>{setColor(c);setTool("pen");}} aria-label="لون"/>)}
             <select value={size} onChange={e=>setSize(Number(e.target.value))} aria-label="حجم القلم">{SIZES.map(v=><option key={v} value={v}>{v}px</option>)}</select>
+          </div>
+          <div className="aa-whiteboard-tool-group aa-tajweed-tools">
+            <span className="aa-tool-caption">ألوان التجويد</span>
+            {TAJWEED_COLORS.map(t=><button key={t.key} className={color===t.color&&tool==="pen"?"aa-tajweed-color is-active":"aa-tajweed-color"} style={{"--tajweed-color":t.color}} onClick={()=>{setColor(t.color);setTool("pen");}}>{t.label}</button>)}
           </div>
           <div className="aa-whiteboard-tool-group">
             <select value={background} onChange={e=>setBackground(e.target.value)} aria-label="خلفية السبورة">
-              <option value="paper">خلفية كتابة</option><option value="soft">خلفية هادئة</option><option value="focus">خلفية عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
+              <option value="paper">ورق دافئ</option><option value="clouds">سحاب وسماء</option><option value="greenboard">سبورة خضراء</option><option value="grid">شبكة بيضاء</option><option value="islamic">زخرفة هادئة</option><option value="focus">مساحة عرض</option><option value="timer">شاشة المؤقت</option><option value="video">شاشة الفيديو</option>
             </select>
-            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>▶ مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"⏹ إيقاف المشاركة":"🖥️ مشاركة الشاشة"}</button>
+            <label className="aa-video-upload">إضافة فيديو<input type="file" accept="video/*" onChange={handleVideo}/></label>{videoUrl&&<button onClick={shareUploadedVideo} disabled={!sessionCode||connectionState!=="connected"}>مشاركة الفيديو</button>}<button onClick={sharingMedia?stopMediaShare:startScreenShare} disabled={!sessionCode||connectionState!=="connected"}>{sharingMedia?"إيقاف المشاركة":"مشاركة الشاشة"}</button>
             <button onClick={()=>setPresentation(v=>!v)}>{presentation?"إنهاء العرض":"وضع العرض"}</button>
-            <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"🔒 جعل الطالب مشاهدة فقط":"✍️ السماح للطالب بالكتابة"}</button>
+            <button onClick={()=>syncPermission(!studentCanWrite)}>{studentCanWrite?"جعل الطالب مشاهدة فقط":"السماح للطالب بالكتابة"}</button>
             {sessionCode&&connectionState==="connected"&&<button onClick={disconnectStudent}>فصل الطالب</button>}
-            <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"⏸ إيقاف المؤقت":"▶ بدء المؤقت"}</button>
+            <button onClick={()=>setTimerRunning(v=>!v)}>{timerRunning?"إيقاف المؤقت":"بدء المؤقت"}</button>
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
-            <button onClick={saveBoard}>💾 حفظ</button>
-            <button onClick={startTeacherSession}>＋ جلسة جديدة</button>
+            <button onClick={saveBoard}>حفظ</button>
+            <button onClick={startTeacherSession}>＋ جلسة جديدة</button><button onClick={finishLesson} disabled={finishBusy||!lessonContext?.sessionId}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</button>
             <button onClick={exportBoard}>تصدير صورة</button>
-          </div>
-          <div className="aa-whiteboard-tool-group aa-sound-group">
-            <span className="aa-sound-title">أصوات سريعة</span>
-            {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
           </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
-          <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span><label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{setLessonPhase(e.target.value);sendRealtime({type:"lesson-context",context:lessonContext,phase:e.target.value});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة</option><option>تطبيق</option></select></label></div>
+          <div><b>مرجع الدرس</b><span>{lessonContext?.surah?("سورة "+lessonContext.surah+(lessonContext.number?" — الآية "+lessonContext.number:"")):"لم تحدد آية بعد"}</span>
+            {lessonContext?.sessionId&&<div className="aa-board-session">
+              <span><b>الحصة المرتبطة</b>{lessonContext.studentName||"الطالب الحالي"}{lessonContext.scheduledStartUtc?" • "+new Date(lessonContext.scheduledStartUtc).toLocaleString("ar-EG",{dateStyle:"medium",timeStyle:"short"}):""}</span>
+              <div className="aa-board-session-actions">
+                <input value={finishNote} onChange={e=>setFinishNote(e.target.value)} maxLength="400" placeholder="ملاحظة ختامية للحصة" aria-label="ملاحظة ختامية للحصة"/>
+                <Button kind="secondary" onClick={finishLesson} disabled={finishBusy}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</Button>
+              </div>
+            </div>}<label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{const phase=e.target.value;setLessonPhase(phase);const next={...(lessonContext||{}),phase};setLessonContext(next);saveLessonContext(next);sendRealtime({type:"lesson-context",context:next,phase});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة تطبيقية</option><option>تطبيق</option></select></label></div>
+          {lessonContext?.enrollmentId&&<div className="aa-board-bonus">
+            <div><b>مكافأة سريعة</b><span>{lessonContext.studentName||"الطالب الحالي"}</span></div>
+            <input type="number" min="1" max="100000" value={bonusPoints} onChange={e=>setBonusPoints(e.target.value)} aria-label="عدد نقاط المكافأة"/>
+            <input value={bonusReason} onChange={e=>setBonusReason(e.target.value)} maxLength="300" placeholder="سبب المكافأة" aria-label="سبب المكافأة"/>
+            <Button kind="secondary" onClick={grantBonusFromBoard} disabled={bonusBusy}>{bonusBusy?"جارٍ الحفظ...":"إضافة مكافأة"}</Button>
+          </div>}
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
             <label>الآية<input inputMode="numeric" value={ayahNumber} onChange={e=>setAyahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
@@ -254,7 +334,7 @@ export default function WhiteboardPage(){
           <div className="aa-whiteboard-effects" aria-live="polite">
             {effects.map(effect=><div key={effect.id} className={"aa-board-effect aa-effect-"+effect.type} aria-hidden="true">
               {effect.type==="clap"&&<><span className="aa-clap-hand aa-hand-a"/><span className="aa-clap-hand aa-hand-b"/><span className="aa-clap-lines"/></>}
-              {effect.type==="heart"&&<span className="aa-heart-shape">♥</span>}
+              {effect.type==="heart"&&<span className="aa-heart-shape" aria-hidden="true"/>}
               {effect.type==="star"&&<span className="aa-star-shape">★</span>}
               {effect.type==="trophy"&&<><span className="aa-trophy-cup"/><span className="aa-trophy-base"/></>}
               {effect.type==="hammer"&&<><span className="aa-hammer-head"/><span className="aa-hammer-handle"/></>}
@@ -264,6 +344,10 @@ export default function WhiteboardPage(){
           </div>
           <canvas ref={canvasRef} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end}/>
           {locked&&<div className="aa-whiteboard-lock">تفاعل الطالب مقفول — المعلم وحده يستطيع التعديل</div>}
+        </div>
+        <div className="aa-whiteboard-reactions" aria-label="تفاعلات الحصة">
+          <span className="aa-sound-title">تفاعلات الحصة</span>
+          {soundActions.map(([type,label])=><button key={type} className={"aa-effect-btn aa-effect-"+type} onClick={()=>playSound(type)}>{label}</button>)}
         </div>
         {message&&<div className="msg ok">{message}</div>}
       </div>
