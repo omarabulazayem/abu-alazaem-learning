@@ -111,7 +111,7 @@ export function TeacherSchedulePanel({data}){
       phase:"شرح"
     };
     saveLessonContext(next);
-    go("/teacher/whiteboard");
+    go("/teacher/whiteboard?autostart=1");
   }
 
   const upcoming=sessions.filter(s=>new Date(s.scheduled_start_utc)>=new Date()||s.status!=="SCHEDULED").slice(0,40);
