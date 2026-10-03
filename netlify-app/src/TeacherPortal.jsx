@@ -215,6 +215,19 @@ function StudentDetail({user,data,studentId,reloadOverview}){
   const totalGameAttempts=gameSessions.reduce((sum,s)=>sum+Number(s.correct_answers??s.correctAnswers??0)+Number(s.wrong_answers??s.wrongAnswers??0),0);
   const totalGameCorrect=gameSessions.reduce((sum,s)=>sum+Number(s.correct_answers??s.correctAnswers??0),0);
   const overallGameAccuracy=totalGameAttempts?Math.round(totalGameCorrect/totalGameAttempts*100):0;
+  const ayahReport=gameEvents.reduce((acc,event)=>{
+    if(!event.surah_number||!event.ayah_number)return acc;
+    const key=event.surah_number+":"+event.ayah_number;
+    if(!acc[key])acc[key]={key,surahNumber:Number(event.surah_number),ayahNumber:Number(event.ayah_number),attempts:0,correct:0,wrong:0,games:new Set(),last:event.created_at};
+    const item=acc[key];
+    item.attempts+=1;
+    if(event.is_correct)item.correct+=1;else item.wrong+=1;
+    if(event.game_id)item.games.add(event.game_id);
+    if(new Date(event.created_at||0)>new Date(item.last||0))item.last=event.created_at;
+    return acc;
+  },{});
+  const ayahRows=Object.values(ayahReport).map(item=>({...item,accuracy:item.attempts?Math.round(item.correct/item.attempts*100):0,gamesCount:item.games.size})).sort((a,b)=>a.accuracy-b.accuracy||b.attempts-a.attempts);
+  const lowAccuracyAyahs=ayahRows.filter(row=>row.attempts>=2&&row.accuracy<70).slice(0,10);
 
   async function submitReview(e){e.preventDefault();if(!surahNumber)return;setBusy(true);setMessage("");setError("");
     try{
