@@ -188,12 +188,13 @@ function StudentDetail({user,data,studentId,reloadOverview}){
   const summary=data.students.find(s=>s.id===studentId);
   const [progress,setProgress]=useState([]),[reviews,setReviews]=useState([]),[gameSessions,setGameSessions]=useState([]),[gameEvents,setGameEvents]=useState([]),[score,setScore]=useState(100),[surahNumber,setSurahNumber]=useState(""),[notes,setNotes]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
   async function load(){if(!summary)return;try{
-    const [rows,reviewRows,gameRows]=await Promise.all([
+    const [rows,reviewRows,gameRows,gameEventRows]=await Promise.all([
       getProgress(studentId),
       rest(`/review_events?child_id=eq.${encodeURIComponent(studentId)}&select=id,surah_number,score,notes,reviewed_at,created_by&order=reviewed_at.desc&limit=20`),
-      listTeacherGameSessions(studentId,20).catch(()=>[])
+      listTeacherGameSessions(studentId,20).catch(()=>[]),
+      listTeacherGameEvents(studentId,120).catch(()=>[])
     ]);
-    setProgress(rows||[]);setReviews(reviewRows||[]);setGameSessions(gameRows||[]);
+    setProgress(rows||[]);setReviews(reviewRows||[]);setGameSessions(gameRows||[]);setGameEvents(gameEventRows||[]);
     const first=(rows||[]).find(r=>Number(r.memorized_percent||0)>0);setSurahNumber(v=>v||(first?String(first.surah_number):""));
   }catch(e){setError(e.message||"تعذر تحميل ملف الطالب.");}}
   useEffect(()=>{load();},[studentId,summary?.id]);
@@ -228,6 +229,19 @@ function StudentDetail({user,data,studentId,reloadOverview}){
   },{});
   const ayahRows=Object.values(ayahReport).map(item=>({...item,accuracy:item.attempts?Math.round(item.correct/item.attempts*100):0,gamesCount:item.games.size})).sort((a,b)=>a.accuracy-b.accuracy||b.attempts-a.attempts);
   const lowAccuracyAyahs=ayahRows.filter(row=>row.attempts>=2&&row.accuracy<70).slice(0,10);
+  const surahReport=gameEvents.reduce((acc,event)=>{
+    if(!event.surah_number)return acc;
+    const key=String(event.surah_number);
+    if(!acc[key])acc[key]={surahNumber:Number(event.surah_number),attempts:0,correct:0,ayahs:new Set(),games:new Set(),last:event.created_at};
+    const item=acc[key];
+    item.attempts+=1;
+    if(event.is_correct)item.correct+=1;
+    if(event.ayah_number)item.ayahs.add(Number(event.ayah_number));
+    if(event.game_id)item.games.add(event.game_id);
+    if(new Date(event.created_at||0)>new Date(item.last||0))item.last=event.created_at;
+    return acc;
+  },{});
+  const surahRows=Object.values(surahReport).map(item=>({...item,accuracy:item.attempts?Math.round(item.correct/item.attempts*100):0,ayahCount:item.ayahs.size,gamesCount:item.games.size})).sort((a,b)=>new Date(b.last||0)-new Date(a.last||0));
 
   async function submitReview(e){e.preventDefault();if(!surahNumber)return;setBusy(true);setMessage("");setError("");
     try{
@@ -265,6 +279,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
       <Metric icon="quran" label="سور طُبقت عليها ألعاب" value={new Set(gameSessions.map(s=>s.surah_number).filter(Boolean)).size} tone="sky"/>
     </div>
     <Section eyebrow="تحليل الألعاب" title="أداء كل لعبة">{gameBreakdown.length?<div className="aa-person-list">{gameBreakdown.map(item=><article className="aa-person-card" key={item.key}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>{item.title}</b><strong>{item.count} جولة</strong></div><small>متوسط النقاط: {Math.round(item.total/item.count)} • أعلى نتيجة: {item.best}{item.accuracySamples?" • دقة الإجابات: "+Math.round(item.accuracyTotal/item.accuracySamples)+"%":""} • إجابات صحيحة: {item.correct}</small></article>)}</div>:<Empty icon="game" title="لا توجد بيانات كافية للتحليل"/>}</Section>
+    <Section eyebrow="تحليل السور" title="السور التي طُبقت عليها الألعاب">{surahRows.length?<div className="aa-person-list">{surahRows.slice(0,12).map(row=><article className="aa-person-card" key={row.surahNumber}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>سورة {getSurah(row.surahNumber)?.name||row.surahNumber}</b><strong>{row.accuracy}%</strong></div><small>{row.ayahCount} آيات مطبقة • {row.attempts} محاولة • {row.correct} صحيحة • {row.gamesCount} ألعاب • آخر تطبيق: {formatDate(row.last)}</small></article>)}</div>:<Empty icon="quran" title="لا توجد بيانات تطبيق على السور بعد" text="يظهر هذا الملخص بعد تسجيل محاولات على آيات داخل الألعاب."/>}</Section>
     <Section eyebrow="تحليل الآيات" title="متابعة التطبيق على الآيات">{ayahRows.length?<div className="aa-table-list">{ayahRows.slice(0,20).map(row=><article className="aa-table-row" key={row.key}><span><Icon name="quran" size={21}/></span><div><b>سورة {getSurah(row.surahNumber)?.name||row.surahNumber} • الآية {row.ayahNumber}</b><small>{row.attempts} محاولة • {row.correct} صحيحة • {row.wrong} غير صحيحة • {row.gamesCount} ألعاب • آخر تطبيق: {formatDate(row.last)}</small></div><strong>{row.accuracy}%</strong></article>)}</div>:<Empty icon="quran" title="لا توجد بيانات على مستوى الآيات بعد" text="تظهر هنا الآيات التي سُجل عليها تطبيق فعلي داخل الألعاب."/ >}</Section>\n    <Section eyebrow="متابعة تحتاج انتباهًا" title="آيات بدقة منخفضة في الجولات المسجلة">{lowAccuracyAyahs.length?<div className="aa-person-list">{lowAccuracyAyahs.map(row=><article className="aa-person-card" key={row.key}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>سورة {getSurah(row.surahNumber)?.name||row.surahNumber} • الآية {row.ayahNumber}</b><strong>{row.accuracy}%</strong></div><small>{row.attempts} محاولات • {row.correct} صحيحة • آخر تطبيق: {formatDate(row.last)}</small></article>)}</div>:<Empty icon="circleCheck" title="لا توجد آيات منخفضة الدقة ضمن البيانات الحالية" text="يظهر هذا القسم فقط عند وجود محاولتين فأكثر ودقة أقل من 70%. " />}</Section>\n    <Section eyebrow="سجل الألعاب" title="آخر جولات الألعاب">{gameSessions.length?<div className="aa-table-list">{gameSessions.map((s,index)=><article className="aa-table-row" key={s.id||index}><span><Icon name="game" size={21}/></span><div><b>{s.game_name||s.game_id||"لعبة"}</b><small>{formatDate(s.completed_at||s.updated_at||s.created_at)}{s.surah_number?" • سورة "+(getSurah(s.surah_number)?.name||s.surah_number):""}{(s.lesson_context?.number||s.resume_state?.lesson_context?.number)?" • الآية "+(s.lesson_context?.number||s.resume_state.lesson_context.number):""}{(s.lesson_context?.phase||s.resume_state?.lesson_context?.phase)?" • "+(s.lesson_context?.phase||s.resume_state.lesson_context.phase):""}</small></div><strong>{Number(s.score||0)} نقطة</strong></article>)}</div>:<Empty icon="game" title="لا توجد جولات ألعاب محفوظة بعد" text="تظهر هنا الجولات التي يسجلها نظام الألعاب للطالب."/>}</Section>
     <Section eyebrow="السجل" title="آخر المراجعات">{reviews.length?<div className="aa-table-list">{reviews.map(r=><article className="aa-table-row" key={r.id}><span><Icon name="review" size={21}/></span><div><b>سورة {getSurah(r.surah_number)?.name||r.surah_number}</b><small>{formatDate(r.reviewed_at)}{r.notes?` • ${r.notes}`:""}</small></div><strong>{r.score}%</strong></article>)}</div>:<Empty icon="review" title="لا توجد مراجعات بعد"/>}</Section>
   </>;
