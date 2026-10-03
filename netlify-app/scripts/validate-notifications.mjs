@@ -30,6 +30,8 @@ const checks=[
   [api,"export async function markAllNotificationsRead","notification bulk read API"],
   [panel,"listNotifications","panel data flow"],
   [panel,"markNotificationRead","panel read action"],
+  [panel,"row.metadata||{}","metadata-aware notification routing"],
+  [panel,"/teacher/student/${metadata.student_id}","teacher student-context routing"],
   [family,"<NotificationsPanel userId=","family notification UI"],
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
