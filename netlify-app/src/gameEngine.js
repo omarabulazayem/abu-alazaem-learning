@@ -31,7 +31,7 @@ export class GameEngine {
   }
 
   async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = this.lessonContext } = {}) {
-    const activeLessonContext = lessonContext || null;
+    const activeLessonContext = this.teacherPreview ? (lessonContext || null) : null;
     const scopedSurahNumber = surahNumber == null && activeLessonContext?.surahNumber ? Number(activeLessonContext.surahNumber) : surahNumber;
     if (this.teacherPreview) {
       this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: scopedSurahNumber, selected_ayahs: ayahNumbers, preview: true };
