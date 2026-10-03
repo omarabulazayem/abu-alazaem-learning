@@ -347,7 +347,7 @@ export async function hasChildModePin() {
 export async function listTeacherGameSessions(childId, limit = 20) {
   if (!childId) return [];
   const bounded = Math.max(1, Math.min(100, Number(limit) || 20));
-  return rest(`/game_sessions?child_id=eq.${encodeURIComponent(childId)}&select=*&order=updated_at.desc.nullslast,created_at.desc&limit=${bounded}`);
+  return rest(`/game_sessions?child_id=eq.${encodeURIComponent(childId)}&completed=eq.true&select=*&order=updated_at.desc.nullslast,created_at.desc&limit=${bounded}`);
 }
 
 export async function getStudentWallet(childId) {
