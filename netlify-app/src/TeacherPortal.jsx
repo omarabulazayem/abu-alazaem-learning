@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
   claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
-  listTeacherTaskAssignments,recordReview,rest,reviewTaskAssignment,signOut,teacherEnrollmentOverview
+  listTeacherTaskAssignments,listTeacherGameSessions,recordReview,rest,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
@@ -186,13 +186,13 @@ function Tasks({data}){
 
 function StudentDetail({user,data,studentId,reloadOverview}){
   const summary=data.students.find(s=>s.id===studentId);
-  const [progress,setProgress]=useState([]),[reviews,setReviews]=useState([]),[score,setScore]=useState(100),[surahNumber,setSurahNumber]=useState(""),[notes,setNotes]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
+  const [progress,setProgress]=useState([]),[reviews,setReviews]=useState([]),[gameSessions,setGameSessions]=useState([]),[score,setScore]=useState(100),[surahNumber,setSurahNumber]=useState(""),[notes,setNotes]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
   async function load(){if(!summary)return;try{
-    const [rows,reviewRows]=await Promise.all([
+    const [rows,reviewRows,gameRows]=await Promise.all([
       getProgress(studentId),
       rest(`/review_events?child_id=eq.${encodeURIComponent(studentId)}&select=id,surah_number,score,notes,reviewed_at,created_by&order=reviewed_at.desc&limit=20`)
     ]);
-    setProgress(rows||[]);setReviews(reviewRows||[]);
+    setProgress(rows||[]);setReviews(reviewRows||[]);setGameSessions(gameRows||[]);
     const first=(rows||[]).find(r=>Number(r.memorized_percent||0)>0);setSurahNumber(v=>v||(first?String(first.surah_number):""));
   }catch(e){setError(e.message||"تعذر تحميل ملف الطالب.");}}
   useEffect(()=>{load();},[studentId,summary?.id]);
@@ -227,6 +227,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
         {message&&<div className="msg ok">{message}</div>}<ErrorBox text={error}/>
       </aside>
     </div>
+    <Section eyebrow="سجل الألعاب" title="آخر جولات الألعاب">{gameSessions.length?<div className="aa-table-list">{gameSessions.map((s,index)=><article className="aa-table-row" key={s.id||index}><span><Icon name="game" size={21}/></span><div><b>{s.game_name||s.game_id||"لعبة"}</b><small>{formatDate(s.completed_at||s.updated_at||s.created_at)}{s.surah_number?" • سورة "+(getSurah(s.surah_number)?.name||s.surah_number):""}{s.lesson_context?.number?" • الآية "+s.lesson_context.number:""}</small></div><strong>{Number(s.score||0)} نقطة</strong></article>)}</div>:<Empty icon="game" title="لا توجد جولات ألعاب محفوظة بعد" text="تظهر هنا الجولات التي يسجلها نظام الألعاب للطالب."/>}</Section>
     <Section eyebrow="السجل" title="آخر المراجعات">{reviews.length?<div className="aa-table-list">{reviews.map(r=><article className="aa-table-row" key={r.id}><span><Icon name="review" size={21}/></span><div><b>سورة {getSurah(r.surah_number)?.name||r.surah_number}</b><small>{formatDate(r.reviewed_at)}{r.notes?` • ${r.notes}`:""}</small></div><strong>{r.score}%</strong></article>)}</div>:<Empty icon="review" title="لا توجد مراجعات بعد"/>}</Section>
   </>;
 }
