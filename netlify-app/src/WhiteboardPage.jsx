@@ -13,7 +13,7 @@ const TAJWEED_COLORS=[
 ];
 const SIZES=[2,4,7,11,16,24];
 
-function pixelRatio(){return pixelRatio();}
+function pixelRatio(){return Math.min(2,Math.max(1,window.devicePixelRatio||1));}
 
 function pointFromEvent(canvas,e){
   const rect=canvas.getBoundingClientRect();
