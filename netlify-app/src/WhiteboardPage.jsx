@@ -45,7 +45,7 @@ export default function WhiteboardPage(){
   const STORAGE_KEY="abu-al-azaem-whiteboard-v2";
   const [timerRunning,setTimerRunning]=useState(false),[ayah,setAyah]=useState(null),[surahNumber,setSurahNumber]=useState("67"),[ayahNumber,setAyahNumber]=useState("1");
   const [background,setBackground]=useState("paper"),[videoUrl,setVideoUrl]=useState(""),[presentation,setPresentation]=useState(false);
-  const [effects,setEffects]=useState([]);
+  const [effects,setEffects]=useState([]),autoStartRef=useRef(false);
   const audioRef=useRef(null),peerRef=useRef(null),connRef=useRef(null),mediaCallRef=useRef(null),videoRef=useRef(null),screenStreamRef=useRef(null);
   const [connectionState,setConnectionState]=useState("offline");
   const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
@@ -85,7 +85,7 @@ export default function WhiteboardPage(){
   useEffect(()=>{
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode(saved.sessionCode||"");setLessonContext(saved.lessonContext||saved.ayah||null);setLessonPhase(saved.lessonPhase||"شرح");}
+      if(saved?.canvas){setTimeout(()=>restore(saved.canvas),0);setAyah(saved.ayah||null);setTimer(saved.timer||0);setSavedAt(saved.savedAt||"");setSessionCode("");setLessonContext(saved.lessonContext||saved.ayah||null);setLessonPhase(saved.lessonPhase||"شرح");}
     }catch{}
   },[restore]);
   const saveBoard=useCallback(()=>{
@@ -198,6 +198,13 @@ export default function WhiteboardPage(){
       setMessage("تم إنشاء جلسة مباشرة. أرسلي الكود للطالب: "+code);
     }catch{setConnectionState("error");setMessage("تعذر تشغيل الاتصال المباشر على هذا المتصفح.");}
   }
+  useEffect(()=>{
+    const autoStart=new URLSearchParams(window.location.search).get("autostart")==="1";
+    if(!autoStart||autoStartRef.current||!lessonContext?.sessionId)return;
+    autoStartRef.current=true;
+    try{window.history.replaceState({},document.title,"/teacher/whiteboard");}catch{}
+    window.setTimeout(()=>startTeacherSession(),0);
+  },[lessonContext?.sessionId]);
   useEffect(()=>{sendRealtime({type:"state",canvas:snapshot(),locked:!studentCanWrite,timer,background,sessionCode,timerRunning,lessonContext,lessonPhase});},[studentCanWrite,background,sessionCode,lessonContext,lessonPhase,snapshot]);
   useEffect(()=>{sendRealtime({type:"timer",timer,timerRunning});},[timer,timerRunning]);
 
