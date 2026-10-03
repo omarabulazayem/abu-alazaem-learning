@@ -30,7 +30,8 @@ export class GameEngine {
     return this.session;
   }
 
-  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = this.lessonContext } = {}) {\n    const activeLessonContext = lessonContext || null;\n    const scopedSurahNumber = surahNumber == null && activeLessonContext?.surahNumber ? Number(activeLessonContext.surahNumber) : surahNumber;
+  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = this.lessonContext } = {}) {
+    const activeLessonContext = lessonContext || null;\n    const scopedSurahNumber = surahNumber == null && activeLessonContext?.surahNumber ? Number(activeLessonContext.surahNumber) : surahNumber;
     if (this.teacherPreview) {
       this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: scopedSurahNumber, selected_ayahs: ayahNumbers, preview: true };
       return this.session;
@@ -96,6 +97,7 @@ export class GameEngine {
       p_resume_state: resumeState || {},
     });
     this.session = Array.isArray(result) ? result[0] : result;
+    if (this.lessonContext && this.session) this.session.lesson_context = this.lessonContext;
     return this.session;
   }
 
