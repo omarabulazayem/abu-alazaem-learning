@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState} from "react";
 import Icon from "./Icon.jsx";
-import {getCurrentUser,rest,teacherOverview} from "./api.js";
+import {getCurrentUser,rest,teacherEnrollmentOverview} from "./api.js";
 import {gameDefinition} from "./gameRegistry.js";
 import {getSurah} from "./surahCatalog.js";
 import {AppShell,Button,Card,Empty,Hero,Metric,ProgressBar,Section,TEACHER_NAV,go} from "./ui-v4.jsx";
@@ -12,7 +12,7 @@ function questionLabel(type){return ({next_ayah:"الآية التالية",miss
 
 export default function TeacherGameReports(){
   const [user,setUser]=useState(undefined),[students,setStudents]=useState([]),[selected,setSelected]=useState(""),[games,setGames]=useState([]),[review,setReview]=useState([]),[events,setEvents]=useState([]),[loading,setLoading]=useState(false),[error,setError]=useState("");
-  useEffect(()=>{let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current)return go("/login");setUser(current);const overview=await teacherOverview(current.id);if(!alive)return;setStudents(overview.students||[]);setSelected(v=>v||(overview.students?.[0]?.id||""));}catch(e){if(alive)setError(e.message||"تعذر تحميل طلاب المعلم.");}})();return()=>{alive=false;};},[]);
+  useEffect(()=>{let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current)return go("/login");setUser(current);const overview=await teacherEnrollmentOverview(current.id);if(!alive)return;setStudents(overview.students||[]);setSelected(v=>v||(overview.students?.[0]?.id||""));}catch(e){if(alive)setError(e.message||"تعذر تحميل طلاب المعلم.");}})();return()=>{alive=false;};},[]);
   useEffect(()=>{if(!selected)return;let alive=true;setLoading(true);setError("");(async()=>{try{const [gp,rq,ev]=await Promise.all([rest(`/game_progress?child_id=eq.${encodeURIComponent(selected)}&select=*&order=plays.desc`),rest(`/review_queue?child_id=eq.${encodeURIComponent(selected)}&select=*&order=priority.desc,last_error_at.desc&limit=100`),rest(`/game_ayah_events?child_id=eq.${encodeURIComponent(selected)}&select=game_id,surah_number,ayah_number,question_type,is_correct,response_time_ms,created_at&order=created_at.desc&limit=300`)]);if(alive){setGames(gp||[]);setReview(rq||[]);setEvents(ev||[]);}}catch(e){if(alive)setError(e.message||"تعذر تحميل تقارير الألعاب.");}finally{if(alive)setLoading(false);}})();return()=>{alive=false;};},[selected]);
   const student=students.find(s=>s.id===selected)||null;
   const summary=useMemo(()=>{const played=games.filter(g=>Number(g.plays||0)>0);const favorite=[...played].sort((a,b)=>Number(b.plays)-Number(a.plays))[0]||null;const weakest=[...played].sort((a,b)=>Number(a.mastery_score||0)-Number(b.mastery_score||0))[0]||null;const correct=played.reduce((s,g)=>s+Number(g.total_correct||0),0),wrong=played.reduce((s,g)=>s+Number(g.total_wrong||0),0),attempts=correct+wrong,timed=events.filter(e=>e.response_time_ms!=null);return{plays:played.reduce((s,g)=>s+Number(g.plays||0),0),completions:played.reduce((s,g)=>s+Number(g.completions||0),0),mastered:played.filter(g=>Number(g.best_stars||0)>=3).length,favorite,weakest,accuracy:pct(correct,attempts),averageMs:timed.length?Math.round(timed.reduce((s,e)=>s+Number(e.response_time_ms||0),0)/timed.length):0,highPriority:review.filter(r=>Number(r.priority||0)>=7).length};},[games,events,review]);
