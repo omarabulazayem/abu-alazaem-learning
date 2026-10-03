@@ -13,6 +13,8 @@ const TAJWEED_COLORS=[
 ];
 const SIZES=[2,4,7,11,16,24];
 
+function pixelRatio(){return pixelRatio();}
+
 function pointFromEvent(canvas,e){
   const rect=canvas.getBoundingClientRect();
   return {x:(e.clientX-rect.left)*(canvas.width/rect.width),y:(e.clientY-rect.top)*(canvas.height/rect.height)};
@@ -63,14 +65,14 @@ export default function WhiteboardPage(){
 
   const fitCanvas=useCallback(()=>{
     const c=canvasRef.current;if(!c)return;
-    const rect=c.getBoundingClientRect(),ratio=Math.min(2,Math.max(1,window.devicePixelRatio||1)),old=snapshot();
+    const rect=c.getBoundingClientRect(),ratio=pixelRatio(),old=snapshot();
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
     const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     if(old)restore(old);
   },[restore,snapshot]);
 
   useEffect(()=>{const c=canvasRef.current;if(!c)return;
-    const rect=c.getBoundingClientRect(),ratio=Math.min(2,Math.max(1,window.devicePixelRatio||1));
+    const rect=c.getBoundingClientRect(),ratio=pixelRatio();
     c.width=Math.max(600,Math.floor(rect.width*ratio));c.height=Math.max(420,Math.floor(rect.height*ratio));
     const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);
     const onResize=()=>fitCanvas();window.addEventListener("resize",onResize);
@@ -193,8 +195,8 @@ export default function WhiteboardPage(){
     if(locked)return;
     const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);
     pushHistory();drawingRef.current=true;strokeRef.current=[p];ctx.beginPath();ctx.moveTo(p.x,p.y);
-    ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(window.devicePixelRatio||1);
-    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;ctx.globalAlpha=tool==="highlighter"?0.24:1;ctx.lineWidth=(tool==="eraser"?Math.max(size*2,18):size)*(window.devicePixelRatio||1);c.setPointerCapture?.(e.pointerId);
+    ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=size*(pixelRatio());
+    ctx.globalCompositeOperation=tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=color;ctx.globalAlpha=tool==="highlighter"?0.24:1;ctx.lineWidth=(tool==="eraser"?Math.max(size*2,18):size)*(pixelRatio());c.setPointerCapture?.(e.pointerId);
   }
   function move(e){if(!drawingRef.current||locked)return;const c=canvasRef.current,ctx=c.getContext("2d"),p=pointFromEvent(c,e);strokeRef.current.push(p);ctx.lineTo(p.x,p.y);ctx.stroke();}
   function end(){
@@ -203,14 +205,19 @@ export default function WhiteboardPage(){
     const ctx=canvasRef.current?.getContext("2d");if(ctx)ctx.globalAlpha=1;
     const points=strokeRef.current;strokeRef.current=[];
     if(points.length){
-      const stroke={points,tool,color,size:size*(window.devicePixelRatio||1)};
+      const stroke={points,tool,color,size:size*(pixelRatio())};
       sendRealtime({type:"stroke",stroke});
     }
 }
   function undo(){const h=historyRef.current;if(!h.length)return;futureRef.current=[snapshot(),...futureRef.current].slice(0,30);restore(h[h.length-1]);historyRef.current=h.slice(0,-1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function redo(){const f=futureRef.current;if(!f.length)return;historyRef.current=[...historyRef.current,snapshot()].slice(-30);restore(f[0]);futureRef.current=f.slice(1);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});}
   function clearBoard(){if(!window.confirm("مسح كل ما على السبورة؟"))return;pushHistory();const c=canvasRef.current,ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);sendRealtime({type:"state",canvas:snapshot(),locked,timer,background,sessionCode});setMessage("تم تنظيف السبورة.");}
-  function addAyah(){const s=getSurah(Number(surahNumber));if(!s){setMessage("رقم السورة غير صحيح.");return;}const context={...(lessonContext||{}),surah:s.name,number:Number(ayahNumber),surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);saveLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
+  function addAyah(){
+    const s=getSurah(Number(surahNumber));
+    if(!s){setMessage("رقم السورة غير صحيح.");return;}
+    const number=Math.min(s.ayahs,Math.max(1,Number(ayahNumber)||1));
+    setAyahNumber(String(number));
+    const context={...(lessonContext||{}),surah:s.name,number,surahNumber:Number(surahNumber)};setAyah(context);setLessonContext(context);saveLessonContext(context);sendRealtime({type:"lesson-context",context,phase:lessonPhase});setMessage("تم تثبيت مرجع سورة "+s.name+"، الآية "+ayahNumber+" للمعلم والطالب.");}
   function openLessonSection(path){saveLessonContext(lessonContext);go(path);}
   function exportBoard(){const c=canvasRef.current;if(!c)return;const a=document.createElement("a");a.href=c.toDataURL("image/png");a.download="abu-al-azaem-whiteboard.png";a.click();setMessage("تم تجهيز صورة السبورة.");}
   const mm=String(Math.floor(timer/60)).padStart(2,"0"),ss=String(timer%60).padStart(2,"0");
