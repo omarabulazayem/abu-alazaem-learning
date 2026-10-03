@@ -4,6 +4,7 @@ import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
 import { loadQuranData } from "./quranCorpus.js";
 import { GameEngine, gameResultSummary } from "./gameEngine.js";
 import { SoundEngine } from "./soundEngine.js";
+import { getLessonContext } from "./ui-v4.jsx";
 import {
   adaptiveResumeState,
   createAdaptivePlan,
@@ -61,6 +62,11 @@ export function useAdaptiveGameSession(gameId, kinds) {
         if (!context.user) return navigate("/login");
         const corpus = await loadQuranData();
         let choices = SAFE_SURAHS;
+        const lessonContext = getLessonContext();
+        if (context.teacherPreview && lessonContext?.surahNumber) {
+          const scoped = Number(lessonContext.surahNumber);
+          if (corpus.surahs.some(surah => Number(surah.number) === scoped)) choices = [scoped];
+        }
         let currentProgress = null;
         let review = [];
         let events = [];
