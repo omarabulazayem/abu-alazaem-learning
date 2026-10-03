@@ -190,7 +190,8 @@ function StudentDetail({user,data,studentId,reloadOverview}){
   async function load(){if(!summary)return;try{
     const [rows,reviewRows,gameRows]=await Promise.all([
       getProgress(studentId),
-      rest(`/review_events?child_id=eq.${encodeURIComponent(studentId)}&select=id,surah_number,score,notes,reviewed_at,created_by&order=reviewed_at.desc&limit=20`)
+      rest(`/review_events?child_id=eq.${encodeURIComponent(studentId)}&select=id,surah_number,score,notes,reviewed_at,created_by&order=reviewed_at.desc&limit=20`),
+      listTeacherGameSessions(studentId,20).catch(()=>[])
     ]);
     setProgress(rows||[]);setReviews(reviewRows||[]);setGameSessions(gameRows||[]);
     const first=(rows||[]).find(r=>Number(r.memorized_percent||0)>0);setSurahNumber(v=>v||(first?String(first.surah_number):""));
@@ -226,6 +227,12 @@ function StudentDetail({user,data,studentId,reloadOverview}){
         </form>:<p style={{color:"var(--aa-muted)",fontSize:12}}>لا يمكن تسجيل مراجعة قبل بدء حفظ سورة.</p>}
         {message&&<div className="msg ok">{message}</div>}<ErrorBox text={error}/>
       </aside>
+    </div>
+    <div className="aa-teacher-layout" style={{marginTop:24}}>
+      <Metric icon="game" label="جولات الألعاب" value={gameSessions.length} tone="sky"/>
+      <Metric icon="circleCheck" label="متوسط النقاط" value={gameSessions.length?Math.round(gameSessions.reduce((sum,s)=>sum+Number(s.score||0),0)/gameSessions.length):0} tone="mint"/>
+      <Metric icon="target" label="أعلى نتيجة" value={gameSessions.length?Math.max(...gameSessions.map(s=>Number(s.score||0))):0} tone="gold"/>
+      <Metric icon="quran" label="سور طُبقت عليها ألعاب" value={new Set(gameSessions.map(s=>s.surah_number).filter(Boolean)).size} tone="sky"/>
     </div>
     <Section eyebrow="سجل الألعاب" title="آخر جولات الألعاب">{gameSessions.length?<div className="aa-table-list">{gameSessions.map((s,index)=><article className="aa-table-row" key={s.id||index}><span><Icon name="game" size={21}/></span><div><b>{s.game_name||s.game_id||"لعبة"}</b><small>{formatDate(s.completed_at||s.updated_at||s.created_at)}{s.surah_number?" • سورة "+(getSurah(s.surah_number)?.name||s.surah_number):""}{s.lesson_context?.number?" • الآية "+s.lesson_context.number:""}</small></div><strong>{Number(s.score||0)} نقطة</strong></article>)}</div>:<Empty icon="game" title="لا توجد جولات ألعاب محفوظة بعد" text="تظهر هنا الجولات التي يسجلها نظام الألعاب للطالب."/>}</Section>
     <Section eyebrow="السجل" title="آخر المراجعات">{reviews.length?<div className="aa-table-list">{reviews.map(r=><article className="aa-table-row" key={r.id}><span><Icon name="review" size={21}/></span><div><b>سورة {getSurah(r.surah_number)?.name||r.surah_number}</b><small>{formatDate(r.reviewed_at)}{r.notes?` • ${r.notes}`:""}</small></div><strong>{r.score}%</strong></article>)}</div>:<Empty icon="review" title="لا توجد مراجعات بعد"/>}</Section>
