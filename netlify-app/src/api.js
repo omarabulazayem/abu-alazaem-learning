@@ -344,6 +344,12 @@ export async function hasChildModePin() {
   return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
 }
 
+export async function listTeacherGameSessions(childId, limit = 20) {
+  if (!childId) return [];
+  const bounded = Math.max(1, Math.min(100, Number(limit) || 20));
+  return rest(`/game_sessions?child_id=eq.${encodeURIComponent(childId)}&select=*&order=updated_at.desc.nullslast,created_at.desc&limit=${bounded}`);
+}
+
 export async function getStudentWallet(childId) {
   if (!childId) return { wallet_balance: 0, lifetime_points: 0 };
   const rows = await rest(`/student_wallets?student_id=eq.${encodeURIComponent(childId)}&select=student_id,wallet_balance,lifetime_points,updated_at&limit=1`);
