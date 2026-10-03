@@ -1,5 +1,6 @@
 import React from "react";
 import Icon from "./Icon.jsx";
+import {getStoredSession,listNotifications} from "./api.js";
 
 export const LESSON_CONTEXT_KEY="abu-alazaem-lesson-context-v1";
 export function getLessonContext(){try{return JSON.parse(localStorage.getItem(LESSON_CONTEXT_KEY)||"null");}catch{return null;}}
@@ -63,6 +64,31 @@ function TeacherLessonDock(){
     </div>
   </div>;
 }
+function NotificationBell({mode}){
+  const [unread,setUnread]=React.useState(0);
+  const target=mode==="teacher"?"/teacher":"/family";
+  async function load(){
+    const session=getStoredSession();
+    const userId=session?.user?.id;
+    if(!userId){setUnread(0);return;}
+    try{
+      const rows=await listNotifications(userId,100);
+      setUnread(rows.filter(row=>!row.read_at).length);
+    }catch{setUnread(0);}
+  }
+  React.useEffect(()=>{
+    load();
+    const timer=setInterval(load,30000);
+    const onAuth=()=>load();
+    window.addEventListener("abu-auth",onAuth);
+    return()=>{clearInterval(timer);window.removeEventListener("abu-auth",onAuth);};
+  },[]);
+  return <button className="aa-notification-bell" type="button" aria-label={unread ? "التنبيهات • "+unread+" جديدة" : "التنبيهات"} onClick={()=>go(target)}>
+    <Icon name="mail" size={20}/>
+    <span>التنبيهات</span>
+    {unread>0&&<b>{unread>99?"99+":unread}</b>}
+  </button>;
+}
 export function AppShell({mode="public",subtitle,nav=[],actions,children,footer="رحلة هادئة وواضحة مع القرآن.",hideNav=false}){
   const current=routePath();
   return <div className={`aa-app aa-mode-${mode}`} dir="rtl">
@@ -72,7 +98,7 @@ export function AppShell({mode="public",subtitle,nav=[],actions,children,footer=
         {!hideNav&&nav.length>0&&<nav className="aa-nav" aria-label="التنقل الرئيسي">
           {nav.map(item=><button key={item.path} className={current===item.path?"is-active":""} onClick={()=>go(item.path)}><Icon name={item.icon||"arrow"} size={20}/><span>{item.label}</span></button>)}
         </nav>}
-        <div className="aa-header-actions">{actions}</div>
+        {(mode==="teacher"||mode==="family")&&<NotificationBell mode={mode}/>}<div className="aa-header-actions">{actions}</div>
       </div>
     </header>
     <main className="aa-main">{mode==="teacher"&&<TeacherLessonDock/>}{children}</main>
