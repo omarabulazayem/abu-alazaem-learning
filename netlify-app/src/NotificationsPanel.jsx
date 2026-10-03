@@ -20,12 +20,14 @@ const ICONS={
   POINTS_CHANGED:"star"
 };
 
-function targetPath(type,mode){
+function targetPath(type,mode,metadata={}){
   if(mode==="teacher"){
     if(type==="TASK_SUBMITTED")return "/teacher/tasks";
-    if(type==="ENROLLMENT_ACCEPTED")return "/teacher/students";
+    if(type==="ENROLLMENT_ACCEPTED"&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
+    if((type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
+    if(type==="POINTS_CHANGED"&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
+    if(type==="ENROLLMENT_ACCEPTED"||type==="POINTS_CHANGED")return "/teacher/students";
     if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/teacher/schedule";
-    if(type==="POINTS_CHANGED")return "/teacher/students";
     return "/teacher";
   }
   if(type==="TASK_ASSIGNED"||type==="TASK_APPROVED"||type==="TASK_REJECTED")return "/family";
@@ -55,7 +57,7 @@ export default function NotificationsPanel({userId,title="التنبيهات",li
         await markNotificationRead(row.id);
         setRows(v=>v.map(r=>r.id===row.id?{...r,read_at:new Date().toISOString()}:r));
       }
-      const target=targetPath(row.event_type,mode);
+      const target=targetPath(row.event_type,mode,row.metadata||{});
       if(target)go(target);
     }catch(e){setError(e.message||"تعذر تحديث الإشعار.");}
     finally{setBusy(false);}
