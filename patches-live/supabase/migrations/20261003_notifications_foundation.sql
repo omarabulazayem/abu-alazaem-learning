@@ -277,6 +277,7 @@ declare
   v_title text;
   v_body text;
 begin
+  if new.transaction_type='TASK_APPROVED' then return new; end if;
   if new.transaction_type='GAME_PURCHASE' then
     v_title:='تم استخدام نقاط لفتح لعبة';
     v_body:='تم تسجيل شراء لعبة باستخدام '||abs(coalesce(new.wallet_delta,0))||' نقطة.';
@@ -303,3 +304,77 @@ drop trigger if exists point_ledger_notification_insert on public.point_ledger;
 create trigger point_ledger_notification_insert
 after insert on public.point_ledger
 for each row execute function public.notify_point_ledger_insert();
+
+create or replace function public.notify_enrollment_created()
+returns trigger
+language plpgsql
+security definer
+set search_path=public
+as $
+declare
+  v_teacher_name text;
+  v_child_name text;
+begin
+  select display_name into v_teacher_name from public.profiles where id=new.teacher_user_id;
+  select display_name into v_child_name from public.child_profiles where id=new.student_id;
+
+  perform public.create_notification(
+    new.teacher_user_id,
+    'ENROLLMENT_ACCEPTED',
+    'تم ربط طالب جديد',
+    coalesce(v_child_name,'الطالب')||' • تم قبول الدعوة وإضافة الطالب إلى مساحتك.',
+    jsonb_build_object('enrollment_id',new.id,'student_id',new.student_id,'workspace_id',new.workspace_id)
+  );
+  return new;
+end;
+$;
+
+drop trigger if exists enrollment_notification_created on public.enrollments;
+create trigger enrollment_notification_created
+after insert on public.enrollments
+for each row execute function public.notify_enrollment_created();
+
+create or replace function public.notify_billing_changed()
+returns trigger
+language plpgsql
+security definer
+set search_path=public
+as $
+declare
+  v_student uuid;
+  v_parent uuid;
+  v_title text;
+  v_body text;
+begin
+  select student_id into v_student from public.enrollments where id=new.enrollment_id;
+  v_parent:=public.notification_parent_for_child(v_student);
+  if v_parent is null then return new; end if;
+
+  if tg_op='INSERT' and new.status='DUE' then
+    v_title:='استحقاق حصة جديد';
+    v_body:='تم تسجيل استحقاق مالي للحصة بقيمة '||new.amount||'.';
+  elsif tg_op='UPDATE' and new.status<>old.status and new.status='PAID' then
+    v_title:='تم تحديث استحقاق الحصة';
+    v_body:='تم تسجيل الاستحقاق كمدفوع.';
+  elsif tg_op='UPDATE' and new.status<>old.status and new.status='WAIVED' then
+    v_title:='تم إعفاء استحقاق الحصة';
+    v_body:='تم إعفاء الاستحقاق وتسجيل ذلك في السجل.';
+  else
+    return new;
+  end if;
+
+  perform public.create_notification(
+    v_parent,
+    'TUITION_STATUS_CHANGED',
+    v_title,
+    v_body,
+    jsonb_build_object('billing_entry_id',new.id,'session_id',new.session_id,'student_id',v_student,'enrollment_id',new.enrollment_id,'status',new.status)
+  );
+  return new;
+end;
+$;
+
+drop trigger if exists session_billing_notification_changed on public.session_billing_entries;
+create trigger session_billing_notification_changed
+after insert or update of status on public.session_billing_entries
+for each row execute function public.notify_billing_changed();
