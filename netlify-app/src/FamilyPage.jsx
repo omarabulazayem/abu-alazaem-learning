@@ -125,7 +125,7 @@ export default function FamilyPage(){
     footer="أبو العزايم • ولي الأمر يملك ملف الطفل والمعلم يرتبط به عبر Enrollment.">
     <Hero eyebrow="حساب الأسرة" title={`أهلًا ${user?.name||"بك"}`}
       description="ملف الطفل ملك للأسرة. اربطه بأكثر من معلم من خلال دعوات آمنة، وادخل وضع الطفل برقم سري مستقل." icon="family" tone="sky"/>
-    <NotificationsPanel userId={user?.id} title="تنبيهات الأسرة" limit={6}/>
+    <NotificationsPanel userId={user?.id} title="تنبيهات الأسرة" limit={6} mode="family"/>
 
     {err&&<div className="msg error">{err}</div>}{msg&&<div className="msg ok">{msg}</div>}
 
