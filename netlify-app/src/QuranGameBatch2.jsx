@@ -5,6 +5,7 @@ import { loadLearningViewer, learningActorReady } from "./learningViewer.js";
 import { getSurahAyahs, loadQuranData, splitAyahIntoChunks } from "./quranCorpus.js";
 import { GameEngine, gameResultSummary } from "./gameEngine.js";
 import { SoundEngine } from "./soundEngine.js";
+import { getLessonContext } from "./ui-v4.jsx";
 
 const SAFE_SHORT_SURAHS=[112,113,114,108,109,110,111,103,104,105,106,107,67];
 function routePath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
@@ -16,7 +17,13 @@ function shuffledDifferent(items){if(items.length<2)return [...items];let next=s
 
 function useRuntime(gameId){
   const [viewer,setViewer]=useState(undefined);const [quran,setQuran]=useState(null);const [surahChoices,setSurahChoices]=useState([]);const [difficulty,setDifficulty]=useState("easy");const [error,setError]=useState("");
-  useEffect(()=>{let alive=true;(async()=>{try{const context=await loadLearningViewer();if(!alive)return;if(!context.user)return navigate("/login");const data=await loadQuranData();if(!alive)return;let choices=SAFE_SHORT_SURAHS;if(!context.teacherPreview&&context.child?.id){const progress=await getProgress(context.child.id);const studied=(progress||[]).filter(p=>Number(p.memorized_percent||0)>0).map(p=>Number(p.surah_number));if(studied.length)choices=[...new Set(studied)];}setViewer(context);setQuran(data);setSurahChoices(choices.filter(n=>data.surahs.some(s=>s.number===n)));}catch(e){if(alive)setError(e.message||"تعذر تجهيز اللعبة.");}})();return()=>{alive=false;};},[gameId]);
+  useEffect(()=>{let alive=true;(async()=>{try{const context=await loadLearningViewer();if(!alive)return;if(!context.user)return navigate("/login");const data=await loadQuranData();if(!alive)return;let choices=SAFE_SHORT_SURAHS;
+        const lessonContext=getLessonContext();
+        if(context.teacherPreview&&lessonContext?.surahNumber){
+          const scoped=Number(lessonContext.surahNumber);
+          if(data.surahs.some(s=>Number(s.number)===scoped)) choices=[scoped];
+        }
+        if(!context.teacherPreview&&context.child?.id){const progress=await getProgress(context.child.id);const studied=(progress||[]).filter(p=>Number(p.memorized_percent||0)>0).map(p=>Number(p.surah_number));if(studied.length)choices=[...new Set(studied)];}setViewer(context);setQuran(data);setSurahChoices(choices.filter(n=>data.surahs.some(s=>s.number===n)));}catch(e){if(alive)setError(e.message||"تعذر تجهيز اللعبة.");}})();return()=>{alive=false;};},[gameId]);
   const makeEngine=()=>new GameEngine({childId:viewer?.child?.id,gameId,teacherPreview:Boolean(viewer?.teacherPreview)});
   return {viewer,quran,surahChoices,difficulty,setDifficulty,error,setError,makeEngine};
 }
