@@ -31,6 +31,8 @@ for(const legacy of [
   "./real-child-art-fix.css","./site-design.css"
 ])if(imports.includes(legacy))fail(`legacy page visual layer is still imported: ${legacy}`);
 for(const token of ["--aa-ink","--aa-blue",".aa-app",".aa-home-hero",".aa-world-grid",".aa-login-shell",".aa-surah-grid",".aa-game-grid"])if(!ui.includes(token))fail(`UI v4 is missing ${token}`);
+const malformedHex=[...ui.matchAll(/#[0-9A-Fa-f]+(?![0-9A-Fa-f])/g)].map(m=>m[0]).filter(token=>![3,4,6,8].includes(token.length-1));
+if(malformedHex.length)fail(`UI v4 contains malformed hex colors: ${[...new Set(malformedHex)].join(", ")}`);
 for(const color of ["#1E6F5C","#4EA8DE","#E9C46A","#F7F6F0","#2B2D42"])if(!brand.includes(color))fail(`brand identity is missing official palette color ${color}`);
 for(const forbidden of ["#EE91BC","#A38BE0","#D4649D"]){if(brand.toUpperCase().includes(forbidden))fail(`brand identity reintroduced an off-palette hue ${forbidden}`);}
 for(const component of [home,child]){
