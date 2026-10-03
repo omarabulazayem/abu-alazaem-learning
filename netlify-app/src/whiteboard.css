@@ -127,3 +127,14 @@
  linear-gradient(-45deg,transparent 48%,rgba(233,196,106,.08) 49% 51%,transparent 52%),#FFFDF8;background-size:30px 30px}
 .aa-whiteboard-stage.aa-bg-greenboard canvas{filter:none}
 .aa-whiteboard-stage.aa-bg-greenboard .aa-whiteboard-lock{background:rgba(20,48,40,.92)}
+
+.aa-whiteboard-reactions{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid #e5e1d8;border-radius:22px;background:#fffdf8;box-shadow:0 8px 20px rgba(43,45,66,.055)}
+.aa-whiteboard-reactions .aa-sound-title{margin-inline-end:4px}
+.aa-whiteboard-reactions .aa-effect-btn{min-width:92px;border:1px solid #e5e1d8;background:#f7f6f0;color:#2b2d42;border-radius:999px;padding:8px 14px;font:inherit;font-size:11px;font-weight:900;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+.aa-whiteboard-reactions .aa-effect-btn:hover{transform:translateY(-2px);box-shadow:0 7px 14px rgba(43,45,66,.08);background:#fff}
+.aa-whiteboard-reactions .aa-effect-clap{border-color:#cfe0f0}
+.aa-whiteboard-reactions .aa-effect-trophy{border-color:#e9d9a8}
+.aa-whiteboard-reactions .aa-effect-celebrate{border-color:#d7c8ef}
+.aa-whiteboard-reactions .aa-effect-star{border-color:#ead8a1}
+.aa-whiteboard-reactions .aa-effect-hammer{border-color:#e4cfc5}
+@media(max-width:760px){.aa-whiteboard-reactions{justify-content:stretch;overflow-x:auto;flex-wrap:nowrap}.aa-whiteboard-reactions .aa-sound-title{white-space:nowrap}.aa-whiteboard-reactions .aa-effect-btn{min-width:88px;white-space:nowrap}}
