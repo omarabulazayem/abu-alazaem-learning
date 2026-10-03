@@ -300,7 +300,7 @@ export default function WhiteboardPage(){
           </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
-          <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span>
+          <div><b>مرجع الدرس</b><span>{lessonContext?.surah?("سورة "+lessonContext.surah+(lessonContext.number?" — الآية "+lessonContext.number:"")):"لم تحدد آية بعد"}</span>
             {lessonContext?.sessionId&&<div className="aa-board-session">
               <span><b>الحصة المرتبطة</b>{lessonContext.studentName||"الطالب الحالي"}{lessonContext.scheduledStartUtc?" • "+new Date(lessonContext.scheduledStartUtc).toLocaleString("ar-EG",{dateStyle:"medium",timeStyle:"short"}):""}</span>
               <Button kind="secondary" onClick={finishLesson} disabled={finishBusy}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</Button>
