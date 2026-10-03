@@ -243,6 +243,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
     return acc;
   },{});
   const surahRows=Object.values(surahReport).map(item=>({...item,accuracy:item.attempts?Math.round(item.correct/item.attempts*100):0,ayahCount:item.ayahs.size,gamesCount:item.games.size})).sort((a,b)=>new Date(b.last||0)-new Date(a.last||0));
+  const teacherPointLedger=pointLedger.filter(row=>row.workspace_id===summary.workspaceId||row.enrollment_id===summary.enrollmentId);
 
   function prepareAyah(row,path){
     const surah=getSurah(row.surahNumber);
@@ -316,7 +317,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
           <Button type="submit" disabled={busy}>إضافة المكافأة</Button>
         </form>
       </aside>
-      <section><Section eyebrow="آخر الحركات" title="سجل النقاط">{pointLedger.length?<div className="aa-table-list">{pointLedger.slice(0,15).map((row,index)=>{
+      <section><Section eyebrow="نقاط هذا الارتباط" title="سجل نقاط الطالب مع هذا المعلم">{teacherPointLedger.length?<div className="aa-table-list">{teacherPointLedger.slice(0,15).map((row,index)=>{
         const delta=Number(row.wallet_delta||0);
         const reversible=delta>0&&row.transaction_type!=="GAME_PURCHASE"&&row.transaction_type!=="POINT_REVERSAL"&&(row.workspace_id===summary.workspaceId||row.enrollment_id===summary.enrollmentId);
         const labels={TASK_APPROVED:"اعتماد مهمة",TEACHER_BONUS:"مكافأة معلم",GAME_PURCHASE:"شراء لعبة",WEEKLY_REWARD:"مكافأة أسبوعية",POINT_REVERSAL:"سحب نقاط",ADMIN_ADJUSTMENT:"تعديل إداري",LEGACY_REWARD:"مكافأة قديمة",LEGACY_BALANCE_IMPORT:"ترحيل رصيد"};
