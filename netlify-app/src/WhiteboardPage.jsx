@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useRef,useState} from "react";
 import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go,getLessonContext,saveLessonContext} from "./ui-v4.jsx";
 import Icon from "./Icon.jsx";
 import {getSurah} from "./surahCatalog.js";
+import {grantTeacherBonus} from "./api.js";
 import Peer from "peerjs";
 
 const COLORS=["#1E6F5C","#4EA8DE","#E9C46A","#2B2D42","#FFFFFF"];
@@ -49,6 +50,7 @@ export default function WhiteboardPage(){
   const [connectionState,setConnectionState]=useState("offline");
   const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
   const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
+  const [bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[bonusBusy,setBonusBusy]=useState(false);
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -92,6 +94,18 @@ export default function WhiteboardPage(){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));setSavedAt(payload.savedAt);setMessage("تم حفظ حالة السبورة على هذا الجهاز.");
   },[snapshot,ayah,timer,sessionCode,lessonContext,lessonPhase]);
   useEffect(()=>{const id=setTimeout(()=>{const canvas=snapshot();if(canvas)localStorage.setItem(STORAGE_KEY,JSON.stringify({canvas,ayah,timer,savedAt:new Date().toISOString(),sessionCode,lessonContext,lessonPhase}));},900);return()=>clearTimeout(id);},[ayah,timer,sessionCode,lessonContext,lessonPhase,snapshot]);
+  async function grantBonusFromBoard(){
+    if(!lessonContext?.enrollmentId)return;
+    const reason=String(bonusReason||"").trim();
+    if(!reason){setMessage("اكتبي سبب المكافأة أولًا.");return;}
+    setBonusBusy(true);setMessage("");
+    try{
+      await grantTeacherBonus(lessonContext.enrollmentId,bonusPoints,reason);
+      setBonusReason("");
+      setMessage("تمت إضافة المكافأة لـ "+(lessonContext.studentName||"الطالب")+" وتسجيلها.");
+    }catch(e){setMessage(e.message||"تعذر إضافة المكافأة.");}
+    finally{setBonusBusy(false);}
+  }
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
   function stopMediaShare(){
     try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
@@ -261,6 +275,12 @@ export default function WhiteboardPage(){
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
           <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span><label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{const phase=e.target.value;setLessonPhase(phase);const next={...(lessonContext||{}),phase};setLessonContext(next);saveLessonContext(next);sendRealtime({type:"lesson-context",context:next,phase});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة تطبيقية</option><option>تطبيق</option></select></label></div>
+          {lessonContext?.enrollmentId&&<div className="aa-board-bonus">
+            <div><b>مكافأة سريعة</b><span>{lessonContext.studentName||"الطالب الحالي"}</span></div>
+            <input type="number" min="1" max="100000" value={bonusPoints} onChange={e=>setBonusPoints(e.target.value)} aria-label="عدد نقاط المكافأة"/>
+            <input value={bonusReason} onChange={e=>setBonusReason(e.target.value)} maxLength="300" placeholder="سبب المكافأة" aria-label="سبب المكافأة"/>
+            <Button kind="secondary" onClick={grantBonusFromBoard} disabled={bonusBusy}>{bonusBusy?"جارٍ الحفظ...":"إضافة مكافأة"}</Button>
+          </div>}
           <div className="aa-board-reference-form">
             <label>السورة<input inputMode="numeric" value={surahNumber} onChange={e=>setSurahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
             <label>الآية<input inputMode="numeric" value={ayahNumber} onChange={e=>setAyahNumber(e.target.value.replace(/\D/g,"").slice(0,3))}/></label>
