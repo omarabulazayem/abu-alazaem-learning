@@ -246,7 +246,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
 
   function prepareAyah(row,path){
     const surah=getSurah(row.surahNumber);
-    const next={...(getLessonContext()||{}),surah:surah?.name||row.surahNumber,surahNumber:row.surahNumber,number:row.ayahNumber,phase:"مراجعة"};
+    const next={...(getLessonContext()||{}),surah:surah?.name||row.surahNumber,surahNumber:row.surahNumber,number:row.ayahNumber,phase:"مراجعة",studentId:studentId,enrollmentId:summary.enrollmentId,workspaceId:summary.workspaceId,studentName:summary.display_name};
     saveLessonContext(next);
     go(path);
   }
