@@ -7,6 +7,7 @@ import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
 import {TeacherLeaderboardPanel} from "./LeaderboardPage.jsx";
 import Icon from "./Icon.jsx";
+import NotificationsPanel from "./NotificationsPanel.jsx";
 import {AppShell,Button,Empty,Hero,Metric,ProgressBar,Section,TEACHER_NAV,getLessonContext,saveLessonContext,go,routePath} from "./ui-v4.jsx";
 
 function formatDate(value){if(!value)return "لا يوجد نشاط بعد";try{return new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}catch{return value;}}
