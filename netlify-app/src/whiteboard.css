@@ -144,4 +144,5 @@
 .aa-board-session>span{display:grid;gap:2px;font-size:10px;color:#5e706b;line-height:1.5}
 .aa-board-session>span b{font-size:11px;color:#1e6f5c}
 .aa-board-session .aa-btn{min-height:38px;white-space:nowrap}
-@media(max-width:760px){.aa-board-session{grid-template-columns:1fr}.aa-board-session .aa-btn{width:100%}}
+.aa-board-session-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.aa-board-session-actions input{min-height:38px;min-width:210px;border:1px solid #d9d5cc;border-radius:12px;padding:8px 10px;background:#fff;color:#2b2d42;font:inherit;font-size:10px}.aa-board-session-actions .aa-btn{flex:0 0 auto}
+@media(max-width:760px){.aa-board-session{grid-template-columns:1fr}.aa-board-session-actions{width:100%}.aa-board-session-actions input{width:100%;min-width:0}.aa-board-session-actions .aa-btn{width:100%}}
