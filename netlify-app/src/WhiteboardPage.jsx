@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useRef,useState} from "react";
 import {AppShell,Button,Card,Hero,Section,TEACHER_NAV,go,getLessonContext,saveLessonContext} from "./ui-v4.jsx";
 import Icon from "./Icon.jsx";
 import {getSurah} from "./surahCatalog.js";
-import {grantTeacherBonus} from "./api.js";
+import {finalizeSession,grantTeacherBonus} from "./api.js";
 import Peer from "peerjs";
 
 const COLORS=["#1E6F5C","#4EA8DE","#E9C46A","#2B2D42","#FFFFFF"];
@@ -50,7 +50,7 @@ export default function WhiteboardPage(){
   const [connectionState,setConnectionState]=useState("offline");
   const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
   const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
-  const [bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[bonusBusy,setBonusBusy]=useState(false);
+  const [bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[bonusBusy,setBonusBusy]=useState(false),[finishBusy,setFinishBusy]=useState(false);
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -106,6 +106,32 @@ export default function WhiteboardPage(){
     }catch(e){setMessage(e.message||"تعذر إضافة المكافأة.");}
     finally{setBonusBusy(false);}
   }
+  async function finishLesson(){
+    if(!lessonContext?.sessionId){setMessage("اربط السبورة بحصة مجدولة من الجدول أولًا.");return;}
+    if(!window.confirm("إنهاء الحصة الحالية؟ ستصبح الحصة مكتملة وستُغلق مساحة السبورة المؤقتة على هذا الجهاز."))return;
+    setFinishBusy(true);setMessage("");setTimerRunning(false);
+    try{
+      await finalizeSession(lessonContext.sessionId,"COMPLETED","تم إنهاء الحصة من غرفة التدريس.");
+      try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
+      screenStreamRef.current=null;
+      try{mediaCallRef.current?.close?.();}catch{}
+      mediaCallRef.current=null;
+      try{connRef.current?.send({type:"disconnect",reason:"تم إنهاء الحصة من المعلم."});}catch{}
+      try{connRef.current?.close?.();}catch{}
+      connRef.current=null;
+      try{peerRef.current?.destroy?.();}catch{}
+      peerRef.current=null;
+      const canvas=canvasRef.current;
+      if(canvas){const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);}
+      historyRef.current=[];futureRef.current=[];strokeRef.current=[];
+      setSharingMedia(false);setMediaKind("");setConnectionState("offline");setSessionCode("");setStudentCanWrite(false);setLocked(false);setTimer(0);setAyah(null);setSavedAt("");
+      setLessonContext(null);setLessonPhase("شرح");saveLessonContext(null);
+      localStorage.removeItem(STORAGE_KEY);
+      setMessage("تم إنهاء الحصة بنجاح وتصفير مساحة السبورة.");
+    }catch(e){setMessage(e.message||"تعذر إنهاء الحصة.");}
+    finally{setFinishBusy(false);}
+  }
+
   function sendRealtime(payload){try{if(connRef.current?.open)connRef.current.send(payload);}catch{}}
   function stopMediaShare(){
     try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
@@ -269,12 +295,16 @@ export default function WhiteboardPage(){
             <strong className="aa-board-timer">{mm}:{ss}</strong>
             <button onClick={()=>setTimer(0)}>تصفير</button>
             <button onClick={saveBoard}>حفظ</button>
-            <button onClick={startTeacherSession}>＋ جلسة جديدة</button>
+            <button onClick={startTeacherSession}>＋ جلسة جديدة</button><button onClick={finishLesson} disabled={finishBusy||!lessonContext?.sessionId}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</button>
             <button onClick={exportBoard}>تصدير صورة</button>
           </div>
         </div>
         <div className="aa-whiteboard-reference"><div><b>جلسة السبورة</b><span>{sessionCode?("رمز الجلسة: "+sessionCode):"لم تبدأ جلسة بعد"}{savedAt?" • آخر حفظ: "+new Date(savedAt).toLocaleTimeString("ar-EG"):""}{sessionCode?" • "+({offline:"غير متصل",waiting:"بانتظار الطالب",connected:"الطالب متصل",error:"خطأ في الاتصال"}[connectionState]||connectionState):""}</span>{sessionCode&&<Button kind="secondary" onClick={copyStudentLink}>نسخ رابط الطالب</Button>}</div>
-          <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span><label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{const phase=e.target.value;setLessonPhase(phase);const next={...(lessonContext||{}),phase};setLessonContext(next);saveLessonContext(next);sendRealtime({type:"lesson-context",context:next,phase});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة تطبيقية</option><option>تطبيق</option></select></label></div>
+          <div><b>مرجع الدرس</b><span>{lessonContext?("سورة "+lessonContext.surah+" — الآية "+lessonContext.number):"لم تحدد آية بعد"}</span>
+            {lessonContext?.sessionId&&<div className="aa-board-session">
+              <span><b>الحصة المرتبطة</b>{lessonContext.studentName||"الطالب الحالي"}{lessonContext.scheduledStartUtc?" • "+new Date(lessonContext.scheduledStartUtc).toLocaleString("ar-EG",{dateStyle:"medium",timeStyle:"short"}):""}</span>
+              <Button kind="secondary" onClick={finishLesson} disabled={finishBusy}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</Button>
+            </div>}<label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{const phase=e.target.value;setLessonPhase(phase);const next={...(lessonContext||{}),phase};setLessonContext(next);saveLessonContext(next);sendRealtime({type:"lesson-context",context:next,phase});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة تطبيقية</option><option>تطبيق</option></select></label></div>
           {lessonContext?.enrollmentId&&<div className="aa-board-bonus">
             <div><b>مكافأة سريعة</b><span>{lessonContext.studentName||"الطالب الحالي"}</span></div>
             <input type="number" min="1" max="100000" value={bonusPoints} onChange={e=>setBonusPoints(e.target.value)} aria-label="عدد نقاط المكافأة"/>
