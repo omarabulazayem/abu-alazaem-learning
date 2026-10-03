@@ -199,6 +199,16 @@ function StudentDetail({user,data,studentId,reloadOverview}){
   useEffect(()=>{load();},[studentId,summary?.id]);
   if(!summary)return <Empty icon="lock" title="الطالب غير متاح" text="لا يوجد Enrollment نشط يسمح لهذا المعلم بالوصول إلى الطفل." action={<Button onClick={()=>go("/teacher/students")}>كل الطلاب</Button>}/>;
   const active=progress.filter(r=>Number(r.memorized_percent||0)>0);
+  const gameBreakdown=Object.values(gameSessions.reduce((acc,s)=>{
+    const key=s.game_id||s.game_name||"unknown";
+    if(!acc[key])acc[key]={key,title:s.game_name||s.game_id||"لعبة",count:0,total:0,best:0};
+    const scoreValue=Number(s.score||0);
+    acc[key].count+=1;
+    acc[key].total+=scoreValue;
+    acc[key].best=Math.max(acc[key].best,scoreValue);
+    return acc;
+  },{})).sort((a,b)=>b.count-a.count||b.total-a.total);
+
   async function submitReview(e){e.preventDefault();if(!surahNumber)return;setBusy(true);setMessage("");setError("");
     try{
       const n=Number(surahNumber);await recordReview(user,studentId,n,Number(score),notes.trim());
@@ -234,6 +244,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
       <Metric icon="target" label="أعلى نتيجة" value={gameSessions.length?Math.max(...gameSessions.map(s=>Number(s.score||0))):0} tone="gold"/>
       <Metric icon="quran" label="سور طُبقت عليها ألعاب" value={new Set(gameSessions.map(s=>s.surah_number).filter(Boolean)).size} tone="sky"/>
     </div>
+    <Section eyebrow="تحليل الألعاب" title="أداء كل لعبة">{gameBreakdown.length?<div className="aa-person-list">{gameBreakdown.map(item=><article className="aa-person-card" key={item.key}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>{item.title}</b><strong>{item.count} جولة</strong></div><small>متوسط النقاط: {Math.round(item.total/item.count)} • أعلى نتيجة: {item.best}</small></article>)}</div>:<Empty icon="game" title="لا توجد بيانات كافية للتحليل"/></Section>
     <Section eyebrow="سجل الألعاب" title="آخر جولات الألعاب">{gameSessions.length?<div className="aa-table-list">{gameSessions.map((s,index)=><article className="aa-table-row" key={s.id||index}><span><Icon name="game" size={21}/></span><div><b>{s.game_name||s.game_id||"لعبة"}</b><small>{formatDate(s.completed_at||s.updated_at||s.created_at)}{s.surah_number?" • سورة "+(getSurah(s.surah_number)?.name||s.surah_number):""}{s.lesson_context?.number?" • الآية "+s.lesson_context.number:""}</small></div><strong>{Number(s.score||0)} نقطة</strong></article>)}</div>:<Empty icon="game" title="لا توجد جولات ألعاب محفوظة بعد" text="تظهر هنا الجولات التي يسجلها نظام الألعاب للطالب."/>}</Section>
     <Section eyebrow="السجل" title="آخر المراجعات">{reviews.length?<div className="aa-table-list">{reviews.map(r=><article className="aa-table-row" key={r.id}><span><Icon name="review" size={21}/></span><div><b>سورة {getSurah(r.surah_number)?.name||r.surah_number}</b><small>{formatDate(r.reviewed_at)}{r.notes?` • ${r.notes}`:""}</small></div><strong>{r.score}%</strong></article>)}</div>:<Empty icon="review" title="لا توجد مراجعات بعد"/>}</Section>
   </>;
