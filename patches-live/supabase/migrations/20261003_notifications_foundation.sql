@@ -232,13 +232,15 @@ set search_path=public
 as $$
 declare
   v_parent uuid;
+  v_student uuid;
   v_title text;
   v_body text;
   v_type text;
 begin
   if new.status=old.status and new.scheduled_start_utc=old.scheduled_start_utc then return new; end if;
 
-  v_parent:=public.notification_parent_for_child(new.student_id);
+  select student_id into v_student from public.enrollments where id=new.enrollment_id;
+  v_parent:=public.notification_parent_for_child(v_student);
   if v_parent is null then return new; end if;
 
   if new.status='COMPLETED' and old.status='SCHEDULED' then
@@ -253,7 +255,7 @@ begin
 
   perform public.create_notification(
     v_parent,v_type,v_title,v_body,
-    jsonb_build_object('session_id',new.id,'student_id',new.student_id,'enrollment_id',new.enrollment_id,'status',new.status,'scheduled_start_utc',new.scheduled_start_utc)
+    jsonb_build_object('session_id',new.id,'student_id',v_student,'enrollment_id',new.enrollment_id,'status',new.status,'scheduled_start_utc',new.scheduled_start_utc)
   );
   return new;
 end;
