@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
   claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
-  listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,recordReview,rest,reviewTaskAssignment,signOut,teacherEnrollmentOverview
+  grantTeacherBonus,listPointLedger,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
@@ -186,15 +186,16 @@ function Tasks({data}){
 
 function StudentDetail({user,data,studentId,reloadOverview}){
   const summary=data.students.find(s=>s.id===studentId);
-  const [progress,setProgress]=useState([]),[reviews,setReviews]=useState([]),[gameSessions,setGameSessions]=useState([]),[gameEvents,setGameEvents]=useState([]),[score,setScore]=useState(100),[surahNumber,setSurahNumber]=useState(""),[notes,setNotes]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
+  const [progress,setProgress]=useState([]),[reviews,setReviews]=useState([]),[gameSessions,setGameSessions]=useState([]),[gameEvents,setGameEvents]=useState([]),[pointLedger,setPointLedger]=useState([]),[score,setScore]=useState(100),[surahNumber,setSurahNumber]=useState(""),[notes,setNotes]=useState(""),[bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[reversalTarget,setReversalTarget]=useState(""),[reversalReason,setReversalReason]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
   async function load(){if(!summary)return;try{
-    const [rows,reviewRows,gameRows,gameEventRows]=await Promise.all([
+    const [rows,reviewRows,gameRows,gameEventRows,ledgerRows]=await Promise.all([
       getProgress(studentId),
       rest(`/review_events?child_id=eq.${encodeURIComponent(studentId)}&select=id,surah_number,score,notes,reviewed_at,created_by&order=reviewed_at.desc&limit=20`),
       listTeacherGameSessions(studentId,20).catch(()=>[]),
-      listTeacherGameEvents(studentId,120).catch(()=>[])
+      listTeacherGameEvents(studentId,120).catch(()=>[]),
+      listPointLedger(studentId,40).catch(()=>[])
     ]);
-    setProgress(rows||[]);setReviews(reviewRows||[]);setGameSessions(gameRows||[]);setGameEvents(gameEventRows||[]);
+    setProgress(rows||[]);setReviews(reviewRows||[]);setGameSessions(gameRows||[]);setGameEvents(gameEventRows||[]);setPointLedger(ledgerRows||[]);
     const first=(rows||[]).find(r=>Number(r.memorized_percent||0)>0);setSurahNumber(v=>v||(first?String(first.surah_number):""));
   }catch(e){setError(e.message||"تعذر تحميل ملف الطالب.");}}
   useEffect(()=>{load();},[studentId,summary?.id]);
@@ -249,6 +250,29 @@ function StudentDetail({user,data,studentId,reloadOverview}){
     saveLessonContext(next);
     go(path);
   }
+  async function grantBonus(e){
+    e.preventDefault();
+    setBusy(true);setMessage("");setError("");
+    try{
+      await grantTeacherBonus(summary.enrollmentId,bonusPoints,bonusReason);
+      setBonusReason("");
+      setMessage("تمت إضافة المكافأة وتسجيلها في سجل النقاط.");
+      await load();
+    }catch(e){setError(e.message||"تعذر إضافة المكافأة.");}
+    finally{setBusy(false);}
+  }
+  async function reverseTransaction(e){
+    e.preventDefault();
+    if(!reversalTarget)return;
+    setBusy(true);setMessage("");setError("");
+    try{
+      await reversePointTransaction(reversalTarget,reversalReason);
+      setReversalTarget("");setReversalReason("");
+      setMessage("تم تسجيل سحب النقاط كسجل عكسي، دون تعديل العملية الأصلية.");
+      await load();
+    }catch(e){setError(e.message||"تعذر سحب النقاط.");}
+    finally{setBusy(false);}
+  }
   async function submitReview(e){e.preventDefault();if(!surahNumber)return;setBusy(true);setMessage("");setError("");
     try{
       const n=Number(surahNumber);await recordReview(user,studentId,n,Number(score),notes.trim());
@@ -284,6 +308,29 @@ function StudentDetail({user,data,studentId,reloadOverview}){
       <Metric icon="target" label="دقة الإجابات" value={overallGameAccuracy+"%"} tone="gold"/>
       <Metric icon="quran" label="سور طُبقت عليها ألعاب" value={new Set(gameSessions.map(s=>s.surah_number).filter(Boolean)).size} tone="sky"/>
     </div>
+    <div className="aa-dashboard-grid" style={{marginTop:24}}>
+      <aside className="aa-form-card"><h3 style={{marginTop:0}}>مكافأة سريعة</h3>
+        <form className="aa-form" onSubmit={grantBonus}>
+          <label>عدد النقاط<input type="number" min="1" max="100000" value={bonusPoints} onChange={e=>setBonusPoints(e.target.value)} required/></label>
+          <label>سبب المكافأة<textarea rows="2" maxLength="300" value={bonusReason} onChange={e=>setBonusReason(e.target.value)} placeholder="مثال: تسميع ممتاز اليوم" required/></label>
+          <Button type="submit" disabled={busy}>إضافة المكافأة</Button>
+        </form>
+      </aside>
+      <section><Section eyebrow="آخر الحركات" title="سجل النقاط">{pointLedger.length?<div className="aa-table-list">{pointLedger.slice(0,15).map((row,index)=>{
+        const delta=Number(row.wallet_delta||0);
+        const reversible=delta>0&&row.transaction_type!=="GAME_PURCHASE"&&row.transaction_type!=="POINT_REVERSAL"&&(row.workspace_id===summary.workspaceId||row.enrollment_id===summary.enrollmentId);
+        const labels={TASK_APPROVED:"اعتماد مهمة",TEACHER_BONUS:"مكافأة معلم",GAME_PURCHASE:"شراء لعبة",WEEKLY_REWARD:"مكافأة أسبوعية",POINT_REVERSAL:"سحب نقاط",ADMIN_ADJUSTMENT:"تعديل إداري",LEGACY_REWARD:"مكافأة قديمة",LEGACY_BALANCE_IMPORT:"ترحيل رصيد"};
+        return <article className="aa-table-row" key={row.id||index}><span><Icon name={delta<0?"arrow":"star"} size={20}/></span><div><b>{labels[row.transaction_type]||row.transaction_type||"حركة نقاط"}</b><small>{formatDate(row.created_at)}{row.reason?" • "+row.reason:""}</small></div><strong>{delta>0?"+":""}{delta} نقطة</strong>{reversible&&<Button kind="ghost" onClick={()=>setReversalTarget(row.id)}>سحب</Button>}</article>;
+      })}</div>:<Empty icon="star" title="لا توجد حركات نقاط بعد"/>}</Section></section>
+    </div>
+    {reversalTarget&&<section className="aa-form-card" style={{marginTop:16}}>
+      <h3 style={{marginTop:0}}>سحب النقاط</h3>
+      <form className="aa-form" onSubmit={reverseTransaction}>
+        <label>سبب السحب<textarea rows="2" maxLength="300" value={reversalReason} onChange={e=>setReversalReason(e.target.value)} placeholder="اكتبي سببًا واضحًا لسحب النقاط" required/></label>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><Button type="submit" disabled={busy}>تأكيد السحب</Button><Button kind="secondary" onClick={()=>{setReversalTarget("");setReversalReason("");}}>إلغاء</Button></div>
+      </form>
+    </section>}
+
     <Section eyebrow="تحليل الألعاب" title="أداء كل لعبة">{gameBreakdown.length?<div className="aa-person-list">{gameBreakdown.map(item=><article className="aa-person-card" key={item.key}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>{item.title}</b><strong>{item.count} جولة</strong></div><small>متوسط النقاط: {Math.round(item.total/item.count)} • أعلى نتيجة: {item.best}{item.accuracySamples?" • دقة الإجابات: "+Math.round(item.accuracyTotal/item.accuracySamples)+"%":""} • إجابات صحيحة: {item.correct}</small></article>)}</div>:<Empty icon="game" title="لا توجد بيانات كافية للتحليل"/>}</Section>
     <Section eyebrow="تحليل السور" title="السور التي طُبقت عليها الألعاب">{surahRows.length?<div className="aa-person-list">{surahRows.slice(0,12).map(row=><article className="aa-person-card" key={row.surahNumber}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>سورة {getSurah(row.surahNumber)?.name||row.surahNumber}</b><strong>{row.accuracy}%</strong></div><small>{row.ayahCount} آيات مطبقة • {row.attempts} محاولة • {row.correct} صحيحة • {row.gamesCount} ألعاب • آخر تطبيق: {formatDate(row.last)}</small></article>)}</div>:<Empty icon="quran" title="لا توجد بيانات تطبيق على السور بعد" text="يظهر هذا الملخص بعد تسجيل محاولات على آيات داخل الألعاب."/>}</Section>
     <Section eyebrow="تحليل الآيات" title="متابعة التطبيق على الآيات">{ayahRows.length?<div className="aa-table-list">{ayahRows.slice(0,20).map(row=><article className="aa-table-row" key={row.key}><span><Icon name="quran" size={21}/></span><div><b>سورة {getSurah(row.surahNumber)?.name||row.surahNumber} • الآية {row.ayahNumber}</b><small>{row.attempts} محاولة • {row.correct} صحيحة • {row.wrong} غير صحيحة • {row.gamesCount} ألعاب • آخر تطبيق: {formatDate(row.last)}</small></div><strong>{row.accuracy}%</strong></article>)}</div>:<Empty icon="quran" title="لا توجد بيانات على مستوى الآيات بعد" text="تظهر هنا الآيات التي سُجل عليها تطبيق فعلي داخل الألعاب."/ >}</Section>\n    <Section eyebrow="متابعة تحتاج انتباهًا" title="آيات بدقة منخفضة في الجولات المسجلة">{lowAccuracyAyahs.length?<div className="aa-person-list">{lowAccuracyAyahs.map(row=><article className="aa-person-card" key={row.key}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center"}}><b>سورة {getSurah(row.surahNumber)?.name||row.surahNumber} • الآية {row.ayahNumber}</b><strong>{row.accuracy}%</strong></div><small>{row.attempts} محاولات • {row.correct} صحيحة • آخر تطبيق: {formatDate(row.last)}</small><div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}><Button kind="secondary" icon="quran" onClick={()=>prepareAyah(row,"/quran")}>فتح في المصحف</Button><Button kind="secondary" icon="edit" onClick={()=>prepareAyah(row,"/teacher/whiteboard")}>شرح على السبورة</Button></div></article>)}</div>:<Empty icon="circleCheck" title="لا توجد آيات منخفضة الدقة ضمن البيانات الحالية" text="يظهر هذا القسم فقط عند وجود محاولتين فأكثر ودقة أقل من 70%. " />}</Section>\n    <Section eyebrow="سجل الألعاب" title="آخر جولات الألعاب">{gameSessions.length?<div className="aa-table-list">{gameSessions.map((s,index)=><article className="aa-table-row" key={s.id||index}><span><Icon name="game" size={21}/></span><div><b>{s.game_name||s.game_id||"لعبة"}</b><small>{formatDate(s.completed_at||s.updated_at||s.created_at)}{s.surah_number?" • سورة "+(getSurah(s.surah_number)?.name||s.surah_number):""}{(s.lesson_context?.number||s.resume_state?.lesson_context?.number)?" • الآية "+(s.lesson_context?.number||s.resume_state.lesson_context.number):""}{(s.lesson_context?.phase||s.resume_state?.lesson_context?.phase)?" • "+(s.lesson_context?.phase||s.resume_state.lesson_context.phase):""}</small></div><strong>{Number(s.score||0)} نقطة</strong></article>)}</div>:<Empty icon="game" title="لا توجد جولات ألعاب محفوظة بعد" text="تظهر هنا الجولات التي يسجلها نظام الألعاب للطالب."/>}</Section>
