@@ -4,6 +4,7 @@ import {
   listChildTaskAssignments,listChildren,listParentEnrollments,listPointLedger,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
+import NotificationsPanel from "./NotificationsPanel.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
 
 function genderLabel(v){return v==="male"?"ولد":v==="female"?"بنت":"غير محدد";}
