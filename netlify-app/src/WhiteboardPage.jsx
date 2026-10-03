@@ -50,7 +50,7 @@ export default function WhiteboardPage(){
   const [connectionState,setConnectionState]=useState("offline");
   const [studentCanWrite,setStudentCanWrite]=useState(false),[sharingMedia,setSharingMedia]=useState(false),[mediaKind,setMediaKind]=useState("");
   const [lessonPhase,setLessonPhase]=useState("شرح"),[lessonContext,setLessonContext]=useState(()=>getLessonContext());
-  const [bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[bonusBusy,setBonusBusy]=useState(false),[finishBusy,setFinishBusy]=useState(false);
+  const [bonusPoints,setBonusPoints]=useState(10),[bonusReason,setBonusReason]=useState(""),[bonusBusy,setBonusBusy]=useState(false),[finishBusy,setFinishBusy]=useState(false),[finishNote,setFinishNote]=useState("");
 
   const snapshot=useCallback(()=>{const c=canvasRef.current;return c?c.toDataURL("image/png"):null;},[]);
   const restore=useCallback((data)=>{
@@ -111,7 +111,7 @@ export default function WhiteboardPage(){
     if(!window.confirm("إنهاء الحصة الحالية؟ ستصبح الحصة مكتملة وستُغلق مساحة السبورة المؤقتة على هذا الجهاز."))return;
     setFinishBusy(true);setMessage("");setTimerRunning(false);
     try{
-      await finalizeSession(lessonContext.sessionId,"COMPLETED","تم إنهاء الحصة من غرفة التدريس.");
+      await finalizeSession(lessonContext.sessionId,"COMPLETED",String(finishNote||"").trim()||"تم إنهاء الحصة من غرفة التدريس.");
       try{screenStreamRef.current?.getTracks?.().forEach(t=>t.stop());}catch{}
       screenStreamRef.current=null;
       try{mediaCallRef.current?.close?.();}catch{}
@@ -303,7 +303,10 @@ export default function WhiteboardPage(){
           <div><b>مرجع الدرس</b><span>{lessonContext?.surah?("سورة "+lessonContext.surah+(lessonContext.number?" — الآية "+lessonContext.number:"")):"لم تحدد آية بعد"}</span>
             {lessonContext?.sessionId&&<div className="aa-board-session">
               <span><b>الحصة المرتبطة</b>{lessonContext.studentName||"الطالب الحالي"}{lessonContext.scheduledStartUtc?" • "+new Date(lessonContext.scheduledStartUtc).toLocaleString("ar-EG",{dateStyle:"medium",timeStyle:"short"}):""}</span>
-              <Button kind="secondary" onClick={finishLesson} disabled={finishBusy}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</Button>
+              <div className="aa-board-session-actions">
+                <input value={finishNote} onChange={e=>setFinishNote(e.target.value)} maxLength="400" placeholder="ملاحظة ختامية للحصة" aria-label="ملاحظة ختامية للحصة"/>
+                <Button kind="secondary" onClick={finishLesson} disabled={finishBusy}>{finishBusy?"جارٍ الإنهاء...":"إنهاء الحصة"}</Button>
+              </div>
             </div>}<label>مرحلة الحصة<select value={lessonPhase} onChange={e=>{const phase=e.target.value;setLessonPhase(phase);const next={...(lessonContext||{}),phase};setLessonContext(next);saveLessonContext(next);sendRealtime({type:"lesson-context",context:next,phase});}}><option>شرح</option><option>تسميع</option><option>مراجعة</option><option>لعبة تطبيقية</option><option>تطبيق</option></select></label></div>
           {lessonContext?.enrollmentId&&<div className="aa-board-bonus">
             <div><b>مكافأة سريعة</b><span>{lessonContext.studentName||"الطالب الحالي"}</span></div>
