@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {listNotifications,markAllNotificationsRead,markNotificationRead} from "./api.js";
-import {Button,Section} from "./ui-v4.jsx";
+import {Button,Section,go} from "./ui-v4.jsx";
 import Icon from "./Icon.jsx";
 
 function formatDate(value){
@@ -20,7 +20,21 @@ const ICONS={
   POINTS_CHANGED:"star"
 };
 
-export default function NotificationsPanel({userId,title="التنبيهات",limit=8}){
+function targetPath(type,mode){
+  if(mode==="teacher"){
+    if(type==="TASK_SUBMITTED")return "/teacher/tasks";
+    if(type==="ENROLLMENT_ACCEPTED")return "/teacher/students";
+    if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/teacher/schedule";
+    if(type==="POINTS_CHANGED")return "/teacher/students";
+    return "/teacher";
+  }
+  if(type==="TASK_ASSIGNED"||type==="TASK_APPROVED"||type==="TASK_REJECTED")return "/family";
+  if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/family";
+  if(type==="TUITION_STATUS_CHANGED"||type==="POINTS_CHANGED")return "/family";
+  return "/family";
+}
+
+export default function NotificationsPanel({userId,title="التنبيهات",limit=8,mode="family"}){
   const [rows,setRows]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState("");
   async function load(){
     if(!userId)return;
@@ -34,10 +48,16 @@ export default function NotificationsPanel({userId,title="التنبيهات",li
   },[userId,limit]);
   const visible=rows.slice(0,limit);
   const unread=useMemo(()=>rows.filter(r=>!r.read_at).length,[rows]);
-  async function read(id){
+  async function read(row){
     setBusy(true);
-    try{await markNotificationRead(id);setRows(v=>v.map(r=>r.id===id?{...r,read_at:new Date().toISOString()}:r));}
-    catch(e){setError(e.message||"تعذر تحديث الإشعار.");}
+    try{
+      if(!row.read_at){
+        await markNotificationRead(row.id);
+        setRows(v=>v.map(r=>r.id===row.id?{...r,read_at:new Date().toISOString()}:r));
+      }
+      const target=targetPath(row.event_type,mode);
+      if(target)go(target);
+    }catch(e){setError(e.message||"تعذر تحديث الإشعار.");}
     finally{setBusy(false);}
   }
   async function readAll(){
@@ -49,7 +69,7 @@ export default function NotificationsPanel({userId,title="التنبيهات",li
   }
   return <Section eyebrow={unread?(`${unread} جديد`):"آخر التنبيهات"} title={title} action={unread?<Button kind="secondary" onClick={readAll} disabled={busy}>تحديد الكل كمقروء</Button>:null}>
     {error&&<div className="msg error">{error}</div>}
-    {visible.length?<div className="aa-notification-list">{visible.map(row=><button key={row.id} className={`aa-notification ${row.read_at?"is-read":""}`} onClick={()=>!row.read_at&&read(row.id)} disabled={busy}>
+    {visible.length?<div className="aa-notification-list">{visible.map(row=><button key={row.id} className={`aa-notification ${row.read_at?"is-read":""}`} onClick={()=>read(row)} disabled={busy}>
       <span><Icon name={ICONS[row.event_type]||"mail"} size={20}/></span>
       <div><b>{row.title}</b><small>{row.body}</small><em>{formatDate(row.created_at)}</em></div>
       {!row.read_at&&<i aria-label="غير مقروء"/>}
