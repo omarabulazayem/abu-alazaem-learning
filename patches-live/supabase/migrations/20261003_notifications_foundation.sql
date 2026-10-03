@@ -389,3 +389,43 @@ revoke execute on function public.notify_session_changed() from public,anon,auth
 revoke execute on function public.notify_point_ledger_insert() from public,anon,authenticated;
 revoke execute on function public.notify_enrollment_created() from public,anon,authenticated;
 revoke execute on function public.notify_billing_changed() from public,anon,authenticated;
+revoke execute on function public.notify_leaderboard_snapshot_created() from public,anon,authenticated;
+
+create or replace function public.notify_leaderboard_snapshot_created()
+returns trigger
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_parent uuid;
+  v_suffix text;
+begin
+  v_parent:=public.notification_parent_for_child(new.student_id);
+  if v_parent is null then return new; end if;
+
+  v_suffix:=case when new.reward_points>0 then ' • مكافأة '+new.reward_points+' نقطة' else '' end;
+  perform public.create_notification(
+    v_parent,
+    'WEEKLY_RESULT',
+    'نتيجة الأسبوع',
+    'احتل الطفل المركز '||new.rank||' برصيد '||new.final_score||' نقطة'||v_suffix||'.',
+    jsonb_build_object(
+      'snapshot_id',new.id,
+      'leaderboard_week_id',new.leaderboard_week_id,
+      'student_id',new.student_id,
+      'rank',new.rank,
+      'final_score',new.final_score,
+      'reward_points',new.reward_points
+    )
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists leaderboard_snapshot_notification_created on public.leaderboard_snapshots;
+create trigger leaderboard_snapshot_notification_created
+after insert on public.leaderboard_snapshots
+for each row execute function public.notify_leaderboard_snapshot_created();
+
+revoke execute on function public.notify_leaderboard_snapshot_created() from public,anon,authenticated;
