@@ -20,7 +20,7 @@ export default function TeacherGameReports(){
   const wrongEvents=useMemo(()=>events.filter(e=>!e.is_correct).slice(0,8),[events]);
   function prepareAyah(event,path){
     const surah=getSurah(event.surah_number);
-    const context={...(getLessonContext()||{}),surah:surah?.name||event.surah_number,surahNumber:Number(event.surah_number),number:Number(event.ayah_number||1),phase:"مراجعة",gameId:event.game_id,gameTitle:gameTitle(event.game_id)};
+    const context={...(getLessonContext()||{}),surah:surah?.name||event.surah_number,surahNumber:Number(event.surah_number),number:Number(event.ayah_number||1),phase:"مراجعة",gameId:event.game_id,gameTitle:gameTitle(event.game_id),studentId:selected,enrollmentId:student?.enrollmentId,workspaceId:student?.workspaceId,studentName:student?.display_name};
     saveLessonContext(context);
     go(path);
   }
