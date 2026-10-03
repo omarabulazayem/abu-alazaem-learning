@@ -30,6 +30,8 @@ function Dashboard({data}){
   const pending=data.invites.filter(i=>i.status==="pending").length;
   return <>
     <Hero eyebrow="Teacher Workspace" title={data.workspace?.display_name||"مساحة المعلم"} description="الطلاب الآن مرتبطون بالمعلم عبر Enrollment مستقل، وليس ملكية مباشرة أو كود فصل." icon="teacher" tone="sky"/>
+    <NotificationsPanel userId={data.workspace?.owner_teacher_user_id} title="تنبيهات الحصة والمتابعة" limit={6}/>
+
     <div className="aa-teacher-layout">
       <Metric icon="users" label="طلاب مرتبطون" value={data.students.length} tone="mint"/>
       <Metric icon="mail" label="دعوات معلقة" value={pending} tone="sky"/>
