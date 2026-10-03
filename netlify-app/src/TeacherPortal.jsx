@@ -199,15 +199,22 @@ function StudentDetail({user,data,studentId,reloadOverview}){
   useEffect(()=>{load();},[studentId,summary?.id]);
   if(!summary)return <Empty icon="lock" title="الطالب غير متاح" text="لا يوجد Enrollment نشط يسمح لهذا المعلم بالوصول إلى الطفل." action={<Button onClick={()=>go("/teacher/students")}>كل الطلاب</Button>}/>;
   const active=progress.filter(r=>Number(r.memorized_percent||0)>0);
-  const gameBreakdown=Object.values(gameSessions.reduce((acc,s)=>{
+  const gameReport=gameSessions.reduce((acc,s)=>{
     const key=s.game_id||s.game_name||"unknown";
-    if(!acc[key])acc[key]={key,title:s.game_name||s.game_id||"لعبة",count:0,total:0,best:0};
+    if(!acc[key])acc[key]={key,title:s.game_name||s.game_id||"لعبة",count:0,total:0,best:0,correct:0,wrong:0,accuracySamples:0,accuracyTotal:0};
+    const item=acc[key];
     const scoreValue=Number(s.score||0);
-    acc[key].count+=1;
-    acc[key].total+=scoreValue;
-    acc[key].best=Math.max(acc[key].best,scoreValue);
+    const correct=Number(s.correct_answers??s.correctAnswers??0);
+    const wrong=Number(s.wrong_answers??s.wrongAnswers??0);
+    const attempts=correct+wrong;
+    item.count+=1; item.total+=scoreValue; item.best=Math.max(item.best,scoreValue); item.correct+=correct; item.wrong+=wrong;
+    if(attempts){item.accuracySamples+=1;item.accuracyTotal+=(correct/attempts)*100;}
     return acc;
-  },{})).sort((a,b)=>b.count-a.count||b.total-a.total);
+  },{});
+  const gameBreakdown=Object.values(gameReport).sort((a,b)=>b.count-a.count||b.total-a.total);
+  const totalGameAttempts=gameSessions.reduce((sum,s)=>sum+Number(s.correct_answers??s.correctAnswers??0)+Number(s.wrong_answers??s.wrongAnswers??0),0);
+  const totalGameCorrect=gameSessions.reduce((sum,s)=>sum+Number(s.correct_answers??s.correctAnswers??0),0);
+  const overallGameAccuracy=totalGameAttempts?Math.round(totalGameCorrect/totalGameAttempts*100):0;
 
   async function submitReview(e){e.preventDefault();if(!surahNumber)return;setBusy(true);setMessage("");setError("");
     try{
