@@ -350,7 +350,13 @@ export async function listTeacherGameSessions(childId, limit = 20) {
   return rest(`/game_sessions?child_id=eq.${encodeURIComponent(childId)}&completed=eq.true&select=*&order=updated_at.desc.nullslast,created_at.desc&limit=${bounded}`);
 }
 
-export async function listTeacherGameEvents(childId, limit = 100) {\n  if (!childId) return [];\n  const bounded = Math.max(1, Math.min(200, Number(limit) || 100));\n  return rest(`/game_ayah_events?child_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${bounded}`);\n}\n\nexport async function getStudentWallet(childId) {
+export async function listTeacherGameEvents(childId, limit = 100) {
+  if (!childId) return [];
+  const bounded = Math.max(1, Math.min(200, Number(limit) || 100));
+  return rest(`/game_ayah_events?child_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${bounded}`);
+}
+
+export async function getStudentWallet(childId) {
   if (!childId) return { wallet_balance: 0, lifetime_points: 0 };
   const rows = await rest(`/student_wallets?student_id=eq.${encodeURIComponent(childId)}&select=student_id,wallet_balance,lifetime_points,updated_at&limit=1`);
   return rows?.[0] || { student_id: childId, wallet_balance: 0, lifetime_points: 0 };
