@@ -125,6 +125,8 @@ export default function FamilyPage(){
     footer="أبو العزايم • ولي الأمر يملك ملف الطفل والمعلم يرتبط به عبر Enrollment.">
     <Hero eyebrow="حساب الأسرة" title={`أهلًا ${user?.name||"بك"}`}
       description="ملف الطفل ملك للأسرة. اربطه بأكثر من معلم من خلال دعوات آمنة، وادخل وضع الطفل برقم سري مستقل." icon="family" tone="sky"/>
+    <NotificationsPanel userId={user?.id} title="تنبيهات الأسرة" limit={6}/>
+
     {err&&<div className="msg error">{err}</div>}{msg&&<div className="msg ok">{msg}</div>}
 
     {inviteToken&&<Section eyebrow="دعوة معلم" title="اختر الطفل الذي سيدرس مع هذا المعلم" description="الدعوة لا تنشئ ملف طفل جديد؛ تضيف Enrollment للملف الذي تختاره.">
