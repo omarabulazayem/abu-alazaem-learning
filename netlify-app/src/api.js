@@ -379,6 +379,31 @@ export async function purchaseGameUnlock(childId, gameId) {
   return rpc("purchase_game_unlock", { p_child_id: childId, p_game_id: gameId });
 }
 
+export async function listNotifications(userId, limit = 30) {
+  if (!userId) return [];
+  const bounded=Math.max(1,Math.min(100,Number(limit)||30));
+  return rest(`/notifications?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc&limit=${bounded}`);
+}
+
+export async function markNotificationRead(notificationId) {
+  if (!notificationId) return null;
+  const rows=await rest(`/notifications?id=eq.${encodeURIComponent(notificationId)}`,{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({read_at:new Date().toISOString()})
+  });
+  return rows?.[0]||null;
+}
+
+export async function markAllNotificationsRead(userId) {
+  if (!userId) return [];
+  return rest(`/notifications?user_id=eq.${encodeURIComponent(userId)}&read_at=is.null`,{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({read_at:new Date().toISOString()})
+  });
+}
+
 export async function listPointLedger(childId, limit = 50) {
   if (!childId) return [];
   return rest(`/point_ledger?student_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${Math.min(100,Math.max(1,Number(limit)||50))}`);
