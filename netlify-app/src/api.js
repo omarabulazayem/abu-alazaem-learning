@@ -384,6 +384,21 @@ export async function listPointLedger(childId, limit = 50) {
   return rest(`/point_ledger?student_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${Math.min(100,Math.max(1,Number(limit)||50))}`);
 }
 
+export async function grantTeacherBonus(enrollmentId, points, reason) {
+  return rpc("grant_teacher_bonus", {
+    p_enrollment_id: enrollmentId,
+    p_points: Math.max(1, Math.min(100000, Number(points) || 0)),
+    p_reason: String(reason || "").trim(),
+  });
+}
+
+export async function reversePointTransaction(transactionId, reason) {
+  return rpc("reverse_point_transaction", {
+    p_transaction_id: transactionId,
+    p_reason: String(reason || "").trim(),
+  });
+}
+
 async function hydrateTaskAssignments(assignments = []) {
   if (!assignments.length) return [];
   const taskIds=[...new Set(assignments.map(a=>a.task_id).filter(Boolean))];
