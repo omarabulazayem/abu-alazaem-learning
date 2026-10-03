@@ -92,10 +92,14 @@ export class GameEngine {
       this.local.completed = true;
       return { ...this.local, preview: true };
     }
+    const persistedResumeState = {
+      ...(resumeState || {}),
+      ...(this.lessonContext ? { lesson_context: this.lessonContext } : {}),
+    };
     const result = await rpc("complete_game_session", {
       p_session_id: this.session.id,
       p_elapsed_seconds: elapsedSeconds == null ? null : Math.max(0, Math.round(elapsedSeconds)),
-      p_resume_state: resumeState || {},
+      p_resume_state: persistedResumeState,
     });
     this.session = Array.isArray(result) ? result[0] : result;
     if (this.lessonContext && this.session) this.session.lesson_context = this.lessonContext;
