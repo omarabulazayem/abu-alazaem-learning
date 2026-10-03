@@ -30,9 +30,9 @@ export class GameEngine {
     return this.session;
   }
 
-  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = this.lessonContext } = {}) {
+  async start({ difficulty = "easy", surahNumber = null, ayahNumbers = [], lessonContext = this.lessonContext } = {}) {\n    const activeLessonContext = lessonContext || null;\n    const scopedSurahNumber = surahNumber == null && activeLessonContext?.surahNumber ? Number(activeLessonContext.surahNumber) : surahNumber;
     if (this.teacherPreview) {
-      this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: surahNumber, selected_ayahs: ayahNumbers, preview: true };
+      this.session = { id: `preview:${this.gameId}:${Date.now()}`, game_id: this.gameId, difficulty, surah_number: scopedSurahNumber, selected_ayahs: ayahNumbers, preview: true };
       return this.session;
     }
     if (!this.childId) throw new Error("لا يوجد طفل نشط لبدء اللعبة.");
@@ -42,11 +42,11 @@ export class GameEngine {
       p_game_name: this.definition.title,
       p_game_type: this.definition.educationalGoal || "quran_game",
       p_difficulty: difficulty,
-      p_surah_number: surahNumber,
+      p_surah_number: scopedSurahNumber,
       p_selected_ayahs: ayahNumbers,
     });
     this.session = Array.isArray(result) ? result[0] : result;
-    if (lessonContext && this.session) this.session.lesson_context = lessonContext;
+    if (activeLessonContext && this.session) this.session.lesson_context = activeLessonContext;
     return this.session;
   }
 
