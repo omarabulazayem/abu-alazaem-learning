@@ -378,3 +378,14 @@ drop trigger if exists session_billing_notification_changed on public.session_bi
 create trigger session_billing_notification_changed
 after insert or update of status on public.session_billing_entries
 for each row execute function public.notify_billing_changed();
+
+
+-- Internal notification helpers are trigger-only and must not be exposed as callable RPCs.
+revoke execute on function public.notification_parent_for_child(uuid) from public,anon,authenticated;
+revoke execute on function public.notify_task_assignment_created() from public,anon,authenticated;
+revoke execute on function public.notify_task_assignment_status() from public,anon,authenticated;
+revoke execute on function public.notify_task_submission_created() from public,anon,authenticated;
+revoke execute on function public.notify_session_changed() from public,anon,authenticated;
+revoke execute on function public.notify_point_ledger_insert() from public,anon,authenticated;
+revoke execute on function public.notify_enrollment_created() from public,anon,authenticated;
+revoke execute on function public.notify_billing_changed() from public,anon,authenticated;
