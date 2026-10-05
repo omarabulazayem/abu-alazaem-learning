@@ -31,9 +31,19 @@ function targetPath(type,mode,metadata={}){
     if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/teacher/schedule";
     return "/teacher";
   }
-  if(type==="TASK_ASSIGNED"||type==="TASK_APPROVED"||type==="TASK_REJECTED")return "/family";
-  if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/family";
-  if(type==="TUITION_STATUS_CHANGED"||type==="POINTS_CHANGED")return "/family";
+  if(type==="TASK_ASSIGNED"||type==="TASK_APPROVED"||type==="TASK_REJECTED"){
+    return metadata.student_id&&metadata.assignment_id?"/family?student="+metadata.student_id+"&assignment="+metadata.assignment_id:"/family";
+  }
+  if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED"){
+    return metadata.student_id&&metadata.session_id?"/family?student="+metadata.student_id+"&session="+metadata.session_id:"/family";
+  }
+  if(type==="TUITION_STATUS_CHANGED"){
+    return metadata.student_id&&metadata.billing_entry_id?"/family?student="+metadata.student_id+"&billing="+metadata.billing_entry_id:"/family";
+  }
+  if(type==="POINTS_CHANGED"){
+    return metadata.student_id&&metadata.transaction_id?"/family?student="+metadata.student_id+"&transaction="+metadata.transaction_id:"/family";
+  }
+  if(type==="WEEKLY_RESULT"&&metadata.student_id)return "/family?student="+metadata.student_id;
   return "/family";
 }
 
