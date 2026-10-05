@@ -39,6 +39,12 @@ const checks=[
   [portal,"data-assignment-id={row.id}","task focus target"],
   [portal,"aa-task-focus","task focus class"],
   [family,"<NotificationsPanel userId=","family notification UI"],
+  [family,"familyNotificationFocus","family deep-link parser"],
+  [family,"data-assignment-id={row.id}","family task focus target"],
+  [family,"data-session-id={row.id}","family session focus target"],
+  [family,"data-transaction-id={row.id}","family points focus target"],
+  [family,"data-billing-id={entry.id}","family billing focus target"],
+  [family,"aa-notification-focus","family notification focus class"],
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
 
