@@ -339,6 +339,11 @@ export async function listTeacherSubscriptions(limit=100) {
   return rest(`/teacher_subscriptions?select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,updated_at,workspace:teacher_workspaces(id,display_name,owner_teacher_user_id,timezone,status),plan:saas_plans(id,code,name_ar,monthly_price,yearly_price,currency,active)&order=updated_at.desc&limit=${bounded}`);
 }
 
+export async function selectTeacherPlan(workspaceId,planId) {
+  const result=await rpc("select_teacher_subscription_plan",{p_workspace_id:workspaceId,p_plan_id:planId});
+  return Array.isArray(result)?result[0]:result;
+}
+
 export async function setTeacherSubscriptionManual(workspaceId,planId,currentPeriodEnd,reason) {
   const result=await rpc("set_teacher_subscription_manual",{
     p_workspace_id:workspaceId,
