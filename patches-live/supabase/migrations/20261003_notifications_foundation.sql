@@ -69,7 +69,7 @@ returns public.notifications
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_row public.notifications;
 begin
@@ -100,7 +100,7 @@ language sql
 stable
 security definer
 set search_path=public
-as $
+as $$
   select coalesce(
     (
       select r.parent_user_id
@@ -122,7 +122,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_parent uuid;
   v_task public.tasks;
@@ -150,7 +150,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_parent uuid;
   v_submission public.task_submissions;
@@ -198,7 +198,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_assignment public.task_assignments;
   v_task public.tasks;
@@ -229,7 +229,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_parent uuid;
   v_student uuid;
@@ -271,7 +271,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_parent uuid;
   v_title text;
@@ -394,7 +394,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_parent uuid;
   v_suffix text;
