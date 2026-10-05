@@ -7,7 +7,7 @@ const root=path.resolve(here,"..");
 const repo=path.resolve(root,"..");
 function fail(message){console.error(`SITE FOUNDATION VALIDATION FAILED: ${message}`);process.exitCode=1;}
 
-const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=await Promise.all([
+const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child,router,routerUi]=await Promise.all([
   fs.readFile(path.join(root,"src/main.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/ui-v4.css"),"utf8"),
   fs.readFile(path.join(root,"src/brand-identity.css"),"utf8"),
@@ -19,6 +19,8 @@ const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=
   fs.readFile(path.join(root,"src/FamilyPage.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/HomePage.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/ChildHub.jsx"),"utf8"),
+  fs.readFile(path.join(root,"src/RootRouter.jsx"),"utf8"),
+  fs.readFile(path.join(root,"src/ui-v4.jsx"),"utf8"),
 ]);
 
 const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
@@ -40,6 +42,8 @@ for(const component of [home,child]){
   if(/homeV2|child-world-home|kidsHeroScene|real-child-hero-img/.test(component))fail("legacy homepage/child markup leaked into UI v4");
 }
 if(main.includes("installRealChildArt")||main.includes("RealChildArt"))fail("DOM artwork injection must not return; artwork belongs in React markup");
+if(!router.includes("function routeKey()")||!router.includes("const route=usePath(),path=route.split(\"?\")[0]"))fail("router must preserve query changes without treating query as a route");
+if(!routerUi.includes("const currentKey=routePath()+(window.location.search||\"")"))fail("ui router helper must compare query-aware navigation keys");
 for(const source of ["Opened Qur'an","Sundanese Muslim children","Sultan Hassan","CC BY 2.0","CC BY-SA 4.0"])if(!assetsDoc.includes(source))fail(`visual asset documentation missing ${source}`);
 for(const table of ["cms_content","cms_content_meta","cms_terms","cms_taxonomies","cms_term_relationships","cms_media","cms_options","cms_navigation"])if(!cmsSql.includes(`public.${table}`))fail(`CMS migration missing ${table}`);
 for(const mapping of ["wp_posts","wp_postmeta","wp_terms","wp_term_taxonomy","wp_term_relationships","wp_options"])if(!wpDoc.includes(mapping))fail(`WordPress migration guide missing ${mapping}`);
