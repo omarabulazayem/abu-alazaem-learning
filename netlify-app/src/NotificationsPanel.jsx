@@ -22,6 +22,7 @@ const ICONS={
 
 function targetPath(type,mode,metadata={}){
   if(mode==="teacher"){
+    if(type==="TASK_SUBMITTED"&&metadata.assignment_id)return `/teacher/tasks?assignment=${metadata.assignment_id}`;
     if(type==="TASK_SUBMITTED")return "/teacher/tasks";
     if(type==="ENROLLMENT_ACCEPTED"&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
     if((type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
