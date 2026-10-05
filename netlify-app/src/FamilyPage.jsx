@@ -140,6 +140,17 @@ export default function FamilyPage(){
     finally{setBusy(false);}
   }
 
+  async function cancelLesson(row){
+    const reason=window.prompt("سبب إلغاء الحصة (اختياري):","")||"";
+    if(!window.confirm("تأكيد إلغاء هذه الحصة؟ سيتم تطبيق سياسة الإلغاء الخاصة بالمعلم تلقائيًا."))return;
+    setBusy(true);setErr("");setMsg("");
+    try{
+      const result=await cancelSession(row.id,reason);
+      setMsg(result?.status==="LATE_CANCELLATION"?"تم إلغاء الحصة كإلغاء متأخر وفق سياسة المعلم.":"تم إلغاء الحصة.");
+      await load(user);
+    }catch(e){setErr(e.message||"تعذر إلغاء الحصة.");}
+    finally{setBusy(false);}
+  }
   async function logout(){await signOut();go("/");}
   const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
   const activeLinks=enrollments.filter(e=>e.student_id===activeChild?.id);
@@ -186,7 +197,8 @@ export default function FamilyPage(){
       {upcomingSessions.length?<div className="aa-table-list">{upcomingSessions.map(row=>{
         const link=enrollments.find(e=>e.id===row.enrollment_id);
         return <article className="aa-table-row" data-session-id={row.id} key={row.id}>
-          <span><Icon name="clock" size={21}/></span><div><b>{formatDate(row.scheduled_start_utc)}</b><small>{link?.workspace?.display_name||"المعلم"} • {sessionStatusLabel(row.status)} • Teacher TZ: {link?.workspace?.timezone||"—"}</small></div><strong>{money(link?.session_rate||0)}</strong>
+          <span><Icon name="clock" size={21}/></span><div><b>{formatDate(row.scheduled_start_utc)}</b><small>{link?.workspace?.display_name||"المعلم"} • {sessionStatusLabel(row.status)} • Teacher TZ: {link?.workspace?.timezone||"—"}</small></div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><strong>{money(link?.session_rate||0)}</strong>{row.status==="SCHEDULED"&&new Date(row.scheduled_start_utc)>new Date()&&<Button kind="ghost" onClick={()=>cancelLesson(row)} disabled={busy}>إلغاء الحصة</Button>}</div>
         </article>;
       })}</div>:<Empty icon="clock" title="لا توجد حصص قادمة لهذا الطفل"/>}
     </Section>
