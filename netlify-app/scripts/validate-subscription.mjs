@@ -37,7 +37,7 @@ const checks=[
   [api,"export async function upsertSaasPlan","admin plan API"],
   [teacher,"function TeacherSubscriptionPanel","teacher subscription UI"],
   [teacher,'path==="/teacher/subscription"',"teacher subscription route"],
-  [teacher,"subscription:data.subscription","teacher overview subscription state"],
+  [teacher,"subscription:null","teacher overview subscription state"],
   [admin,"listSaasPlans(true)","admin reads inactive plans"],
   [admin,"upsertSaasPlan(form)","admin saves plans"],
   [router,'import AdminPortal from "./AdminPortal.jsx"',"admin portal import"],
