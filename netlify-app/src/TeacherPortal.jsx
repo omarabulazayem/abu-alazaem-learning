@@ -95,6 +95,7 @@ function Students({data}){
 function Tasks({data}){
   const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
   const [message,setMessage]=useState(""),[error,setError]=useState("");
+  const [focusAssignmentId,setFocusAssignmentId]=useState("");
   const [form,setForm]=useState({enrollmentId:"",title:"",type:"NEW_MEMORIZATION",points:10,dueAt:"",teacherNote:""});
   const [decisionNotes,setDecisionNotes]=useState({});
 
@@ -104,7 +105,7 @@ function Tasks({data}){
     catch(e){setError(e.message||"تعذر تحميل المهام.");}
     finally{setLoading(false);}
   }
-  useEffect(()=>{load();},[]);
+  useEffect(()=>{load();const params=new URLSearchParams(window.location.search);setFocusAssignmentId(params.get("assignment")||"");},[]);
 
   const students=data.students.filter(s=>s.enrollmentStatus==="active");
   useEffect(()=>{
@@ -114,6 +115,12 @@ function Tasks({data}){
   const pending=rows.filter(r=>r.status==="pending_teacher_approval");
   const recent=[...rows].sort((a,b)=>new Date(b.updated_at||b.assigned_at||0)-new Date(a.updated_at||a.assigned_at||0)).slice(0,20);
   const studentName=id=>data.students.find(s=>s.id===id)?.display_name||"طالب";
+  useEffect(()=>{
+    if(!focusAssignmentId||loading)return;
+    const node=document.querySelector(`[data-assignment-id="${focusAssignmentId}"]`);
+    if(node){node.scrollIntoView({behavior:"smooth",block:"center"});node.classList.add("aa-task-focus");setTimeout(()=>node.classList.remove("aa-task-focus"),2400);}
+    history.replaceState({},"",window.location.pathname);
+  },[focusAssignmentId,loading,rows.length]);
 
   async function create(e){
     e.preventDefault();setBusy(true);setMessage("");setError("");
@@ -162,7 +169,7 @@ function Tasks({data}){
       </aside>
       <section>
         <Section eyebrow="تحتاج قرارك" title={`بانتظار المراجعة (${pending.length})`}>
-          {loading?<Loading/>:pending.length?<div className="aa-person-list">{pending.map(row=><article className="aa-person-card" key={row.id}>
+          {loading?<Loading/>:pending.length?<div className="aa-person-list">{pending.map(row=><article className={`aa-person-card ${focusAssignmentId===row.id?"aa-task-focus":""}`} data-assignment-id={row.id} key={row.id}>
             <div className="aa-person-head"><span className="aa-avatar"><Icon name="target" size={24}/></span><div>
               <b>{row.task?.title||"مهمة"}</b>
               <small>{studentName(row.student_id)} • {taskTypeLabel(row.task?.task_type)} • {row.task?.points_reward||0} نقطة • أرسلها ولي الأمر {formatDate(row.latestSubmission?.submitted_at)}</small>
@@ -178,7 +185,7 @@ function Tasks({data}){
       </section>
     </div>
     <Section eyebrow="السجل" title="آخر المهام">
-      {recent.length?<div className="aa-table-list">{recent.map(row=><article className="aa-table-row" key={row.id}>
+      {recent.length?<div className="aa-table-list">{recent.map(row=><article className={`aa-table-row ${focusAssignmentId===row.id?"aa-task-focus":""}`} data-assignment-id={row.id} key={row.id}>
         <span><Icon name={row.status==="approved"?"circleCheck":"target"} size={21}/></span>
         <div><b>{row.task?.title||"مهمة"}</b><small>{studentName(row.student_id)} • {taskTypeLabel(row.task?.task_type)} • موعد التسليم {formatDate(row.due_at)}</small></div>
         <strong>{taskStatusLabel(row.status)}</strong>
