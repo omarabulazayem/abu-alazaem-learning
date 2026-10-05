@@ -20,6 +20,8 @@ function TeacherSettingsPanel({data,reloadOverview}){
   const workspace=data.workspace;
   const settings=data.settings||{};
   const [form,setForm]=useState({
+    displayName:workspace?.display_name||"",
+    timezone:workspace?.timezone||"Africa/Cairo",
     lateCancellationHours:settings.late_cancellation_hours??24,
     leaderboardPrivacy:settings.leaderboard_privacy||"first_name_initial",
     firstPlaceReward:settings.first_place_reward??50,
@@ -31,14 +33,17 @@ function TeacherSettingsPanel({data,reloadOverview}){
     e.preventDefault();if(!workspace?.id)return;
     setBusy(true);setMessage("");setError("");
     try{
+      await updateTeacherWorkspace(workspace.id,form);
       await updateTeacherSettings(workspace.id,form);
-      setMessage("تم حفظ إعدادات الحصة والترتيب.");
+      setMessage("تم حفظ اسم المساحة والمنطقة الزمنية وسياسة الحصة والترتيب.");
       await reloadOverview?.();
     }catch(e){setError(e.message||"تعذر حفظ الإعدادات.");}
     finally{setBusy(false);}
   }
   useEffect(()=>{
     setForm({
+      displayName:workspace?.display_name||"",
+      timezone:workspace?.timezone||"Africa/Cairo",
       lateCancellationHours:settings.late_cancellation_hours??24,
       leaderboardPrivacy:settings.leaderboard_privacy||"first_name_initial",
       firstPlaceReward:settings.first_place_reward??50,
@@ -49,6 +54,21 @@ function TeacherSettingsPanel({data,reloadOverview}){
   return <Section eyebrow="Workspace Settings" title="إعدادات الحصص والترتيب">
     {message&&<div className="msg ok">{message}</div>}{error&&<div className="msg error">{error}</div>}
     <form className="aa-form-card aa-form" onSubmit={save} style={{maxWidth:820}}>
+      <label>اسم مساحة المعلم
+        <input value={form.displayName} onChange={e=>setForm(v=>({...v,displayName:e.target.value}))} maxLength="120" required placeholder="مساحة المعلم"/>
+      </label>
+      <label>المنطقة الزمنية
+        <select value={form.timezone} onChange={e=>setForm(v=>({...v,timezone:e.target.value}))}>
+          <option value="Africa/Cairo">القاهرة — Africa/Cairo</option>
+          <option value="Asia/Riyadh">الرياض — Asia/Riyadh</option>
+          <option value="Asia/Dubai">دبي — Asia/Dubai</option>
+          <option value="Asia/Kuwait">الكويت — Asia/Kuwait</option>
+          <option value="Asia/Qatar">الدوحة — Asia/Qatar</option>
+          <option value="Europe/London">لندن — Europe/London</option>
+          <option value="Europe/Paris">باريس — Europe/Paris</option>
+          <option value="America/New_York">نيويورك — America/New_York</option>
+        </select>
+      </label>
       <label>مهلة الإلغاء المتأخر بالساعات
         <input type="number" min="0" max="168" value={form.lateCancellationHours} onChange={e=>setForm(v=>({...v,lateCancellationHours:e.target.value}))}/>
       </label>
