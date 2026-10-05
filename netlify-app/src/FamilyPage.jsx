@@ -73,6 +73,22 @@ export default function FamilyPage(){
     }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}
   })();return()=>{alive=false;};},[]);
 
+  useEffect(()=>{
+    if(user===undefined)return;
+    const focus=notificationFocus;
+    const targetId=focus.assignmentId||focus.sessionId||focus.transactionId||focus.billingId;
+    if(!targetId)return;
+    const attr=focus.assignmentId?"data-assignment-id":focus.sessionId?"data-session-id":focus.transactionId?"data-transaction-id":"data-billing-id";
+    const node=document.querySelector("["+attr+"=\""+targetId+"\"]");
+    if(!node)return;
+    node.scrollIntoView({behavior:"smooth",block:"center"});
+    node.classList.add("aa-notification-focus");
+    const timer=setTimeout(()=>node.classList.remove("aa-notification-focus"),2400);
+    history.replaceState({},"",window.location.pathname);
+    setNotificationFocus({studentId:"",assignmentId:"",sessionId:"",transactionId:"",billingId:""});
+    return()=>clearTimeout(timer);
+  },[user,notificationFocus,tasks.length,sessions.length,pointLedger.length,billing.length]);
+
   async function addChild(e){e.preventDefault();if(!user)return;setBusy(true);setErr("");setMsg("");
     try{
       const years=Number(ageYears);const ageBand=years<=6?"3-6":years<=9?"7-9":"10-12";
@@ -124,7 +140,7 @@ export default function FamilyPage(){
   const activeWallet=wallets.find(w=>w.student_id===activeChild?.id)||{wallet_balance:0,lifetime_points:0};
   const activeEnrollmentIds=new Set(activeLinks.map(e=>e.id));
   const childSessions=sessions.filter(s=>activeEnrollmentIds.has(s.enrollment_id));
-  const upcomingSessions=childSessions.filter(s=>s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date()).slice(0,5);
+  const upcomingSessions=childSessions.filter(s=>(s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date())||s.id===notificationFocus.sessionId).slice(0,8);
   const childBilling=billing.filter(b=>activeEnrollmentIds.has(b.enrollment_id));
   const dueTotal=childBilling.filter(b=>b.status==="DUE").reduce((sum,b)=>sum+Number(b.amount||0),0);
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
