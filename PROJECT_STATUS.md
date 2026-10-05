@@ -15,5 +15,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the authoritative repositor
 - Closing a lesson records an optional teacher note, finalizes billing through the canonical session RPC, and clears ephemeral whiteboard state.
 - Teacher student reports include lesson history, game/ayah performance, enrollment-scoped point history, bonus and auditable point reversal actions.
 - In-app notifications are now event-driven from Supabase for task, lesson, tuition, point, enrollment, and weekly leaderboard events, with role-specific actionable navigation in teacher/family workspaces.
+- Family notification links can select the referenced child and focus the exact task/session/point/billing row; teacher task alerts can focus the submitted assignment.
+- Lesson reminders have an idempotent Supabase RPC and are materialized for scheduled lessons within 24 hours when the family workspace loads; a background scheduler/provider is still not wired.
 - Email remains a delivery channel foundation only; automated external email sending is not yet wired to a provider.
 
