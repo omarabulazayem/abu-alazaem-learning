@@ -379,6 +379,13 @@ export async function purchaseGameUnlock(childId, gameId) {
   return rpc("purchase_game_unlock", { p_child_id: childId, p_game_id: gameId });
 }
 
+export async function ensureLessonReminder(sessionId) {
+  if (!sessionId) return null;
+  const result=await rpc("ensure_lesson_reminder",{p_session_id:sessionId});
+  if (typeof window!=="undefined") window.dispatchEvent(new Event("abu-notifications"));
+  return result;
+}
+
 export async function listNotifications(userId, limit = 30) {
   if (!userId) return [];
   const bounded=Math.max(1,Math.min(100,Number(limit)||30));
