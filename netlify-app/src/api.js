@@ -279,14 +279,32 @@ export async function getTeacherSettings(workspaceId) {
   return rows?.[0] || null;
 }
 
-export async function listSaasPlans() {
-  return rest("/saas_plans?active=eq.true&select=id,code,name_ar,description_ar,currency,monthly_price,yearly_price,features,limits&order=sort_order.asc,created_at.asc");
+export async function listSaasPlans(includeInactive=false) {
+  const activeFilter=includeInactive?"":"active=eq.true&";
+  return rest(`/saas_plans?${activeFilter}select=id,code,name_ar,description_ar,currency,monthly_price,yearly_price,active,sort_order,features,limits&order=sort_order.asc,created_at.asc`);
 }
 
 export async function getTeacherSubscription(workspaceId) {
   if (!workspaceId) return null;
-  const rows = await rest(`/teacher_subscriptions?workspace_id=eq.${encodeURIComponent(workspaceId)}&select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,created_at,updated_at&limit=1`);
+  const rows = await rest(`/teacher_subscriptions?workspace_id=eq.${encodeURIComponent(workspaceId)}&select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,created_at,updated_at,plan:saas_plans(id,code,name_ar,description_ar,currency,monthly_price,yearly_price,active)&limit=1`);
   return rows?.[0] || null;
+}
+
+export async function upsertSaasPlan(input) {
+  const result=await rpc("upsert_saas_plan",{
+    p_plan_id:input?.id||null,
+    p_code:String(input?.code||"").trim(),
+    p_name_ar:String(input?.nameAr||"").trim(),
+    p_description_ar:String(input?.descriptionAr||"").trim(),
+    p_currency:String(input?.currency||"EGP").trim().toUpperCase(),
+    p_monthly_price:Number(input?.monthlyPrice)||0,
+    p_yearly_price:input?.yearlyPrice===""||input?.yearlyPrice==null?null:Number(input.yearlyPrice),
+    p_active:input?.active!==false,
+    p_sort_order:Number(input?.sortOrder)||0,
+    p_features:input?.features&&typeof input.features==="object"?input.features:{},
+    p_limits:input?.limits&&typeof input.limits==="object"?input.limits:{},
+  });
+  return Array.isArray(result)?result[0]:result;
 }
 
 export async function createEnrollmentInvite(parentEmail, sessionRate = 0) {
