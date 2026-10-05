@@ -1,6 +1,6 @@
 import React,{useEffect,useState} from "react";
 import {
-  acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
+  acceptEnrollmentInvite,createChild,ensureLessonReminder,getActiveChildId,getCurrentUser,hasChildModePin,
   listChildTaskAssignments,listChildren,listParentEnrollments,listPointLedger,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
@@ -54,45 +54,24 @@ export default function FamilyPage(){
     const selected=(children||[]).find(x=>x.id===focus.studentId)||(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
     if(selected&&!inviteChild)setInviteChild(selected.id);
+    const activeEnrollmentIds=new Set((links||[]).filter(e=>e.student_id===selected?.id).map(e=>e.id));
+    const reminderSessions=(sessionRows||[]).filter(row=>activeEnrollmentIds.has(row.enrollment_id)&&row.status==="SCHEDULED"&&new Date(row.scheduled_start_utc)>new Date()&&new Date(row.scheduled_start_utc)<=new Date(Date.now()+24*60*60*1000));
+    if(reminderSessions.length){
+      await Promise.all(reminderSessions.map(row=>ensureLessonReminder(row.id).catch(()=>null)));
+      if(typeof window!=="undefined")window.dispatchEvent(new Event("abu-notifications"));
+    }
     const [selectedTasks,selectedLedger]=selected?await Promise.all([listChildTaskAssignments(selected.id).catch(()=>[]),listPointLedger(selected.id,30).catch(()=>[])]):[[],[]];
     setTasks(selectedTasks||[]);setPointLedger(selectedLedger||[]);
   }
 
-  useEffect(()=>{let alive=true;(async()=>{try{
-    const current=await getCurrentUser();if(!alive)return;
-    if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
-    setUser(current);
-    const from=new Date(Date.now()-30*86400000),to=new Date(Date.now()+90*86400000);
-    const [children,links,pinState,walletRows,sessionRows,billingRows]=await Promise.all([
-      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[]),
-      listVisibleSessions({from,to}).catch(()=>[]),listSessionBillingEntries().catch(()=>[])
-    ]);
-    if(!alive)return;
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);setSessions(sessionRows||[]);setBilling(billingRows||[]);
-    const focus=familyNotificationFocus();
-    const active=getActiveChildId();
-    const selected=(children||[]).find(x=>x.id===focus.studentId)||(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
-    if(selected&&selected.id!==active)setActiveChildId(selected.id);
-    if(selected)setInviteChild(selected.id);
-    setTasks(selected?await listChildTaskAssignments(selected.id).catch(()=>[]):[]);
-  }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}})();return()=>{alive=false;};},[]);
-
-  useEffect(()=>{
-    if(user===undefined)return;
-    const focus=notificationFocus;
-    const targetId=focus.assignmentId||focus.sessionId||focus.transactionId||focus.billingId;
-    const attr=focus.assignmentId?"data-assignment-id":focus.sessionId?"data-session-id":focus.transactionId?"data-transaction-id":"data-billing-id";
-    if(!targetId)return;
-    const node=document.querySelector("["+attr+"=\""+targetId+"\"]");
-    if(node){
-      node.scrollIntoView({behavior:"smooth",block:"center"});
-      node.classList.add("aa-notification-focus");
-      const timer=setTimeout(()=>node.classList.remove("aa-notification-focus"),2400);
-      history.replaceState({},"",window.location.pathname);
-      setNotificationFocus({studentId:"",assignmentId:"",sessionId:"",transactionId:"",billingId:""});
-      return()=>clearTimeout(timer);
-    }
-  },[user,notificationFocus,tasks.length,sessions.length,pointLedger.length,billing.length]);
+  useEffect(()=>{let alive=true;(async()=>{
+    try{
+      const current=await getCurrentUser();if(!alive)return;
+      if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
+      setUser(current);
+      await load(current);
+    }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}
+  })();return()=>{alive=false;};},[]);
 
   async function addChild(e){e.preventDefault();if(!user)return;setBusy(true);setErr("");setMsg("");
     try{
