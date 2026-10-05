@@ -288,6 +288,9 @@ begin
     returning * into v_sub;
     v_before:='null'::jsonb;
   else
+    if v_sub.status not in ('PENDING_PLAN','INCOMPLETE','CANCELLED','EXPIRED','SUSPENDED') then
+      raise exception 'plan_change_requires_payment_flow';
+    end if;
     v_before:=to_jsonb(v_sub);
     update public.teacher_subscriptions
     set plan_id=p_plan_id,
