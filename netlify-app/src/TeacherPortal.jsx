@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
   claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
-  grantTeacherBonus,listPointLedger,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
+  grantTeacherBonus,listPointLedger,updateTeacherSettings,updateTeacherWorkspace,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
@@ -50,7 +50,7 @@ function TeacherSettingsPanel({data,reloadOverview}){
       secondPlaceReward:settings.second_place_reward??30,
       thirdPlaceReward:settings.third_place_reward??20
     });
-  },[settings.late_cancellation_hours,settings.leaderboard_privacy,settings.first_place_reward,settings.second_place_reward,settings.third_place_reward]);
+  },[workspace?.display_name,workspace?.timezone,settings.late_cancellation_hours,settings.leaderboard_privacy,settings.first_place_reward,settings.second_place_reward,settings.third_place_reward]);
   return <Section eyebrow="Workspace Settings" title="إعدادات الحصص والترتيب">
     {message&&<div className="msg ok">{message}</div>}{error&&<div className="msg error">{error}</div>}
     <form className="aa-form-card aa-form" onSubmit={save} style={{maxWidth:820}}>
