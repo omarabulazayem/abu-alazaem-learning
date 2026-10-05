@@ -1,8 +1,10 @@
--- V7: lesson reminder foundation.
--- Creates an in-app reminder for an upcoming family lesson when the parent
--- visits the family workspace. The operation is idempotent per session.
+-- V7: background lesson reminder foundation.
+-- Materializes in-app reminders automatically for scheduled lessons in the next 24h.
+-- The parent-facing RPC remains available for on-demand/idempotent reconciliation.
 
-create or replace function public.ensure_lesson_reminder(p_session_id uuid)
+create extension if not exists pg_cron with schema pg_catalog;
+
+create or replace function public.materialize_lesson_reminder_internal(p_session_id uuid)
 returns public.notifications
 language plpgsql
 security definer
@@ -17,10 +19,6 @@ declare
   v_child_name text;
   v_row public.notifications;
 begin
-  if auth.uid() is null then
-    raise exception 'authentication_required' using errcode='42501';
-  end if;
-
   select
     s.enrollment_id,
     e.student_id,
@@ -35,30 +33,20 @@ begin
   join public.enrollments e on e.id=s.enrollment_id
   join public.teacher_workspaces tw on tw.id=s.workspace_id
   where s.id=p_session_id
-    and e.student_id is not null;
+    and s.status='SCHEDULED'
+    and s.scheduled_start_utc>now()
+    and s.scheduled_start_utc<=now()+interval '24 hours';
 
   if v_student is null or v_enrollment is null or v_start is null then
     return null;
   end if;
 
   v_parent:=public.notification_parent_for_child(v_student);
-  if v_parent is null or v_parent<>auth.uid() then
-    raise exception 'parent_not_allowed' using errcode='42501';
-  end if;
-
-  -- Serialize reminder creation per parent/session so two devices cannot race into duplicates.
-  perform pg_advisory_xact_lock(hashtextextended(v_parent::text||':'||p_session_id::text,0));
-
-  if not exists (
-    select 1
-    from public.sessions s
-    where s.id=p_session_id
-      and s.status='SCHEDULED'
-      and s.scheduled_start_utc>now()
-      and s.scheduled_start_utc<=now()+interval '24 hours'
-  ) then
+  if v_parent is null then
     return null;
   end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(v_parent::text||':'||p_session_id::text,0));
 
   select display_name into v_child_name
   from public.child_profiles
@@ -108,5 +96,86 @@ begin
 end;
 $$;
 
-revoke all on function public.ensure_lesson_reminder(uuid) from public,anon;
+create or replace function public.ensure_lesson_reminder(p_session_id uuid)
+returns public.notifications
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_student uuid;
+  v_parent uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication_required' using errcode='42501';
+  end if;
+
+  select e.student_id
+  into v_student
+  from public.sessions s
+  join public.enrollments e on e.id=s.enrollment_id
+  where s.id=p_session_id;
+
+  if v_student is null then
+    return null;
+  end if;
+
+  v_parent:=public.notification_parent_for_child(v_student);
+  if v_parent is null or v_parent<>auth.uid() then
+    raise exception 'parent_not_allowed' using errcode='42501';
+  end if;
+
+  return public.materialize_lesson_reminder_internal(p_session_id);
+end;
+$$;
+
+create or replace function public.materialize_lesson_reminders()
+returns integer
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  v_session record;
+  v_created integer:=0;
+begin
+  for v_session in
+    select s.id
+    from public.sessions s
+    join public.teacher_workspaces tw on tw.id=s.workspace_id
+    where tw.status='active'
+      and s.status='SCHEDULED'
+      and s.scheduled_start_utc>now()
+      and s.scheduled_start_utc<=now()+interval '24 hours'
+    order by s.scheduled_start_utc
+    for update skip locked
+  loop
+    if public.materialize_lesson_reminder_internal(v_session.id) is not null then
+      v_created:=v_created+1;
+    end if;
+  end loop;
+  return v_created;
+end;
+$$;
+
+do $$
+declare
+  v_job_id bigint;
+begin
+  for v_job_id in
+    select jobid from cron.job where jobname='v7-lesson-reminders'
+  loop
+    perform cron.unschedule(v_job_id);
+  end loop;
+  perform cron.schedule(
+    'v7-lesson-reminders',
+    '*/5 * * * *',
+    'select public.materialize_lesson_reminders();'
+  );
+end;
+$$;
+
+revoke execute on function public.materialize_lesson_reminder_internal(uuid) from public,anon,authenticated;
+revoke execute on function public.ensure_lesson_reminder(uuid) from public,anon;
+revoke execute on function public.materialize_lesson_reminders() from public,anon,authenticated;
 grant execute on function public.ensure_lesson_reminder(uuid) to authenticated;
