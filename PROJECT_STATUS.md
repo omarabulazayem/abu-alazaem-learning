@@ -19,4 +19,6 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the authoritative repositor
 - Lesson reminders have an idempotent Supabase RPC and are materialized for scheduled lessons within 24 hours when the family workspace loads; a background scheduler/provider is still not wired.
 - Email remains a delivery channel foundation only; automated external email sending is not yet wired to a provider.
 - Teacher SaaS subscription foundation is now modeled with plans, teacher subscription state, provider-neutral webhook events, and protected admin plan management. A payment gateway provider and live checkout/webhook endpoint are still intentionally not wired.
+- Teachers can now select an active SaaS plan before checkout; active/manual/trial subscriptions cannot be switched through this pre-checkout control, preserving payment integrity until a gateway is connected.
+- Teacher workspace settings expose timezone, late-cancellation window, leaderboard privacy and podium rewards; family users can cancel future scheduled lessons and the canonical policy RPC determines early versus late cancellation.
 
