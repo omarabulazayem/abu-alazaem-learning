@@ -273,12 +273,17 @@ export async function getTeacherWorkspace(userId) {
   return rows?.[0] || null;
 }
 
-export async function updateTeacherWorkspace(workspaceId,input) {
+export async function updateTeacherWorkspaceAndSettings(workspaceId,input) {
   if (!workspaceId) throw new Error("مساحة المعلم غير محددة.");
-  const displayName=String(input?.displayName||"").trim();
-  const timezone=String(input?.timezone||"").trim();
-  const result=await rpc("update_teacher_workspace_settings",{
-    p_workspace_id:workspaceId,p_display_name:displayName,p_timezone:timezone
+  const result=await rpc("update_teacher_workspace_and_settings",{
+    p_workspace_id:workspaceId,
+    p_display_name:String(input?.displayName||"").trim(),
+    p_timezone:String(input?.timezone||"").trim(),
+    p_late_cancellation_hours:Number(input?.lateCancellationHours),
+    p_leaderboard_privacy:input?.leaderboardPrivacy,
+    p_first_place_reward:Number(input?.firstPlaceReward),
+    p_second_place_reward:Number(input?.secondPlaceReward),
+    p_third_place_reward:Number(input?.thirdPlaceReward),
   });
   return Array.isArray(result)?result[0]:result;
 }
