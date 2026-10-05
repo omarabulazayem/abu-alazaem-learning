@@ -46,6 +46,9 @@ begin
     raise exception 'parent_not_allowed' using errcode='42501';
   end if;
 
+  -- Serialize reminder creation per parent/session so two devices cannot race into duplicates.
+  perform pg_advisory_xact_lock(hashtextextended(v_parent::text||':'||p_session_id::text,0));
+
   if not exists (
     select 1
     from public.sessions s
