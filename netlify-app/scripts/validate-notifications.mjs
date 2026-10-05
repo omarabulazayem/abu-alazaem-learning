@@ -36,7 +36,6 @@ const checks=[
   [panel,"row.metadata||{}","metadata-aware notification routing"],
   [panel,"/teacher/student/${metadata.student_id}","teacher student-context routing"],
   [panel,"/teacher/tasks?assignment=${metadata.assignment_id}","submitted-task deep link"],
-  [panel,"row.metadata||{}","metadata-aware notification routing"],
   [portal,"data-assignment-id={row.id}","task focus target"],
   [portal,"aa-task-focus","task focus class"],
   [family,"<NotificationsPanel userId=","family notification UI"],
