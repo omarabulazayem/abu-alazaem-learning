@@ -105,7 +105,13 @@ function Tasks({data}){
     catch(e){setError(e.message||"تعذر تحميل المهام.");}
     finally{setLoading(false);}
   }
-  useEffect(()=>{load();const params=new URLSearchParams(window.location.search);setFocusAssignmentId(params.get("assignment")||"");},[]);
+  useEffect(()=>{
+    const sync=()=>{const params=new URLSearchParams(window.location.search);setFocusAssignmentId(params.get("assignment")||"");};
+    sync();
+    window.addEventListener("popstate",sync);
+    return()=>window.removeEventListener("popstate",sync);
+  },[]);
+  useEffect(()=>{load();},[]);
 
   const students=data.students.filter(s=>s.enrollmentStatus==="active");
   useEffect(()=>{
