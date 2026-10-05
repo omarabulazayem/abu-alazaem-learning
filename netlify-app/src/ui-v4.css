@@ -273,3 +273,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 
 .aa-task-focus{animation:aa-task-focus 2.4s ease both;box-shadow:0 0 0 3px #E9C46A,0 16px 34px rgba(43,45,66,.14)!important;border-color:#E9C46A!important}
 @keyframes aa-task-focus{0%{transform:translateY(-2px)}45%{transform:translateY(-2px) scale(1.005)}100%{transform:none}}
+
+.aa-notification-focus{animation:aa-notification-focus 2.4s ease both;box-shadow:0 0 0 3px #4EA8DE,0 16px 34px rgba(43,45,66,.14)!important;border-color:#4EA8DE!important}
+@keyframes aa-notification-focus{0%{transform:translateY(-2px)}45%{transform:translateY(-2px) scale(1.005)}100%{transform:none}}
