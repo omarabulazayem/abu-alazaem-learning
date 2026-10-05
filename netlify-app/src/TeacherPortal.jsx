@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
-  claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
+  claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,getTeacherSubscription,
   grantTeacherBonus,listPointLedger,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
@@ -16,6 +16,19 @@ function taskTypeLabel(v){return ({NEW_MEMORIZATION:"حفظ جديد",REVIEW:"م
 function taskStatusLabel(v){return ({assigned:"مطلوبة",pending_teacher_approval:"بانتظار المراجعة",approved:"معتمدة",rejected:"مرفوضة"}[v]||v||"");}
 function Loading(){return <div className="center"><i className="spinner"/><p>جارٍ تجهيز بوابة المعلم...</p></div>;}
 function ErrorBox({text}){return text?<div className="msg error">{text}</div>:null;}
+function TeacherSubscriptionPanel({subscription,standalone=false}){
+  const statusLabels={PENDING_PLAN:"في انتظار اختيار الخطة",INCOMPLETE:"غير مكتمل",TRIALING:"فترة تجريبية",ACTIVE:"نشط",PAST_DUE:"متأخر السداد",CANCELLED:"ملغى",SUSPENDED:"موقوف",EXPIRED:"منتهٍ",MANUAL:"تفعيل يدوي"};
+  const status=subscription?.status||"PENDING_PLAN";
+  const plan=subscription?.plan;
+  const end=subscription?.current_period_end;
+  const date=end?formatDate(end):"لا يوجد موعد انتهاء مسجل";
+  const content=<div className="aa-card-grid">
+    <article className="aa-card aa-card-gold"><div className="aa-card-top"><span className="aa-card-icon"><Icon name="chart" size={28}/></span></div><h3>{plan?.name_ar||"لم تُحدد خطة بعد"}</h3><p>{plan?.description_ar||"حالة الاشتراك محفوظة الآن، بينما تفعيل الدفع الإلكتروني ينتظر ربط بوابة دفع معتمدة."}</p><strong>{statusLabels[status]||status}</strong></article>
+    <article className="aa-card aa-card-sky"><div className="aa-card-top"><span className="aa-card-icon"><Icon name="clock" size={28}/></span></div><h3>الفترة الحالية</h3><p>{end?"حتى "+date:"لا توجد فترة فوترة فعالة حاليًا."}</p><small>{subscription?.provider?"المزود: "+subscription.provider:"لم يتم ربط مزود دفع بعد."}</small></article>
+  </div>;
+  if(standalone)return <><Button kind="ghost" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button><Hero eyebrow="SaaS Subscription" title="اشتراك المنصة" description="تظهر هنا حالة الاشتراك والخطة الحالية. الدفع الإلكتروني سيُفعل بعد ربط بوابة معتمدة." icon="chart" tone="gold"/>{content}</>;
+  return <Section eyebrow="SaaS Subscription" title="اشتراك المنصة" action={<Button kind="secondary" onClick={()=>go("/teacher/subscription")}>التفاصيل</Button>}>{content}</Section>;
+}
 
 function StudentRow({student}){
   return <button className="aa-table-row" style={{width:"100%",textAlign:"right",cursor:"pointer"}} onClick={()=>go(`/teacher/student/${student.id}`)}>
@@ -31,6 +44,7 @@ function Dashboard({data}){
   return <>
     <Hero eyebrow="Teacher Workspace" title={data.workspace?.display_name||"مساحة المعلم"} description="الطلاب الآن مرتبطون بالمعلم عبر Enrollment مستقل، وليس ملكية مباشرة أو كود فصل." icon="teacher" tone="sky"/>
     <NotificationsPanel userId={data.workspace?.owner_teacher_user_id} title="تنبيهات الحصة والمتابعة" limit={6} mode="teacher"/>
+    <TeacherSubscriptionPanel subscription={data.subscription}/>
 
     <div className="aa-teacher-layout">
       <Metric icon="users" label="طلاب مرتبطون" value={data.students.length} tone="mint"/>
@@ -364,7 +378,7 @@ function StudentDetail({user,data,studentId,reloadOverview}){
 }
 
 export default function TeacherPortal(){
-  const [user,setUser]=useState(undefined),[data,setData]=useState({workspace:null,settings:null,enrollments:[],invites:[],students:[],reviewsToday:0}),[loading,setLoading]=useState(true),[error,setError]=useState(""),[path,setPath]=useState(routePath());
+  const [user,setUser]=useState(undefined),[data,setData]=useState({workspace:null,settings:null,subscription:null,enrollments:[],invites:[],students:[],reviewsToday:0}),[loading,setLoading]=useState(true),[error,setError]=useState(""),[path,setPath]=useState(routePath());
   async function reload(){if(!user?.id)return;setLoading(true);try{setData(await teacherEnrollmentOverview(user.id));setError("");}catch(e){setError(e.message||"تعذر تحميل بيانات المعلم.");}finally{setLoading(false);}}
   useEffect(()=>{const sync=()=>setPath(routePath());window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);
   useEffect(()=>{let alive=true;(async()=>{try{const current=await getCurrentUser();if(!alive)return;if(!current)return go("/login");if(!["teacher","admin"].includes(current.accountType))return go("/family");setUser(current);}catch(e){if(alive)setError(e.message||"تعذر التحقق من حساب المعلم.");}})();return()=>{alive=false;};},[]);
@@ -381,6 +395,7 @@ export default function TeacherPortal(){
     else if(path==="/teacher/tasks")page=<Tasks data={data}/>;
     else if(path==="/teacher/schedule")page=<TeacherSchedulePanel data={data}/>;
     else if(path==="/teacher/billing")page=<TeacherBillingPanel data={data}/>;
+    else if(path==="/teacher/subscription")page=<TeacherSubscriptionPanel subscription={data.subscription} standalone/>;
     else if(path==="/teacher/leaderboard")page=<TeacherLeaderboardPanel data={data}/>;
     else if(match)page=<StudentDetail user={user} data={data} studentId={match[1]} reloadOverview={reload}/>;
     else page=<Empty icon="target" title="الصفحة غير موجودة" action={<Button onClick={()=>go("/teacher")}>لوحة المعلم</Button>}/>;
