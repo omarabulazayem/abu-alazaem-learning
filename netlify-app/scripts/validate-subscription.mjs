@@ -9,6 +9,7 @@ const adminPath=path.join(root,"src/AdminPortal.jsx");
 const teacherPath=path.join(root,"src/TeacherPortal.jsx");
 const routerPath=path.join(root,"src/RootRouter.jsx");
 const uiPath=path.join(root,"src/ui-v4.jsx");
+const loginPath=path.join(root,"src/LoginPage.jsx");
 
 const read=p=>fs.readFileSync(p,"utf8");
 const migration=read(migrationPath);
@@ -18,6 +19,7 @@ const admin=read(adminPath);
 const teacher=read(teacherPath);
 const router=read(routerPath);
 const ui=read(uiPath);
+const login=read(loginPath);
 
 const checks=[
   [migration,"create table if not exists public.saas_plans","saas_plans table"],
@@ -57,7 +59,8 @@ const checks=[
   [admin,"upsertSaasPlan(form)","admin saves plans"],
   [admin,"listTeacherSubscriptions()","admin subscription oversight"],
   [admin,"setTeacherSubscriptionManual(","admin manual activation"],
-  [teacher,"function TeacherSettingsPanel","teacher settings UI"],
+    [login,'go(role==="teacher"?"/teacher/subscription":"/family")',"new teacher onboarding route"],
+[teacher,"function TeacherSettingsPanel","teacher settings UI"],
   [teacher,"listSaasPlans()","teacher plan picker"],
   [teacher,"selectTeacherPlan(","teacher plan selection"],
   [teacher,"updateTeacherWorkspace(","workspace settings save"],
