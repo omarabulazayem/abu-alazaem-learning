@@ -14,6 +14,7 @@ const ICONS={
   TASK_SUBMITTED:"target",
   TASK_APPROVED:"circleCheck",
   TASK_REJECTED:"review",
+  PARENT_INVITE:"mail",
   LESSON_COMPLETED:"circleCheck",
   LESSON_REMINDER:"clock",
   LESSON_CANCELLED:"close",
@@ -34,6 +35,7 @@ function targetPath(type,mode,metadata={}){
     if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/teacher/schedule";
     return "/teacher";
   }
+  if(type==="PARENT_INVITE")return "/family";
   if(type==="TASK_ASSIGNED"||type==="TASK_APPROVED"||type==="TASK_REJECTED"){
     return metadata.student_id&&metadata.assignment_id?"/family?student="+metadata.student_id+"&assignment="+metadata.assignment_id:"/family";
   }
