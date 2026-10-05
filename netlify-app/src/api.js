@@ -279,6 +279,16 @@ export async function getTeacherSettings(workspaceId) {
   return rows?.[0] || null;
 }
 
+export async function listSaasPlans() {
+  return rest("/saas_plans?active=eq.true&select=id,code,name_ar,description_ar,currency,monthly_price,yearly_price,features,limits&order=sort_order.asc,created_at.asc");
+}
+
+export async function getTeacherSubscription(workspaceId) {
+  if (!workspaceId) return null;
+  const rows = await rest(`/teacher_subscriptions?workspace_id=eq.${encodeURIComponent(workspaceId)}&select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,created_at,updated_at&limit=1`);
+  return rows?.[0] || null;
+}
+
 export async function createEnrollmentInvite(parentEmail, sessionRate = 0) {
   const result = await rpc("create_enrollment_invite", {
     p_parent_email: String(parentEmail || "").trim().toLowerCase(),
