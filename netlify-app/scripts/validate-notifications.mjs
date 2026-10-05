@@ -21,6 +21,9 @@ const checks=[
   [migration,"POINTS_CHANGED","points event"],
   [migration,"WEEKLY_RESULT","weekly leaderboard event"],
   [migration,"notify_leaderboard_snapshot_created","leaderboard trigger"],
+  [migration,"create trigger leaderboard_snapshot_notification_created","leaderboard notification trigger"],
+  [migration,"for each row execute function public.notify_leaderboard_snapshot_created();","leaderboard trigger execution"],
+
   [migration,"revoke execute on function public.notify_leaderboard_snapshot_created()","leaderboard trigger revoke"],
   [migration,"notifications_select_own","notifications RLS"],
   [migration,"revoke execute on function public.notification_parent_for_child(uuid)","internal helper revoke"],
@@ -32,6 +35,10 @@ const checks=[
   [panel,"markNotificationRead","panel read action"],
   [panel,"row.metadata||{}","metadata-aware notification routing"],
   [panel,"/teacher/student/${metadata.student_id}","teacher student-context routing"],
+  [panel,"/teacher/tasks?assignment=${metadata.assignment_id}","submitted-task deep link"],
+  [panel,"row.metadata||{}","metadata-aware notification routing"],
+  [portal,"data-assignment-id={row.id}","task focus target"],
+  [portal,"aa-task-focus","task focus class"],
   [family,"<NotificationsPanel userId=","family notification UI"],
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
