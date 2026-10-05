@@ -45,6 +45,7 @@ export const TEACHER_NAV=[
   {path:"/teacher/tasks",label:"المهام",icon:"target"},
   {path:"/teacher/schedule",label:"الجدول",icon:"clock"},
   {path:"/teacher/billing",label:"الاستحقاقات",icon:"chart"},
+  {path:"/teacher/subscription",label:"الاشتراك",icon:"star"},
   {path:"/teacher/leaderboard",label:"الترتيب",icon:"medal"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
   {path:"/teacher/whiteboard",label:"السبورة",icon:"edit"},
