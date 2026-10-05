@@ -259,7 +259,7 @@ returns public.teacher_subscriptions
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_sub public.teacher_subscriptions;
   v_plan public.saas_plans;
@@ -305,7 +305,7 @@ begin
 
   return v_sub;
 end;
-$;
+$$;
 
 create or replace function public.set_teacher_subscription_manual(
   p_workspace_id uuid,
@@ -317,7 +317,7 @@ returns public.teacher_subscriptions
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_sub public.teacher_subscriptions;
   v_plan public.saas_plans;
@@ -358,7 +358,7 @@ begin
 
   return v_sub;
 end;
-$;
+$$;
 
 revoke all on public.saas_plans from anon,authenticated;
 revoke all on public.teacher_subscriptions from anon,authenticated;
