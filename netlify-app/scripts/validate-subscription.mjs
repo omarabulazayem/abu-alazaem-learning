@@ -4,6 +4,7 @@ import path from "node:path";
 const root=process.cwd();
 const migrationPath=path.join(root,"../patches-live/supabase/migrations/20261005_teacher_saas_subscription_foundation.sql");
 const workspaceMigrationPath=path.join(root,"../patches-live/supabase/migrations/20261005_teacher_workspace_settings.sql");
+const atomicSettingsMigrationPath=path.join(root,"../patches-live/supabase/migrations/20261005_teacher_settings_atomic.sql");
 const apiPath=path.join(root,"src/api.js");
 const adminPath=path.join(root,"src/AdminPortal.jsx");
 const teacherPath=path.join(root,"src/TeacherPortal.jsx");
@@ -14,6 +15,7 @@ const loginPath=path.join(root,"src/LoginPage.jsx");
 const read=p=>fs.readFileSync(p,"utf8");
 const migration=read(migrationPath);
 const workspaceMigration=read(workspaceMigrationPath);
+const atomicSettingsMigration=read(atomicSettingsMigrationPath);
 const api=read(apiPath);
 const admin=read(adminPath);
 const teacher=read(teacherPath);
@@ -50,7 +52,7 @@ const checks=[
   [api,"export async function listTeacherSubscriptions","admin subscription list API"],
   [api,"export async function setTeacherSubscriptionManual","manual activation API"],
   [api,"export async function selectTeacherPlan","teacher plan selection API"],
-  [api,"export async function updateTeacherWorkspace","workspace settings API"],
+  [api,"export async function updateTeacherWorkspaceAndSettings","atomic workspace settings API"],
   [api,"export async function updateTeacherSettings","teacher policy settings API"],
   [teacher,"function TeacherSubscriptionPanel","teacher subscription UI"],
   [teacher,'path==="/teacher/subscription"',"teacher subscription route"],
@@ -63,8 +65,10 @@ const checks=[
 [teacher,"function TeacherSettingsPanel","teacher settings UI"],
   [teacher,"listSaasPlans()","teacher plan picker"],
   [teacher,"selectTeacherPlan(","teacher plan selection"],
-  [teacher,"updateTeacherWorkspace(","workspace settings save"],
+  [teacher,"updateTeacherWorkspaceAndSettings(","atomic workspace settings save"],
   [workspaceMigration,"create or replace function public.update_teacher_workspace_settings(","validated workspace settings RPC"],
+  [atomicSettingsMigration,"create or replace function public.update_teacher_workspace_and_settings(","atomic teacher settings RPC"],
+  [atomicSettingsMigration,"grant execute on function public.update_teacher_workspace_and_settings","atomic settings RPC grant"],
   [router,'import AdminPortal from "./AdminPortal.jsx"',"admin portal import"],
   [router,'(path==="/admin"||path.startsWith("/admin/"))&&admin',"protected admin route"],
   [router,'if(admin&&!path.startsWith("/admin"))navigate("/admin",true)',"admin redirect"],
