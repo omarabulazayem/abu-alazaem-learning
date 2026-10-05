@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
-  claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,getTeacherSubscription,
+  claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
   grantTeacherBonus,listPointLedger,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
