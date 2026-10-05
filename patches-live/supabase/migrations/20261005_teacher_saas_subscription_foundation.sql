@@ -251,6 +251,59 @@ end;
 $$;
 
 
+create or replace function public.select_teacher_subscription_plan(
+  p_workspace_id uuid,
+  p_plan_id uuid
+)
+returns public.teacher_subscriptions
+language plpgsql
+security definer
+set search_path=public
+as $
+declare
+  v_sub public.teacher_subscriptions;
+  v_plan public.saas_plans;
+  v_before jsonb;
+begin
+  if auth.uid() is null then
+    raise exception 'authentication_required' using errcode='42501';
+  end if;
+  if not public.owns_teacher_workspace(p_workspace_id) then
+    raise exception 'teacher_not_allowed' using errcode='42501';
+  end if;
+
+  select * into v_plan
+  from public.saas_plans
+  where id=p_plan_id and active=true;
+  if v_plan.id is null then raise exception 'plan_not_found_or_inactive'; end if;
+
+  select * into v_sub
+  from public.teacher_subscriptions
+  where workspace_id=p_workspace_id
+  for update;
+
+  if v_sub.id is null then
+    insert into public.teacher_subscriptions(workspace_id,plan_id,status)
+    values(p_workspace_id,p_plan_id,'PENDING_PLAN')
+    returning * into v_sub;
+    v_before:='null'::jsonb;
+  else
+    v_before:=to_jsonb(v_sub);
+    update public.teacher_subscriptions
+    set plan_id=p_plan_id,
+        status=case when status in ('ACTIVE','TRIALING','MANUAL') then status else 'PENDING_PLAN' end,
+        updated_at=now()
+    where workspace_id=p_workspace_id
+    returning * into v_sub;
+  end if;
+
+  insert into public.audit_logs(actor_user_id,action,entity_type,entity_id,before_state,after_state,reason)
+  values(auth.uid(),'TEACHER_SUBSCRIPTION_PLAN_SELECTED','teacher_subscription',v_sub.id,v_before,to_jsonb(v_sub),'Teacher selected SaaS plan');
+
+  return v_sub;
+end;
+$;
+
 create or replace function public.set_teacher_subscription_manual(
   p_workspace_id uuid,
   p_plan_id uuid,
@@ -347,9 +400,11 @@ with check (false);
 
 revoke execute on function public.ensure_teacher_subscription() from public,anon,authenticated;
 revoke execute on function public.upsert_saas_plan(uuid,text,text,text,text,numeric,numeric,boolean,integer,jsonb,jsonb) from public,anon;
+revoke execute on function public.select_teacher_subscription_plan(uuid,uuid) from public,anon;
 revoke execute on function public.set_teacher_subscription_manual(uuid,uuid,timestamptz,text) from public,anon;
 revoke execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,uuid,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) from public,anon,authenticated;
 
 grant execute on function public.upsert_saas_plan(uuid,text,text,text,text,numeric,numeric,boolean,integer,jsonb,jsonb) to authenticated;
+grant execute on function public.select_teacher_subscription_plan(uuid,uuid) to authenticated;
 grant execute on function public.set_teacher_subscription_manual(uuid,uuid,timestamptz,text) to authenticated;
 grant execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,uuid,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) to service_role;
