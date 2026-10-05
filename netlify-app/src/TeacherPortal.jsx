@@ -90,7 +90,7 @@ function TeacherSettingsPanel({data,reloadOverview}){
   </Section>;
 }
 
-function TeacherSubscriptionPanel({subscription,workspaceId,standalone=false}){
+function TeacherSubscriptionPanel({subscription,workspaceId,reloadOverview,standalone=false}){
   const statusLabels={PENDING_PLAN:"في انتظار اختيار الخطة",INCOMPLETE:"غير مكتمل",TRIALING:"فترة تجريبية",ACTIVE:"نشط",PAST_DUE:"متأخر السداد",CANCELLED:"ملغى",SUSPENDED:"موقوف",EXPIRED:"منتهٍ",MANUAL:"تفعيل يدوي"};
   const status=subscription?.status||"PENDING_PLAN";
   const plan=subscription?.plan;
@@ -101,7 +101,7 @@ function TeacherSubscriptionPanel({subscription,workspaceId,standalone=false}){
     setPlanBusy(true);setPlanError("");
     try{
       await selectTeacherPlan(workspaceId,planId);
-      window.dispatchEvent(new Event("abu-auth"));
+      await reloadOverview?.();
     }catch(e){setPlanError(e.message||"تعذر اختيار الخطة.")}
     finally{setPlanBusy(false);}
   }
@@ -142,7 +142,7 @@ function Dashboard({data,reloadOverview}){
   return <>
     <Hero eyebrow="Teacher Workspace" title={data.workspace?.display_name||"مساحة المعلم"} description="الطلاب الآن مرتبطون بالمعلم عبر Enrollment مستقل، وليس ملكية مباشرة أو كود فصل." icon="teacher" tone="sky"/>
     <NotificationsPanel userId={data.workspace?.owner_teacher_user_id} title="تنبيهات الحصة والمتابعة" limit={6} mode="teacher"/>
-    <TeacherSubscriptionPanel subscription={data.subscription} workspaceId={data.workspace?.id}/><TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
+    <TeacherSubscriptionPanel subscription={data.subscription} workspaceId={data.workspace?.id} reloadOverview={reloadOverview}/><TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
 
     <div className="aa-teacher-layout">
       <Metric icon="users" label="طلاب مرتبطون" value={data.students.length} tone="mint"/>
@@ -493,7 +493,7 @@ export default function TeacherPortal(){
     else if(path==="/teacher/tasks")page=<Tasks data={data}/>;
     else if(path==="/teacher/schedule")page=<TeacherSchedulePanel data={data}/>;
     else if(path==="/teacher/billing")page=<TeacherBillingPanel data={data}/>;
-    else if(path==="/teacher/subscription")page=<TeacherSubscriptionPanel subscription={data.subscription} workspaceId={data.workspace?.id} standalone/>;
+    else if(path==="/teacher/subscription")page=<TeacherSubscriptionPanel subscription={data.subscription} workspaceId={data.workspace?.id} reloadOverview={reload} standalone/>;
     else if(path==="/teacher/leaderboard")page=<TeacherLeaderboardPanel data={data}/>;
     else if(match)page=<StudentDetail user={user} data={data} studentId={match[1]} reloadOverview={reload}/>;
     else page=<Empty icon="target" title="الصفحة غير موجودة" action={<Button onClick={()=>go("/teacher")}>لوحة المعلم</Button>}/>;
