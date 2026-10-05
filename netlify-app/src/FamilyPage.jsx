@@ -41,6 +41,12 @@ export default function FamilyPage(){
   const [busy,setBusy]=useState(false),[msg,setMsg]=useState(""),[err,setErr]=useState("");
   const [notificationFocus,setNotificationFocus]=useState(familyNotificationFocus);
 
+  useEffect(()=>{
+    const sync=()=>setNotificationFocus(familyNotificationFocus());
+    window.addEventListener("popstate",sync);
+    return()=>window.removeEventListener("popstate",sync);
+  },[]);
+
   async function load(current=user){
     if(!current)return;
     const from=new Date(Date.now()-30*86400000),to=new Date(Date.now()+90*86400000);
