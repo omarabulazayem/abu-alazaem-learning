@@ -43,7 +43,7 @@ for(const component of [home,child]){
 }
 if(main.includes("installRealChildArt")||main.includes("RealChildArt"))fail("DOM artwork injection must not return; artwork belongs in React markup");
 if(!router.includes("function routeKey()")||!router.includes("const route=usePath(),path=route.split(\"?\")[0]"))fail("router must preserve query changes without treating query as a route");
-if(!routerUi.includes("const currentKey=routePath()+(window.location.search||\"")"))fail("ui router helper must compare query-aware navigation keys");
+if(!routerUi.includes('const currentKey=routePath()+(window.location.search||"")'))fail("ui router helper must compare query-aware navigation keys");
 for(const source of ["Opened Qur'an","Sundanese Muslim children","Sultan Hassan","CC BY 2.0","CC BY-SA 4.0"])if(!assetsDoc.includes(source))fail(`visual asset documentation missing ${source}`);
 for(const table of ["cms_content","cms_content_meta","cms_terms","cms_taxonomies","cms_term_relationships","cms_media","cms_options","cms_navigation"])if(!cmsSql.includes(`public.${table}`))fail(`CMS migration missing ${table}`);
 for(const mapping of ["wp_posts","wp_postmeta","wp_terms","wp_term_taxonomy","wp_term_relationships","wp_options"])if(!wpDoc.includes(mapping))fail(`WordPress migration guide missing ${mapping}`);
