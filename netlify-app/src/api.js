@@ -279,7 +279,24 @@ export async function getTeacherSettings(workspaceId) {
   return rows?.[0] || null;
 }
 
-export async function updateTeacherSettings(workspaceId,input) {\n  if (!workspaceId) throw new Error("مساحة المعلم غير محددة.");\n  const payload={late_cancellation_hours:Math.max(0,Math.min(168,Number(input?.lateCancellationHours)||0)),leaderboard_privacy:["first_name_initial","first_name_only","hidden"].includes(input?.leaderboardPrivacy)?input.leaderboardPrivacy:"first_name_initial",first_place_reward:Math.max(0,Number(input?.firstPlaceReward)||0),second_place_reward:Math.max(0,Number(input?.secondPlaceReward)||0),third_place_reward:Math.max(0,Number(input?.thirdPlaceReward)||0)};\n  const rows=await rest("/teacher_settings?workspace_id=eq."+encodeURIComponent(workspaceId),{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});\n  return rows?.[0]||null;\n}\n\nexport async function listSaasPlans(includeInactive=false) {
+export async function updateTeacherSettings(workspaceId,input) {
+  if (!workspaceId) throw new Error("مساحة المعلم غير محددة.");
+  const payload={
+    late_cancellation_hours:Math.max(0,Math.min(168,Number(input?.lateCancellationHours)||0)),
+    leaderboard_privacy:["first_name_initial","first_name_only","hidden"].includes(input?.leaderboardPrivacy)?input.leaderboardPrivacy:"first_name_initial",
+    first_place_reward:Math.max(0,Number(input?.firstPlaceReward)||0),
+    second_place_reward:Math.max(0,Number(input?.secondPlaceReward)||0),
+    third_place_reward:Math.max(0,Number(input?.thirdPlaceReward)||0),
+  };
+  const rows=await rest("/teacher_settings?workspace_id=eq."+encodeURIComponent(workspaceId),{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify(payload),
+  });
+  return rows?.[0]||null;
+}
+
+export async function listSaasPlans(includeInactive=false) {
   const activeFilter=includeInactive?"":"active=eq.true&";
   return rest(`/saas_plans?${activeFilter}select=id,code,name_ar,description_ar,currency,monthly_price,yearly_price,active,sort_order,features,limits&order=sort_order.asc,created_at.asc`);
 }
