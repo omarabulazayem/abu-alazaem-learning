@@ -4,8 +4,10 @@ import path from "node:path";
 const root=path.resolve("..");
 const migrationPath=path.join(root,"patches-live","supabase","migrations","20261003_notifications_foundation.sql");
 const reminderMigrationPath=path.join(root,"patches-live","supabase","migrations","20261005_lesson_reminders.sql");
+const inviteMigrationPath=path.join(root,"patches-live","supabase","migrations","20261005_parent_invite_notifications.sql");
 const migration=fs.readFileSync(migrationPath,"utf8");
 const reminderMigration=fs.readFileSync(reminderMigrationPath,"utf8");
+const inviteMigration=fs.readFileSync(inviteMigrationPath,"utf8");
 const api=fs.readFileSync(path.join("src","api.js"),"utf8");
 const panel=fs.readFileSync(path.join("src","NotificationsPanel.jsx"),"utf8");
 const family=fs.readFileSync(path.join("src","FamilyPage.jsx"),"utf8");
@@ -25,6 +27,11 @@ const checks=[
   [migration,"notify_leaderboard_snapshot_created","leaderboard trigger"],
   [migration,"create trigger leaderboard_snapshot_notification_created","leaderboard notification trigger"],
   [migration,"for each row execute function public.notify_leaderboard_snapshot_created();","leaderboard trigger execution"],
+  [inviteMigration,"create or replace function public.notify_parent_invite_created()","parent invite notification"],
+  [inviteMigration,"create trigger parent_invite_notification_created","parent invite trigger"],
+  [inviteMigration,"PARENT_INVITE","parent invite event"],
+  [inviteMigration,"from auth.users","registered parent lookup"],
+  [panel,"PARENT_INVITE","parent invite UI mapping"],
   [reminderMigration,"create or replace function public.ensure_lesson_reminder","lesson reminder RPC"],
   [reminderMigration,"create or replace function public.materialize_lesson_reminders","background lesson reminder scheduler"],
   [reminderMigration,"cron.schedule(","lesson reminder cron"],
@@ -62,8 +69,8 @@ const checks=[
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
 
-const malformedDollarQuotes=[...migration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g),...reminderMigration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g)];
-const malformedTaggedQuotes=[...migration.matchAll(/as \$\$\$/g),...migration.matchAll(/\$\$\$;/g),...reminderMigration.matchAll(/as \$\$\$/g),...reminderMigration.matchAll(/\$\$\$;/g)];
+const malformedDollarQuotes=[...migration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g),...reminderMigration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g),...inviteMigration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g)];
+const malformedTaggedQuotes=[...migration.matchAll(/as \$\$\$/g),...migration.matchAll(/\$\$\$;/g),...reminderMigration.matchAll(/as \$\$\$/g),...reminderMigration.matchAll(/\$\$\$;/g),...inviteMigration.matchAll(/as \$\$\$/g),...inviteMigration.matchAll(/\$\$\$;/g)];
 if(malformedDollarQuotes.length||malformedTaggedQuotes.length){
   console.error("Notifications SQL validation failed: malformed dollar quoting.");
   process.exit(1);
