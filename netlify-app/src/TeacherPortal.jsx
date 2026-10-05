@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
   claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
-  grantTeacherBonus,listPointLedger,listSaasPlans,selectTeacherPlan,updateTeacherSettings,updateTeacherWorkspace,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
+  grantTeacherBonus,listPointLedger,listSaasPlans,selectTeacherPlan,updateTeacherWorkspaceAndSettings,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
@@ -33,8 +33,7 @@ function TeacherSettingsPanel({data,reloadOverview}){
     e.preventDefault();if(!workspace?.id)return;
     setBusy(true);setMessage("");setError("");
     try{
-      await updateTeacherWorkspace(workspace.id,form);
-      await updateTeacherSettings(workspace.id,form);
+      await updateTeacherWorkspaceAndSettings(workspace.id,form);
       setMessage("تم حفظ اسم المساحة والمنطقة الزمنية وسياسة الحصة والترتيب.");
       await reloadOverview?.();
     }catch(e){setError(e.message||"تعذر حفظ الإعدادات.");}
