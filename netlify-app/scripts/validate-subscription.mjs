@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root=process.cwd();
 const migrationPath=path.join(root,"../patches-live/supabase/migrations/20261005_teacher_saas_subscription_foundation.sql");
+const workspaceMigrationPath=path.join(root,"../patches-live/supabase/migrations/20261005_teacher_workspace_settings.sql");
 const apiPath=path.join(root,"src/api.js");
 const adminPath=path.join(root,"src/AdminPortal.jsx");
 const teacherPath=path.join(root,"src/TeacherPortal.jsx");
@@ -11,6 +12,7 @@ const uiPath=path.join(root,"src/ui-v4.jsx");
 
 const read=p=>fs.readFileSync(p,"utf8");
 const migration=read(migrationPath);
+const workspaceMigration=read(workspaceMigrationPath);
 const api=read(apiPath);
 const admin=read(adminPath);
 const teacher=read(teacherPath);
@@ -50,7 +52,7 @@ const checks=[
   [admin,"setTeacherSubscriptionManual(","admin manual activation"],
   [teacher,"function TeacherSettingsPanel","teacher settings UI"],
   [teacher,"updateTeacherWorkspace(","workspace settings save"],
-  [migration,"create or replace function public.update_teacher_workspace_settings(","validated workspace settings RPC"],
+  [workspaceMigration,"create or replace function public.update_teacher_workspace_settings(","validated workspace settings RPC"],
   [router,'import AdminPortal from "./AdminPortal.jsx"',"admin portal import"],
   [router,'(path==="/admin"||path.startsWith("/admin/"))&&admin',"protected admin route"],
   [router,'if(admin&&!path.startsWith("/admin"))navigate("/admin",true)',"admin redirect"],
