@@ -34,6 +34,10 @@ export const FAMILY_NAV=[
   {path:"/leaderboard",label:"الترتيب",icon:"medal"},
 ];
 
+export const ADMIN_NAV=[
+  {path:"/admin",label:"الخطط",icon:"chart"},
+];
+
 export const TEACHER_NAV=[
   {path:"/teacher",label:"نظرة عامة",icon:"teacher"},
   {path:"/teacher/invites",label:"الدعوات",icon:"mail"},
@@ -99,7 +103,7 @@ export function AppShell({mode="public",subtitle,nav=[],actions,children,footer=
   return <div className={`aa-app aa-mode-${mode}`} dir="rtl">
     <header className="aa-header">
       <div className="aa-header-inner">
-        <Brand subtitle={subtitle||({child:"عالم الطفل",teacher:"بوابة المعلم",family:"حساب الأسرة"}[mode]||"للحفظ الممتع")} onClick={()=>go(mode==="child"?"/child":mode==="teacher"?"/teacher":"/")}/>
+        <Brand subtitle={subtitle||({child:"عالم الطفل",teacher:"بوابة المعلم",family:"حساب الأسرة",admin:"إدارة المنصة"}[mode]||"للحفظ الممتع")} onClick={()=>go(mode==="child"?"/child":mode==="teacher"?"/teacher":"/")}/>
         {!hideNav&&nav.length>0&&<nav className="aa-nav" aria-label="التنقل الرئيسي">
           {nav.map(item=><button key={item.path} className={current===item.path?"is-active":""} onClick={()=>go(item.path)}><Icon name={item.icon||"arrow"} size={20}/><span>{item.label}</span></button>)}
         </nav>}
