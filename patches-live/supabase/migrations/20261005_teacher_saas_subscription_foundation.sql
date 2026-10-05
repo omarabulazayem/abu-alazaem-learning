@@ -185,7 +185,7 @@ declare
   v_sub public.teacher_subscriptions;
   v_event public.teacher_subscription_events;
 begin
-  if current_user not in ('service_role','supabase_admin') then
+  if coalesce(auth.role(),'') <> 'service_role' then
     raise exception 'service_role_required' using errcode='42501';
   end if;
   if p_workspace_id is null or not exists(select 1 from public.teacher_workspaces where id=p_workspace_id) then
