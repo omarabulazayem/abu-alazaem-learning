@@ -18,7 +18,8 @@ const ICONS={
   LESSON_REMINDER:"clock",
   LESSON_CANCELLED:"close",
   LESSON_RESCHEDULED:"clock",
-  POINTS_CHANGED:"star"
+  POINTS_CHANGED:"star",
+  SAAS_SUBSCRIPTION_CHANGED:"chart"
 };
 
 function targetPath(type,mode,metadata={}){
@@ -28,6 +29,7 @@ function targetPath(type,mode,metadata={}){
     if(type==="ENROLLMENT_ACCEPTED"&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
     if((type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
     if(type==="POINTS_CHANGED"&&metadata.student_id)return `/teacher/student/${metadata.student_id}`;
+    if(type==="SAAS_SUBSCRIPTION_CHANGED")return "/teacher/subscription";
     if(type==="ENROLLMENT_ACCEPTED"||type==="POINTS_CHANGED")return "/teacher/students";
     if(type==="LESSON_RESCHEDULED"||type==="LESSON_CANCELLED"||type==="LESSON_COMPLETED")return "/teacher/schedule";
     return "/teacher";
