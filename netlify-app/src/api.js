@@ -603,8 +603,9 @@ export async function teacherEnrollmentOverview(userId) {
     getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)
   ]);
   const settings = workspace ? await getTeacherSettings(workspace.id).catch(()=>null) : null;
+  const subscription = workspace ? await getTeacherSubscription(workspace.id).catch(()=>null) : null;
   const childIds = [...new Set(enrollments.map(e=>e.student_id).filter(Boolean))];
-  if (!childIds.length) return { workspace, settings, enrollments, invites, students: [], reviewsToday: 0 };
+  if (!childIds.length) return { workspace, settings, subscription, enrollments, invites, students: [], reviewsToday: 0 };
   const progressFilter = childIds.map(id=>`child_id.eq.${id}`).join(",");
   const [progress,reviews] = await Promise.all([
     rest(`/learning_progress?or=(${progressFilter})&select=child_id,memorized_percent,review_percent,status,last_activity_at`),
@@ -628,7 +629,7 @@ export async function teacherEnrollmentOverview(userId) {
       classes:[],
     };
   });
-  return { workspace, settings, enrollments, invites, students, reviewsToday:(reviews||[]).length };
+  return { workspace, settings, subscription, enrollments, invites, students, reviewsToday:(reviews||[]).length };
 }
 
 export async function getProgress(childId) {
