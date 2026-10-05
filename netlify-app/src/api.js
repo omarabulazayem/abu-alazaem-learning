@@ -381,9 +381,7 @@ export async function purchaseGameUnlock(childId, gameId) {
 
 export async function ensureLessonReminder(sessionId) {
   if (!sessionId) return null;
-  const result=await rpc("ensure_lesson_reminder",{p_session_id:sessionId});
-  if (typeof window!=="undefined") window.dispatchEvent(new Event("abu-notifications"));
-  return result;
+  return rpc("ensure_lesson_reminder",{p_session_id:sessionId});
 }
 
 export async function listNotifications(userId, limit = 30) {
