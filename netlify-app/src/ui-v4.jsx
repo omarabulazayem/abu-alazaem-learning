@@ -1,5 +1,6 @@
 import React from "react";
 import Icon from "./Icon.jsx";
+import {getStoredSession,listNotifications} from "./api.js";
 
 export const LESSON_CONTEXT_KEY="abu-alazaem-lesson-context-v1";
 export function getLessonContext(){try{return JSON.parse(localStorage.getItem(LESSON_CONTEXT_KEY)||"null");}catch{return null;}}
@@ -9,7 +10,10 @@ export function routePath(){
   return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;
 }
 export function go(path){
-  if(routePath()===path)return;
+  const target=new URL(path,window.location.href);
+  const currentKey=routePath()+(window.location.search||"");
+  const targetKey=target.pathname+(target.search||"");
+  if(currentKey===targetKey)return;
   history.pushState({},"",path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
@@ -30,6 +34,10 @@ export const FAMILY_NAV=[
   {path:"/leaderboard",label:"الترتيب",icon:"medal"},
 ];
 
+export const ADMIN_NAV=[
+  {path:"/admin",label:"الخطط",icon:"chart"},
+];
+
 export const TEACHER_NAV=[
   {path:"/teacher",label:"نظرة عامة",icon:"teacher"},
   {path:"/teacher/invites",label:"الدعوات",icon:"mail"},
@@ -37,6 +45,7 @@ export const TEACHER_NAV=[
   {path:"/teacher/tasks",label:"المهام",icon:"target"},
   {path:"/teacher/schedule",label:"الجدول",icon:"clock"},
   {path:"/teacher/billing",label:"الاستحقاقات",icon:"chart"},
+  {path:"/teacher/subscription",label:"الاشتراك",icon:"star"},
   {path:"/teacher/leaderboard",label:"الترتيب",icon:"medal"},
   {path:"/teacher/game-reports",label:"تقارير الألعاب",icon:"game"},
   {path:"/teacher/whiteboard",label:"السبورة",icon:"edit"},
@@ -49,19 +58,60 @@ export function Brand({subtitle="للحفظ الممتع",onClick=()=>go("/")}){
   </button>;
 }
 
+function TeacherLessonDock(){
+  const context=getLessonContext();
+  if(!context)return null;
+  const surah=context.surah||"غير محددة";
+  const ayah=context.number||context.ayah||null;
+  return <div className="aa-teacher-lesson-dock" role="region" aria-label="أدوات الحصة">
+    <div className="aa-teacher-lesson-current"><span><Icon name="teacher" size={18}/></span><div><small>الحصة الحالية</small><b>سورة {surah}{ayah?" • الآية "+ayah:""}{context.gameTitle?" • "+context.gameTitle:""}</b></div></div>
+    <div className="aa-teacher-lesson-actions">
+      <button onClick={()=>go("/teacher/whiteboard")} className={routePath()==="/teacher/whiteboard"?"is-active":""}><Icon name="edit" size={17}/><span>السبورة</span></button>
+      <button onClick={()=>go("/quran")} className={routePath()==="/quran"?"is-active":""}><Icon name="quran" size={17}/><span>المصحف</span></button>
+      <button onClick={()=>go("/games")} className={routePath()==="/games"?"is-active":""}><Icon name="game" size={17}/><span>الألعاب</span></button>
+    </div>
+  </div>;
+}
+function NotificationBell({mode}){
+  const [unread,setUnread]=React.useState(0);
+  const target=mode==="teacher"?"/teacher":"/family";
+  async function load(){
+    const session=getStoredSession();
+    const userId=session?.user?.id;
+    if(!userId){setUnread(0);return;}
+    try{
+      const rows=await listNotifications(userId,100);
+      setUnread(rows.filter(row=>!row.read_at).length);
+    }catch{setUnread(0);}
+  }
+  React.useEffect(()=>{
+    load();
+    const timer=setInterval(load,30000);
+    const onAuth=()=>load();
+    const onNotifications=()=>load();
+    window.addEventListener("abu-auth",onAuth);
+    window.addEventListener("abu-notifications",onNotifications);
+    return()=>{clearInterval(timer);window.removeEventListener("abu-auth",onAuth);window.removeEventListener("abu-notifications",onNotifications);};
+  },[]);
+  return <button className="aa-notification-bell" type="button" aria-label={unread ? "التنبيهات • "+unread+" جديدة" : "التنبيهات"} onClick={()=>go(target)}>
+    <Icon name="mail" size={20}/>
+    <span>التنبيهات</span>
+    {unread>0&&<b>{unread>99?"99+":unread}</b>}
+  </button>;
+}
 export function AppShell({mode="public",subtitle,nav=[],actions,children,footer="رحلة هادئة وواضحة مع القرآن.",hideNav=false}){
   const current=routePath();
   return <div className={`aa-app aa-mode-${mode}`} dir="rtl">
     <header className="aa-header">
       <div className="aa-header-inner">
-        <Brand subtitle={subtitle||({child:"عالم الطفل",teacher:"بوابة المعلم",family:"حساب الأسرة"}[mode]||"للحفظ الممتع")} onClick={()=>go(mode==="child"?"/child":mode==="teacher"?"/teacher":"/")}/>
+        <Brand subtitle={subtitle||({child:"عالم الطفل",teacher:"بوابة المعلم",family:"حساب الأسرة",admin:"إدارة المنصة"}[mode]||"للحفظ الممتع")} onClick={()=>go(mode==="child"?"/child":mode==="teacher"?"/teacher":"/")}/>
         {!hideNav&&nav.length>0&&<nav className="aa-nav" aria-label="التنقل الرئيسي">
           {nav.map(item=><button key={item.path} className={current===item.path?"is-active":""} onClick={()=>go(item.path)}><Icon name={item.icon||"arrow"} size={20}/><span>{item.label}</span></button>)}
         </nav>}
-        <div className="aa-header-actions">{actions}</div>
+        {(mode==="teacher"||mode==="family")&&<NotificationBell mode={mode}/>}<div className="aa-header-actions">{actions}</div>
       </div>
     </header>
-    <main className="aa-main">{children}</main>
+    <main className="aa-main">{mode==="teacher"&&<TeacherLessonDock/>}{children}</main>
     <footer className="aa-footer"><div>{footer}</div></footer>
     {mode==="child"&&<nav className="aa-bottom-nav" aria-label="تنقل الطفل">{CHILD_NAV.map(item=><button key={item.path} className={current===item.path?"is-active":""} onClick={()=>go(item.path)}><Icon name={item.icon} size={22}/><span>{item.label}</span></button>)}</nav>}
   </div>;

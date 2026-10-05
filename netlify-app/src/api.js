@@ -273,10 +273,90 @@ export async function getTeacherWorkspace(userId) {
   return rows?.[0] || null;
 }
 
+export async function updateTeacherWorkspaceAndSettings(workspaceId,input) {
+  if (!workspaceId) throw new Error("مساحة المعلم غير محددة.");
+  const result=await rpc("update_teacher_workspace_and_settings",{
+    p_workspace_id:workspaceId,
+    p_display_name:String(input?.displayName||"").trim(),
+    p_timezone:String(input?.timezone||"").trim(),
+    p_late_cancellation_hours:Number(input?.lateCancellationHours),
+    p_leaderboard_privacy:input?.leaderboardPrivacy,
+    p_first_place_reward:Number(input?.firstPlaceReward),
+    p_second_place_reward:Number(input?.secondPlaceReward),
+    p_third_place_reward:Number(input?.thirdPlaceReward),
+  });
+  return Array.isArray(result)?result[0]:result;
+}
+
 export async function getTeacherSettings(workspaceId) {
   if (!workspaceId) return null;
   const rows = await rest(`/teacher_settings?workspace_id=eq.${encodeURIComponent(workspaceId)}&select=*&limit=1`);
   return rows?.[0] || null;
+}
+
+export async function updateTeacherSettings(workspaceId,input) {
+  if (!workspaceId) throw new Error("مساحة المعلم غير محددة.");
+  const payload={
+    late_cancellation_hours:Math.max(0,Math.min(168,Number(input?.lateCancellationHours)||0)),
+    leaderboard_privacy:["first_name_initial","first_name_only","hidden"].includes(input?.leaderboardPrivacy)?input.leaderboardPrivacy:"first_name_initial",
+    first_place_reward:Math.max(0,Number(input?.firstPlaceReward)||0),
+    second_place_reward:Math.max(0,Number(input?.secondPlaceReward)||0),
+    third_place_reward:Math.max(0,Number(input?.thirdPlaceReward)||0),
+  };
+  const rows=await rest("/teacher_settings?workspace_id=eq."+encodeURIComponent(workspaceId),{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify(payload),
+  });
+  return rows?.[0]||null;
+}
+
+export async function listSaasPlans(includeInactive=false) {
+  const activeFilter=includeInactive?"":"active=eq.true&";
+  return rest(`/saas_plans?${activeFilter}select=id,code,name_ar,description_ar,currency,monthly_price,yearly_price,active,sort_order,features,limits&order=sort_order.asc,created_at.asc`);
+}
+
+export async function getTeacherSubscription(workspaceId) {
+  if (!workspaceId) return null;
+  const rows = await rest(`/teacher_subscriptions?workspace_id=eq.${encodeURIComponent(workspaceId)}&select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,created_at,updated_at,plan:saas_plans(id,code,name_ar,description_ar,currency,monthly_price,yearly_price,active)&limit=1`);
+  return rows?.[0] || null;
+}
+
+export async function upsertSaasPlan(input) {
+  const result=await rpc("upsert_saas_plan",{
+    p_plan_id:input?.id||null,
+    p_code:String(input?.code||"").trim(),
+    p_name_ar:String(input?.nameAr||"").trim(),
+    p_description_ar:String(input?.descriptionAr||"").trim(),
+    p_currency:String(input?.currency||"EGP").trim().toUpperCase(),
+    p_monthly_price:Number(input?.monthlyPrice)||0,
+    p_yearly_price:input?.yearlyPrice===""||input?.yearlyPrice==null?null:Number(input.yearlyPrice),
+    p_active:input?.active!==false,
+    p_sort_order:Number(input?.sortOrder)||0,
+    p_features:input?.features&&typeof input.features==="object"?input.features:{},
+    p_limits:input?.limits&&typeof input.limits==="object"?input.limits:{},
+  });
+  return Array.isArray(result)?result[0]:result;
+}
+
+export async function listTeacherSubscriptions(limit=100) {
+  const bounded=Math.max(1,Math.min(200,Number(limit)||100));
+  return rest(`/teacher_subscriptions?select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,updated_at,workspace:teacher_workspaces(id,display_name,owner_teacher_user_id,timezone,status),plan:saas_plans(id,code,name_ar,monthly_price,yearly_price,currency,active)&order=updated_at.desc&limit=${bounded}`);
+}
+
+export async function selectTeacherPlan(workspaceId,planId) {
+  const result=await rpc("select_teacher_subscription_plan",{p_workspace_id:workspaceId,p_plan_id:planId});
+  return Array.isArray(result)?result[0]:result;
+}
+
+export async function setTeacherSubscriptionManual(workspaceId,planId,currentPeriodEnd,reason) {
+  const result=await rpc("set_teacher_subscription_manual",{
+    p_workspace_id:workspaceId,
+    p_plan_id:planId,
+    p_current_period_end:currentPeriodEnd||null,
+    p_reason:String(reason||"").trim(),
+  });
+  return Array.isArray(result)?result[0]:result;
 }
 
 export async function createEnrollmentInvite(parentEmail, sessionRate = 0) {
@@ -344,6 +424,18 @@ export async function hasChildModePin() {
   return Array.isArray(result) ? Boolean(result[0]) : Boolean(result);
 }
 
+export async function listTeacherGameSessions(childId, limit = 20) {
+  if (!childId) return [];
+  const bounded = Math.max(1, Math.min(100, Number(limit) || 20));
+  return rest(`/game_sessions?child_id=eq.${encodeURIComponent(childId)}&completed=eq.true&select=*&order=updated_at.desc.nullslast,created_at.desc&limit=${bounded}`);
+}
+
+export async function listTeacherGameEvents(childId, limit = 100) {
+  if (!childId) return [];
+  const bounded = Math.max(1, Math.min(200, Number(limit) || 100));
+  return rest(`/game_ayah_events?child_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${bounded}`);
+}
+
 export async function getStudentWallet(childId) {
   if (!childId) return { wallet_balance: 0, lifetime_points: 0 };
   const rows = await rest(`/student_wallets?student_id=eq.${encodeURIComponent(childId)}&select=student_id,wallet_balance,lifetime_points,updated_at&limit=1`);
@@ -367,9 +459,54 @@ export async function purchaseGameUnlock(childId, gameId) {
   return rpc("purchase_game_unlock", { p_child_id: childId, p_game_id: gameId });
 }
 
+export async function ensureLessonReminder(sessionId) {
+  if (!sessionId) return null;
+  return rpc("ensure_lesson_reminder",{p_session_id:sessionId});
+}
+
+export async function listNotifications(userId, limit = 30) {
+  if (!userId) return [];
+  const bounded=Math.max(1,Math.min(100,Number(limit)||30));
+  return rest(`/notifications?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc&limit=${bounded}`);
+}
+
+export async function markNotificationRead(notificationId) {
+  if (!notificationId) return null;
+  const rows=await rest(`/notifications?id=eq.${encodeURIComponent(notificationId)}`,{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({read_at:new Date().toISOString()})
+  });
+  return rows?.[0]||null;
+}
+
+export async function markAllNotificationsRead(userId) {
+  if (!userId) return [];
+  return rest(`/notifications?user_id=eq.${encodeURIComponent(userId)}&read_at=is.null`,{
+    method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify({read_at:new Date().toISOString()})
+  });
+}
+
 export async function listPointLedger(childId, limit = 50) {
   if (!childId) return [];
   return rest(`/point_ledger?student_id=eq.${encodeURIComponent(childId)}&select=*&order=created_at.desc&limit=${Math.min(100,Math.max(1,Number(limit)||50))}`);
+}
+
+export async function grantTeacherBonus(enrollmentId, points, reason) {
+  return rpc("grant_teacher_bonus", {
+    p_enrollment_id: enrollmentId,
+    p_points: Math.max(1, Math.min(100000, Number(points) || 0)),
+    p_reason: String(reason || "").trim(),
+  });
+}
+
+export async function reversePointTransaction(transactionId, reason) {
+  return rpc("reverse_point_transaction", {
+    p_transaction_id: transactionId,
+    p_reason: String(reason || "").trim(),
+  });
 }
 
 async function hydrateTaskAssignments(assignments = []) {
@@ -518,8 +655,9 @@ export async function teacherEnrollmentOverview(userId) {
     getTeacherWorkspace(userId),listTeacherEnrollments(userId),listTeacherInvites(userId)
   ]);
   const settings = workspace ? await getTeacherSettings(workspace.id).catch(()=>null) : null;
+  const subscription = workspace ? await getTeacherSubscription(workspace.id).catch(()=>null) : null;
   const childIds = [...new Set(enrollments.map(e=>e.student_id).filter(Boolean))];
-  if (!childIds.length) return { workspace, settings, enrollments, invites, students: [], reviewsToday: 0 };
+  if (!childIds.length) return { workspace, settings, subscription, enrollments, invites, students: [], reviewsToday: 0 };
   const progressFilter = childIds.map(id=>`child_id.eq.${id}`).join(",");
   const [progress,reviews] = await Promise.all([
     rest(`/learning_progress?or=(${progressFilter})&select=child_id,memorized_percent,review_percent,status,last_activity_at`),
@@ -543,7 +681,7 @@ export async function teacherEnrollmentOverview(userId) {
       classes:[],
     };
   });
-  return { workspace, settings, enrollments, invites, students, reviewsToday:(reviews||[]).length };
+  return { workspace, settings, subscription, enrollments, invites, students, reviewsToday:(reviews||[]).length };
 }
 
 export async function getProgress(childId) {

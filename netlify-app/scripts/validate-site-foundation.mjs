@@ -7,7 +7,7 @@ const root=path.resolve(here,"..");
 const repo=path.resolve(root,"..");
 function fail(message){console.error(`SITE FOUNDATION VALIDATION FAILED: ${message}`);process.exitCode=1;}
 
-const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=await Promise.all([
+const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child,router,routerUi]=await Promise.all([
   fs.readFile(path.join(root,"src/main.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/ui-v4.css"),"utf8"),
   fs.readFile(path.join(root,"src/brand-identity.css"),"utf8"),
@@ -19,6 +19,8 @@ const [main,ui,brand,assetsDoc,wpDoc,cmsSql,tafsirSql,newHub,family,home,child]=
   fs.readFile(path.join(root,"src/FamilyPage.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/HomePage.jsx"),"utf8"),
   fs.readFile(path.join(root,"src/ChildHub.jsx"),"utf8"),
+  fs.readFile(path.join(root,"src/RootRouter.jsx"),"utf8"),
+  fs.readFile(path.join(root,"src/ui-v4.jsx"),"utf8"),
 ]);
 
 const imports=[...main.matchAll(/import\s+["'](\.\/[^"']+\.css)["']/g)].map(m=>m[1]);
@@ -31,6 +33,8 @@ for(const legacy of [
   "./real-child-art-fix.css","./site-design.css"
 ])if(imports.includes(legacy))fail(`legacy page visual layer is still imported: ${legacy}`);
 for(const token of ["--aa-ink","--aa-blue",".aa-app",".aa-home-hero",".aa-world-grid",".aa-login-shell",".aa-surah-grid",".aa-game-grid"])if(!ui.includes(token))fail(`UI v4 is missing ${token}`);
+const malformedHex=[...ui.matchAll(/#[0-9A-Fa-f]+(?![0-9A-Fa-f])/g)].map(m=>m[0]).filter(token=>![3,4,6,8].includes(token.length-1));
+if(malformedHex.length)fail(`UI v4 contains malformed hex colors: ${[...new Set(malformedHex)].join(", ")}`);
 for(const color of ["#1E6F5C","#4EA8DE","#E9C46A","#F7F6F0","#2B2D42"])if(!brand.includes(color))fail(`brand identity is missing official palette color ${color}`);
 for(const forbidden of ["#EE91BC","#A38BE0","#D4649D"]){if(brand.toUpperCase().includes(forbidden))fail(`brand identity reintroduced an off-palette hue ${forbidden}`);}
 for(const component of [home,child]){
@@ -38,6 +42,8 @@ for(const component of [home,child]){
   if(/homeV2|child-world-home|kidsHeroScene|real-child-hero-img/.test(component))fail("legacy homepage/child markup leaked into UI v4");
 }
 if(main.includes("installRealChildArt")||main.includes("RealChildArt"))fail("DOM artwork injection must not return; artwork belongs in React markup");
+if(!router.includes("function routeKey()")||!router.includes("const route=usePath(),path=route.split(\"?\")[0]"))fail("router must preserve query changes without treating query as a route");
+if(!routerUi.includes('const currentKey=routePath()+(window.location.search||"")'))fail("ui router helper must compare query-aware navigation keys");
 for(const source of ["Opened Qur'an","Sundanese Muslim children","Sultan Hassan","CC BY 2.0","CC BY-SA 4.0"])if(!assetsDoc.includes(source))fail(`visual asset documentation missing ${source}`);
 for(const table of ["cms_content","cms_content_meta","cms_terms","cms_taxonomies","cms_term_relationships","cms_media","cms_options","cms_navigation"])if(!cmsSql.includes(`public.${table}`))fail(`CMS migration missing ${table}`);
 for(const mapping of ["wp_posts","wp_postmeta","wp_terms","wp_term_taxonomy","wp_term_relationships","wp_options"])if(!wpDoc.includes(mapping))fail(`WordPress migration guide missing ${mapping}`);

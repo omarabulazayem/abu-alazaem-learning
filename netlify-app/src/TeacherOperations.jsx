@@ -5,7 +5,7 @@ import {
   setRecurringScheduleRuleActive,waiveSessionCharge
 } from "./api.js";
 import Icon from "./Icon.jsx";
-import {Button,Empty,Hero,Metric,Section} from "./ui-v4.jsx";
+import {Button,Empty,Hero,Metric,Section,getLessonContext,saveLessonContext,go} from "./ui-v4.jsx";
 
 const DAY_NAMES=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 const STATUS_LABELS={
@@ -96,6 +96,24 @@ export function TeacherSchedulePanel({data}){
     finally{setBusy(false);}
   }
 
+  async function startLesson(row,student){
+    const current=getLessonContext();
+    const sameEnrollment=current?.enrollmentId===row.enrollment_id;
+    const next={
+      ...(sameEnrollment?current:{}),
+      sessionId:row.id,
+      studentId:student?.id,
+      enrollmentId:row.enrollment_id,
+      workspaceId:student?.workspaceId||data.workspace?.id,
+      studentName:student?.display_name||"الطالب",
+      scheduledStartUtc:row.scheduled_start_utc,
+      scheduledEndUtc:row.scheduled_end_utc,
+      phase:"شرح"
+    };
+    saveLessonContext(next);
+    go("/teacher/whiteboard?autostart=1");
+  }
+
   const upcoming=sessions.filter(s=>new Date(s.scheduled_start_utc)>=new Date()||s.status!=="SCHEDULED").slice(0,40);
   const scheduledCount=sessions.filter(s=>s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date()).length;
 
@@ -158,7 +176,8 @@ export function TeacherSchedulePanel({data}){
               <input value={notes[row.id]||""} onChange={e=>setNotes(v=>({...v,[row.id]:e.target.value}))} maxLength="400"/>
             </label>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:10}}>
-              <Button onClick={()=>finalize(row,"COMPLETED")} disabled={busy} icon="circleCheck">مكتملة</Button>
+              <Button onClick={()=>startLesson(row,student)} disabled={busy} icon="teacher">بدء الحصة</Button>
+                            <Button onClick={()=>finalize(row,"COMPLETED")} disabled={busy} icon="circleCheck">مكتملة</Button>
               <Button kind="secondary" onClick={()=>finalize(row,"STUDENT_NO_SHOW")} disabled={busy}>غياب الطالب</Button>
               <Button kind="secondary" onClick={()=>finalize(row,"TEACHER_NO_SHOW")} disabled={busy}>غياب المعلم</Button>
               <Button kind="ghost" onClick={()=>cancel(row)} disabled={busy} icon="close">إلغاء</Button>

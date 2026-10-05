@@ -1,9 +1,10 @@
 import React,{useEffect,useState} from "react";
 import {
-  acceptEnrollmentInvite,createChild,getActiveChildId,getCurrentUser,hasChildModePin,
-  listChildTaskAssignments,listChildren,listParentEnrollments,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
+  acceptEnrollmentInvite,cancelSession,createChild,ensureLessonReminder,getActiveChildId,getCurrentUser,hasChildModePin,
+  listChildTaskAssignments,listChildren,listParentEnrollments,listPointLedger,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
+import NotificationsPanel from "./NotificationsPanel.jsx";
 import {AppShell,Button,Card,Empty,FAMILY_NAV,Hero,Metric,Section,go} from "./ui-v4.jsx";
 
 function genderLabel(v){return v==="male"?"ولد":v==="female"?"بنت":"غير محدد";}
@@ -14,9 +15,19 @@ function formatDate(value){if(!value)return "—";try{return new Intl.DateTimeFo
 function sessionStatusLabel(v){return ({SCHEDULED:"مجدولة",COMPLETED:"مكتملة",STUDENT_NO_SHOW:"غياب الطالب",TEACHER_NO_SHOW:"غياب المعلم",EARLY_CANCELLATION:"إلغاء مبكر",LATE_CANCELLATION:"إلغاء متأخر",RESCHEDULED:"أعيدت جدولتها",CANCELLED:"ملغاة"}[v]||v||"");}
 function billingStatusLabel(v){return ({DUE:"مستحق",PAID:"مدفوع",WAIVED:"معفى"}[v]||v||"");}
 const PENDING_INVITE_KEY="abu-alazaem-pending-enrollment-invite";
+function familyNotificationFocus(){
+  const params=new URLSearchParams(window.location.search);
+  return {
+    studentId:params.get("student")||"",
+    assignmentId:params.get("assignment")||"",
+    sessionId:params.get("session")||"",
+    transactionId:params.get("transaction")||"",
+    billingId:params.get("billing")||""
+  };
+}
 
 export default function FamilyPage(){
-  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[tasks,setTasks]=useState([]),[sessions,setSessions]=useState([]),[billing,setBilling]=useState([]);
+  const [user,setUser]=useState(undefined),[kids,setKids]=useState([]),[enrollments,setEnrollments]=useState([]),[wallets,setWallets]=useState([]),[pointLedger,setPointLedger]=useState([]),[tasks,setTasks]=useState([]),[sessions,setSessions]=useState([]),[billing,setBilling]=useState([]);
   const [taskNotes,setTaskNotes]=useState({});
   const [name,setName]=useState(""),[ageYears,setAgeYears]=useState(8),[gender,setGender]=useState("unspecified");
   const [editingId,setEditingId]=useState(null),[editForm,setEditForm]=useState(null);
@@ -28,6 +39,13 @@ export default function FamilyPage(){
   });
   const [inviteChild,setInviteChild]=useState("");
   const [busy,setBusy]=useState(false),[msg,setMsg]=useState(""),[err,setErr]=useState("");
+  const [notificationFocus,setNotificationFocus]=useState(familyNotificationFocus);
+
+  useEffect(()=>{
+    const sync=()=>setNotificationFocus(familyNotificationFocus());
+    window.addEventListener("popstate",sync);
+    return()=>window.removeEventListener("popstate",sync);
+  },[]);
 
   async function load(current=user){
     if(!current)return;
@@ -37,30 +55,45 @@ export default function FamilyPage(){
       listVisibleSessions({from,to}).catch(()=>[]),listSessionBillingEntries().catch(()=>[])
     ]);
     setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);setSessions(sessionRows||[]);setBilling(billingRows||[]);
+    const focus=familyNotificationFocus();
     const active=getActiveChildId();
-    const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
+    const selected=(children||[]).find(x=>x.id===focus.studentId)||(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
     if(selected&&selected.id!==active)setActiveChildId(selected.id);
     if(selected&&!inviteChild)setInviteChild(selected.id);
-    setTasks(selected?await listChildTaskAssignments(selected.id).catch(()=>[]):[]);
+    const activeEnrollmentIds=new Set((links||[]).filter(e=>e.student_id===selected?.id).map(e=>e.id));
+    const reminderSessions=(sessionRows||[]).filter(row=>activeEnrollmentIds.has(row.enrollment_id)&&row.status==="SCHEDULED"&&new Date(row.scheduled_start_utc)>new Date()&&new Date(row.scheduled_start_utc)<=new Date(Date.now()+24*60*60*1000));
+    if(reminderSessions.length){
+      await Promise.all(reminderSessions.map(row=>ensureLessonReminder(row.id).catch(()=>null)));
+      if(typeof window!=="undefined")window.dispatchEvent(new Event("abu-notifications"));
+    }
+    const [selectedTasks,selectedLedger]=selected?await Promise.all([listChildTaskAssignments(selected.id).catch(()=>[]),listPointLedger(selected.id,30).catch(()=>[])]):[[],[]];
+    setTasks(selectedTasks||[]);setPointLedger(selectedLedger||[]);
   }
 
-  useEffect(()=>{let alive=true;(async()=>{try{
-    const current=await getCurrentUser();if(!alive)return;
-    if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
-    setUser(current);
-    const from=new Date(Date.now()-30*86400000),to=new Date(Date.now()+90*86400000);
-    const [children,links,pinState,walletRows,sessionRows,billingRows]=await Promise.all([
-      listChildren(current),listParentEnrollments(),hasChildModePin().catch(()=>false),listStudentWallets().catch(()=>[]),
-      listVisibleSessions({from,to}).catch(()=>[]),listSessionBillingEntries().catch(()=>[])
-    ]);
-    if(!alive)return;
-    setKids(children||[]);setEnrollments(links||[]);setPinReady(Boolean(pinState));setWallets(walletRows||[]);setSessions(sessionRows||[]);setBilling(billingRows||[]);
-    const active=getActiveChildId();
-    const selected=(children||[]).find(x=>x.id===active)||(children||[])[0]||null;
-    if(selected&&selected.id!==active)setActiveChildId(selected.id);
-    if(selected)setInviteChild(selected.id);
-    setTasks(selected?await listChildTaskAssignments(selected.id).catch(()=>[]):[]);
-  }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}})();return()=>{alive=false;};},[]);
+  useEffect(()=>{let alive=true;(async()=>{
+    try{
+      const current=await getCurrentUser();if(!alive)return;
+      if(!current){if(inviteToken)localStorage.setItem(PENDING_INVITE_KEY,inviteToken);return go("/login");}
+      setUser(current);
+      await load(current);
+    }catch(e){if(alive)setErr(e.message||"تعذر تحميل حساب الأسرة.");}
+  })();return()=>{alive=false;};},[]);
+
+  useEffect(()=>{
+    if(user===undefined)return;
+    const focus=notificationFocus;
+    const targetId=focus.assignmentId||focus.sessionId||focus.transactionId||focus.billingId;
+    if(!targetId)return;
+    const attr=focus.assignmentId?"data-assignment-id":focus.sessionId?"data-session-id":focus.transactionId?"data-transaction-id":"data-billing-id";
+    const node=document.querySelector("["+attr+"=\""+targetId+"\"]");
+    if(!node)return;
+    node.scrollIntoView({behavior:"smooth",block:"center"});
+    node.classList.add("aa-notification-focus");
+    const timer=setTimeout(()=>node.classList.remove("aa-notification-focus"),2400);
+    history.replaceState({},"",window.location.pathname);
+    setNotificationFocus({studentId:"",assignmentId:"",sessionId:"",transactionId:"",billingId:""});
+    return()=>clearTimeout(timer);
+  },[user,notificationFocus,tasks.length,sessions.length,pointLedger.length,billing.length]);
 
   async function addChild(e){e.preventDefault();if(!user)return;setBusy(true);setErr("");setMsg("");
     try{
@@ -107,13 +140,24 @@ export default function FamilyPage(){
     finally{setBusy(false);}
   }
 
+  async function cancelLesson(row){
+    const reason=window.prompt("سبب إلغاء الحصة (اختياري):","")||"";
+    if(!window.confirm("تأكيد إلغاء هذه الحصة؟ سيتم تطبيق سياسة الإلغاء الخاصة بالمعلم تلقائيًا."))return;
+    setBusy(true);setErr("");setMsg("");
+    try{
+      const result=await cancelSession(row.id,reason);
+      setMsg(result?.status==="LATE_CANCELLATION"?"تم إلغاء الحصة كإلغاء متأخر وفق سياسة المعلم.":"تم إلغاء الحصة.");
+      await load(user);
+    }catch(e){setErr(e.message||"تعذر إلغاء الحصة.");}
+    finally{setBusy(false);}
+  }
   async function logout(){await signOut();go("/");}
   const active=getActiveChildId(),activeChild=kids.find(k=>k.id===active)||kids[0]||null;
   const activeLinks=enrollments.filter(e=>e.student_id===activeChild?.id);
   const activeWallet=wallets.find(w=>w.student_id===activeChild?.id)||{wallet_balance:0,lifetime_points:0};
   const activeEnrollmentIds=new Set(activeLinks.map(e=>e.id));
   const childSessions=sessions.filter(s=>activeEnrollmentIds.has(s.enrollment_id));
-  const upcomingSessions=childSessions.filter(s=>s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date()).slice(0,5);
+  const upcomingSessions=childSessions.filter(s=>(s.status==="SCHEDULED"&&new Date(s.scheduled_start_utc)>=new Date())||s.id===notificationFocus.sessionId).slice(0,8);
   const childBilling=billing.filter(b=>activeEnrollmentIds.has(b.enrollment_id));
   const dueTotal=childBilling.filter(b=>b.status==="DUE").reduce((sum,b)=>sum+Number(b.amount||0),0);
   if(user===undefined)return <div className="center"><i className="spinner"/><p>جارٍ تجهيز حساب الأسرة...</p></div>;
@@ -123,6 +167,8 @@ export default function FamilyPage(){
     footer="أبو العزايم • ولي الأمر يملك ملف الطفل والمعلم يرتبط به عبر Enrollment.">
     <Hero eyebrow="حساب الأسرة" title={`أهلًا ${user?.name||"بك"}`}
       description="ملف الطفل ملك للأسرة. اربطه بأكثر من معلم من خلال دعوات آمنة، وادخل وضع الطفل برقم سري مستقل." icon="family" tone="sky"/>
+    <NotificationsPanel userId={user?.id} title="تنبيهات الأسرة" limit={6} mode="family"/>
+
     {err&&<div className="msg error">{err}</div>}{msg&&<div className="msg ok">{msg}</div>}
 
     {inviteToken&&<Section eyebrow="دعوة معلم" title="اختر الطفل الذي سيدرس مع هذا المعلم" description="الدعوة لا تنشئ ملف طفل جديد؛ تضيف Enrollment للملف الذي تختاره.">
@@ -139,17 +185,26 @@ export default function FamilyPage(){
       <Metric icon="flame" label="الاستمرار" value={`${activeChild.streak||0} يوم`} tone="mint"/>
     </div>}
 
+    <Section eyebrow="حركة الرصيد" title="سجل نقاط الطفل" description="يوضح من أين جاءت النقاط ومتى استُخدمت أو سُحبت.">
+      {pointLedger.length?<div className="aa-table-list">{pointLedger.slice(0,12).map((row,index)=>{
+        const delta=Number(row.wallet_delta||0);
+        const labels={TASK_APPROVED:"اعتماد مهمة",TEACHER_BONUS:"مكافأة معلم",GAME_PURCHASE:"شراء لعبة",WEEKLY_REWARD:"مكافأة أسبوعية",POINT_REVERSAL:"سحب نقاط",ADMIN_ADJUSTMENT:"تعديل إداري",LEGACY_REWARD:"مكافأة قديمة",LEGACY_BALANCE_IMPORT:"ترحيل رصيد"};
+        return <article className="aa-table-row" data-transaction-id={row.id} key={row.id||index}><span><Icon name={delta<0?"arrow":"star"} size={20}/></span><div><b>{labels[row.transaction_type]||row.transaction_type||"حركة نقاط"}</b><small>{formatDate(row.created_at)}{row.reason?" • "+row.reason:""}</small></div><strong>{delta>0?"+":""}{delta} نقطة</strong></article>;
+      })}</div>:<Empty icon="star" title="لا توجد حركة نقاط بعد" text="تظهر هنا المكافآت واعتمادات المهام وعمليات شراء الألعاب وسحب النقاط."/>}
+    </Section>
+
     <Section eyebrow="الجدول" title="الحصص القادمة" description="المواعيد تُدار حسب توقيت المعلم وتظهر هنا كتوقيت فعلي للحصة.">
       {upcomingSessions.length?<div className="aa-table-list">{upcomingSessions.map(row=>{
         const link=enrollments.find(e=>e.id===row.enrollment_id);
-        return <article className="aa-table-row" key={row.id}>
-          <span><Icon name="clock" size={21}/></span><div><b>{formatDate(row.scheduled_start_utc)}</b><small>{link?.workspace?.display_name||"المعلم"} • {sessionStatusLabel(row.status)} • Teacher TZ: {link?.workspace?.timezone||"—"}</small></div><strong>{money(link?.session_rate||0)}</strong>
+        return <article className="aa-table-row" data-session-id={row.id} key={row.id}>
+          <span><Icon name="clock" size={21}/></span><div><b>{formatDate(row.scheduled_start_utc)}</b><small>{link?.workspace?.display_name||"المعلم"} • {sessionStatusLabel(row.status)} • Teacher TZ: {link?.workspace?.timezone||"—"}</small></div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><strong>{money(link?.session_rate||0)}</strong>{row.status==="SCHEDULED"&&new Date(row.scheduled_start_utc)>new Date()&&<Button kind="ghost" onClick={()=>cancelLesson(row)} disabled={busy}>إلغاء الحصة</Button>}</div>
         </article>;
       })}</div>:<Empty icon="clock" title="لا توجد حصص قادمة لهذا الطفل"/>}
     </Section>
 
     <Section eyebrow="متابعة التعلم" title="مهام المعلم" description="ولي الأمر يرسل الإنجاز، والمعلم هو من يراجع ويعتمد النقاط.">
-      {activeChild?(tasks.length?<div className="aa-person-list">{tasks.map(row=><article className="aa-person-card" key={row.id}>
+      {activeChild?(tasks.length?<div className="aa-person-list">{tasks.map(row=><article className="aa-person-card" data-assignment-id={row.id} key={row.id}>
         <div className="aa-person-head"><span className="aa-avatar"><Icon name={row.status==="approved"?"circleCheck":"target"} size={25}/></span><div>
           <b>{row.task?.title||"مهمة"}</b>
           <small>{taskTypeLabel(row.task?.task_type)} • {row.task?.points_reward||0} نقطة بعد اعتماد المعلم • التسليم {formatDate(row.due_at)}</small>
@@ -205,7 +260,7 @@ export default function FamilyPage(){
       {childBilling.length?<div className="aa-table-list">{childBilling.map(entry=>{
         const session=childSessions.find(s=>s.id===entry.session_id);
         const link=enrollments.find(e=>e.id===entry.enrollment_id);
-        return <article className="aa-table-row" key={entry.id}>
+        return <article className="aa-table-row" data-billing-id={entry.id} key={entry.id}>
           <span><Icon name="chart" size={21}/></span><div><b>{money(entry.amount)} — {billingStatusLabel(entry.status)}</b><small>{link?.workspace?.display_name||"المعلم"} • {session?formatDate(session.scheduled_start_utc):"حصة"} • {sessionStatusLabel(entry.auto_charge_reason)}</small>{entry.override_reason&&<small>سبب الإعفاء: {entry.override_reason}</small>}</div><strong>{entry.status}</strong>
         </article>;
       })}</div>:<Empty icon="chart" title="لا توجد استحقاقات لهذا الطفل بعد"/>}
