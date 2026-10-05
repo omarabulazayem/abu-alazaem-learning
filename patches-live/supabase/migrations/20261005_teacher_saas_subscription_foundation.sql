@@ -360,6 +360,91 @@ begin
 end;
 $$;
 
+
+create or replace function public.notify_teacher_subscription_changed()
+returns trigger
+language plpgsql
+security definer
+set search_path=public
+as $
+declare
+  v_title text;
+  v_body text;
+  v_plan_name text;
+begin
+  if tg_op='INSERT' and new.status='PENDING_PLAN' and new.plan_id is null then
+    return new;
+  end if;
+
+  if tg_op='UPDATE'
+     and new.status=old.status
+     and new.plan_id is not distinct from old.plan_id
+     and new.current_period_end is not distinct from old.current_period_end
+     and new.cancel_at_period_end=old.cancel_at_period_end
+     and new.grace_until is not distinct from old.grace_until
+  then
+    return new;
+  end if;
+
+  select name_ar into v_plan_name
+  from public.saas_plans
+  where id=new.plan_id;
+
+  case new.status
+    when 'ACTIVE' then
+      v_title:='تم تفعيل اشتراك المنصة';
+      v_body:='اشتراكك في خطة '||coalesce(v_plan_name,'الاشتراك الحالي')||' أصبح نشطًا.';
+    when 'TRIALING' then
+      v_title:='بدأت الفترة التجريبية';
+      v_body:='تم تفعيل الفترة التجريبية لاشتراكك.';
+    when 'PAST_DUE' then
+      v_title:='يوجد تعثر في سداد الاشتراك';
+      v_body:='حالة اشتراك المنصة أصبحت متأخرة السداد. راجع صفحة الاشتراك.';
+    when 'CANCELLED' then
+      v_title:='تم إلغاء اشتراك المنصة';
+      v_body:='تم تسجيل إلغاء اشتراك المنصة.';
+    when 'SUSPENDED' then
+      v_title:='تم تعليق اشتراك المنصة';
+      v_body:='تم تعليق اشتراكك في المنصة. راجع صفحة الاشتراك أو تواصل مع الدعم.';
+    when 'EXPIRED' then
+      v_title:='انتهى اشتراك المنصة';
+      v_body:='انتهت فترة اشتراك المنصة الحالية.';
+    when 'MANUAL' then
+      v_title:='تم تفعيل الاشتراك يدويًا';
+      v_body:='تم تسجيل تفعيل استثنائي لاشتراك المنصة.';
+    else
+      return new;
+  end case;
+
+  perform public.create_notification(
+    tw.owner_teacher_user_id,
+    'SAAS_SUBSCRIPTION_CHANGED',
+    v_title,
+    v_body,
+    jsonb_build_object(
+      'subscription_id',new.id,
+      'workspace_id',new.workspace_id,
+      'plan_id',new.plan_id,
+      'status',new.status,
+      'current_period_end',new.current_period_end,
+      'cancel_at_period_end',new.cancel_at_period_end
+    )
+  )
+  from public.teacher_workspaces tw
+  where tw.id=new.workspace_id;
+
+  return new;
+end;
+$;
+
+drop trigger if exists teacher_subscription_notification_changed on public.teacher_subscriptions;
+create trigger teacher_subscription_notification_changed
+after insert or update of status,plan_id,current_period_end,cancel_at_period_end,grace_until
+on public.teacher_subscriptions
+for each row execute function public.notify_teacher_subscription_changed();
+
+revoke execute on function public.notify_teacher_subscription_changed() from public,anon,authenticated;
+
 revoke all on public.saas_plans from anon,authenticated;
 revoke all on public.teacher_subscriptions from anon,authenticated;
 revoke all on public.teacher_subscription_events from anon,authenticated;
