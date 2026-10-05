@@ -1,6 +1,6 @@
 import React,{useEffect,useState} from "react";
 import {
-  acceptEnrollmentInvite,createChild,ensureLessonReminder,getActiveChildId,getCurrentUser,hasChildModePin,
+  acceptEnrollmentInvite,cancelSession,createChild,ensureLessonReminder,getActiveChildId,getCurrentUser,hasChildModePin,
   listChildTaskAssignments,listChildren,listParentEnrollments,listPointLedger,listSessionBillingEntries,listStudentWallets,listVisibleSessions,setActiveChildId,setChildModePin,signOut,submitTaskAssignment,updateChild
 } from "./api.js";
 import Icon from "./Icon.jsx";
