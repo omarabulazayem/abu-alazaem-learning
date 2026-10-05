@@ -37,14 +37,20 @@ import {isTeacherRestrictedRoute} from "./accessPolicy.js";
 const childSafeRoutes=new Set(["/child","/quran","/memorize","/review","/games","/achievements","/challenges","/room","/leaderboard"]);
 const teacherPreviewPages=new Set(["/quran","/memorize","/review","/achievements","/challenges"]);
 function readPath(){return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;}
-function navigate(path,replace=false){if(readPath()===path)return;if(replace)history.replaceState({},"",path);else history.pushState({},"",path);window.dispatchEvent(new PopStateEvent("popstate"));}
+function routeKey(){return readPath()+(window.location.search||"");}
+function navigate(path,replace=false){
+  const target=new URL(path,window.location.href);
+  if(routeKey()===target.pathname+(target.search||""))return;
+  if(replace)history.replaceState({},"",path);else history.pushState({},"",path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 function isChildSafeRoute(path){return childSafeRoutes.has(path)||path.startsWith("/games/");}
-function usePath(){const [path,setPath]=useState(readPath);useEffect(()=>{const sync=()=>setPath(readPath());window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);return path;}
+function usePath(){const [key,setKey]=useState(routeKey);useEffect(()=>{const sync=()=>setKey(routeKey());window.addEventListener("popstate",sync);return()=>window.removeEventListener("popstate",sync);},[]);return key;}
 function useChildMode(){const [active,setActive]=useState(()=>isChildModeActive());useEffect(()=>{const sync=()=>setActive(isChildModeActive());window.addEventListener("abu-child-mode",sync);window.addEventListener("storage",sync);return()=>{window.removeEventListener("abu-child-mode",sync);window.removeEventListener("storage",sync);};},[]);return active;}
 function useAccountType(){const [role,setRole]=useState(undefined);useEffect(()=>{let alive=true;const sync=async()=>{try{const user=await getCurrentUser();if(alive)setRole(user?.accountType||null);}catch{if(alive)setRole(null);}};sync();window.addEventListener("abu-auth",sync);return()=>{alive=false;window.removeEventListener("abu-auth",sync);};},[]);return role;}
 
 export default function RootRouter(){
-  const path=usePath(),childMode=useChildMode(),accountType=useAccountType(),teacher=accountType==="teacher",teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
+  const route=usePath(),path=route.split("?")[0],childMode=useChildMode(),accountType=useAccountType(),teacher=accountType==="teacher",teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
   useEffect(()=>{if(teacherRestricted)navigate("/teacher",true);},[teacherRestricted]);
   if(path==="/teacher/game-reports")return <TeacherGameReports/>;
   if(path==="/teacher/whiteboard"&&teacher)return <WhiteboardPage/>;
