@@ -3,7 +3,9 @@ import path from "node:path";
 
 const root=path.resolve("..");
 const migrationPath=path.join(root,"patches-live","supabase","migrations","20261003_notifications_foundation.sql");
+const reminderMigrationPath=path.join(root,"patches-live","supabase","migrations","20261005_lesson_reminders.sql");
 const migration=fs.readFileSync(migrationPath,"utf8");
+const reminderMigration=fs.readFileSync(reminderMigrationPath,"utf8");
 const api=fs.readFileSync(path.join("src","api.js"),"utf8");
 const panel=fs.readFileSync(path.join("src","NotificationsPanel.jsx"),"utf8");
 const family=fs.readFileSync(path.join("src","FamilyPage.jsx"),"utf8");
@@ -23,6 +25,15 @@ const checks=[
   [migration,"notify_leaderboard_snapshot_created","leaderboard trigger"],
   [migration,"create trigger leaderboard_snapshot_notification_created","leaderboard notification trigger"],
   [migration,"for each row execute function public.notify_leaderboard_snapshot_created();","leaderboard trigger execution"],
+  [reminderMigration,"create or replace function public.ensure_lesson_reminder","lesson reminder RPC"],
+  [reminderMigration,"LESSON_REMINDER","lesson reminder event"],
+  [reminderMigration,"metadata->>'session_id'","reminder idempotency key"],
+  [reminderMigration,"grant execute on function public.ensure_lesson_reminder(uuid) to authenticated","reminder RPC grant"],
+  [api,"export async function ensureLessonReminder","lesson reminder API"],
+  [panel,"LESSON_REMINDER","lesson reminder UI mapping"],
+  [panel,"/family?student="+metadata.student_id+"&session="+metadata.session_id,"lesson reminder deep link"],
+  [family,"ensureLessonReminder","family reminder creation"],
+  [family,"abu-notifications","family notification refresh event"],
 
   [migration,"revoke execute on function public.notify_leaderboard_snapshot_created()","leaderboard trigger revoke"],
   [migration,"notifications_select_own","notifications RLS"],
