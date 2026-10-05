@@ -307,6 +307,21 @@ export async function upsertSaasPlan(input) {
   return Array.isArray(result)?result[0]:result;
 }
 
+export async function listTeacherSubscriptions(limit=100) {
+  const bounded=Math.max(1,Math.min(200,Number(limit)||100));
+  return rest(`/teacher_subscriptions?select=id,workspace_id,plan_id,status,provider,current_period_start,current_period_end,cancel_at_period_end,grace_until,updated_at,workspace:teacher_workspaces(id,display_name,owner_teacher_user_id,timezone,status),plan:saas_plans(id,code,name_ar,monthly_price,yearly_price,currency,active)&order=updated_at.desc&limit=${bounded}`);
+}
+
+export async function setTeacherSubscriptionManual(workspaceId,planId,currentPeriodEnd,reason) {
+  const result=await rpc("set_teacher_subscription_manual",{
+    p_workspace_id:workspaceId,
+    p_plan_id:planId,
+    p_current_period_end:currentPeriodEnd||null,
+    p_reason:String(reason||"").trim(),
+  });
+  return Array.isArray(result)?result[0]:result;
+}
+
 export async function createEnrollmentInvite(parentEmail, sessionRate = 0) {
   const result = await rpc("create_enrollment_invite", {
     p_parent_email: String(parentEmail || "").trim().toLowerCase(),
