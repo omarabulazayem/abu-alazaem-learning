@@ -26,6 +26,9 @@ const checks=[
   [migration,"create trigger leaderboard_snapshot_notification_created","leaderboard notification trigger"],
   [migration,"for each row execute function public.notify_leaderboard_snapshot_created();","leaderboard trigger execution"],
   [reminderMigration,"create or replace function public.ensure_lesson_reminder","lesson reminder RPC"],
+  [reminderMigration,"create or replace function public.materialize_lesson_reminders","background lesson reminder scheduler"],
+  [reminderMigration,"cron.schedule(","lesson reminder cron"],
+  [reminderMigration,"v7-lesson-reminders","lesson reminder cron identity"],
   [reminderMigration,"LESSON_REMINDER","lesson reminder event"],
   [reminderMigration,"metadata->>'session_id'","reminder idempotency key"],
   [reminderMigration,"grant execute on function public.ensure_lesson_reminder(uuid) to authenticated","reminder RPC grant"],
@@ -59,8 +62,8 @@ const checks=[
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
 
-const malformedDollarQuotes=[...migration.matchAll(/as \\$(?!\\$)|\\n\\$(?!\\$);/g),...reminderMigration.matchAll(/as \\$(?!\\$)|\\n\\$(?!\\$);/g)];
-const malformedTaggedQuotes=[...migration.matchAll(/as \\$\\$\\$/g),...migration.matchAll(/\\$\\$\\$;/g),...reminderMigration.matchAll(/as \\$\\$\\$/g),...reminderMigration.matchAll(/\\$\\$\\$;/g)];
+const malformedDollarQuotes=[...migration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g),...reminderMigration.matchAll(/as \$(?!\$)|\n\$(?!\$);/g)];
+const malformedTaggedQuotes=[...migration.matchAll(/as \$\$\$/g),...migration.matchAll(/\$\$\$;/g),...reminderMigration.matchAll(/as \$\$\$/g),...reminderMigration.matchAll(/\$\$\$;/g)];
 if(malformedDollarQuotes.length||malformedTaggedQuotes.length){
   console.error("Notifications SQL validation failed: malformed dollar quoting.");
   process.exit(1);
