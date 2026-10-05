@@ -93,7 +93,7 @@ export default function AdminPortal(){
         <Section eyebrow="Teacher subscriptions" title={subscriptions.length+" اشتراكات مسجلة"}>
           {subscriptions.length?<div className="aa-table-list">{subscriptions.map(row=><article className="aa-table-row" key={row.id}>
             <span><Icon name={row.status==="ACTIVE"||row.status==="MANUAL"?"circleCheck":"chart"} size={21}/></span>
-            <div><b>{row.workspace?.display_name||"مساحة معلم"}</b><small>{row.plan?.name_ar||"بدون خطة"} • الحالة: {row.status} • آخر تحديث: {money(0,"")}<span style={{marginInlineStart:6}}>{new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium"}).format(new Date(row.updated_at))}</span></small></div>
+            <div><b>{row.workspace?.display_name||"مساحة معلم"}</b><small>{row.plan?.name_ar||"بدون خطة"} • الحالة: {row.status} • آخر تحديث: <span style={{marginInlineStart:6}}>{new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium"}).format(new Date(row.updated_at))}</span></small></div>
             <strong>{row.provider||"—"}</strong>
             <Button kind="ghost" onClick={()=>setManual({workspaceId:row.workspace_id,planId:row.plan_id||plans.find(p=>p.active)?.id||"",endAt:row.current_period_end?new Date(row.current_period_end).toISOString().slice(0,16):"",reason:""})}>تفعيل يدوي</Button>
           </article>)}</div>:<Empty icon="teacher" title="لا توجد اشتراكات مسجلة بعد"/>}
