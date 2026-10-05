@@ -57,7 +57,9 @@ export default function NotificationsPanel({userId,title="التنبيهات",li
   useEffect(()=>{
     load();
     const id=setInterval(load,30000);
-    return()=>clearInterval(id);
+    const onNotifications=()=>load();
+    window.addEventListener("abu-notifications",onNotifications);
+    return()=>{clearInterval(id);window.removeEventListener("abu-notifications",onNotifications);};
   },[userId,limit]);
   const visible=rows.slice(0,limit);
   const unread=useMemo(()=>rows.filter(r=>!r.read_at).length,[rows]);
