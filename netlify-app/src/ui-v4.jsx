@@ -10,7 +10,10 @@ export function routePath(){
   return typeof window.__ABU_ROUTE_PATH__==="function"?window.__ABU_ROUTE_PATH__():window.location.pathname;
 }
 export function go(path){
-  if(routePath()===path)return;
+  const target=new URL(path,window.location.href);
+  const currentKey=routePath()+(window.location.search||"");
+  const targetKey=target.pathname+(target.search||"");
+  if(currentKey===targetKey)return;
   history.pushState({},"",path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
