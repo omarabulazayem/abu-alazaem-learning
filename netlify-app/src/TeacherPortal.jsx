@@ -16,6 +16,60 @@ function taskTypeLabel(v){return ({NEW_MEMORIZATION:"حفظ جديد",REVIEW:"م
 function taskStatusLabel(v){return ({assigned:"مطلوبة",pending_teacher_approval:"بانتظار المراجعة",approved:"معتمدة",rejected:"مرفوضة"}[v]||v||"");}
 function Loading(){return <div className="center"><i className="spinner"/><p>جارٍ تجهيز بوابة المعلم...</p></div>;}
 function ErrorBox({text}){return text?<div className="msg error">{text}</div>:null;}
+function TeacherSettingsPanel({data,reloadOverview}){
+  const workspace=data.workspace;
+  const settings=data.settings||{};
+  const [form,setForm]=useState({
+    lateCancellationHours:settings.late_cancellation_hours??24,
+    leaderboardPrivacy:settings.leaderboard_privacy||"first_name_initial",
+    firstPlaceReward:settings.first_place_reward??50,
+    secondPlaceReward:settings.second_place_reward??30,
+    thirdPlaceReward:settings.third_place_reward??20
+  });
+  const [busy,setBusy]=useState(false),[message,setMessage]=useState(""),[error,setError]=useState("");
+  async function save(e){
+    e.preventDefault();if(!workspace?.id)return;
+    setBusy(true);setMessage("");setError("");
+    try{
+      await updateTeacherSettings(workspace.id,form);
+      setMessage("تم حفظ إعدادات الحصة والترتيب.");
+      await reloadOverview?.();
+    }catch(e){setError(e.message||"تعذر حفظ الإعدادات.");}
+    finally{setBusy(false);}
+  }
+  useEffect(()=>{
+    setForm({
+      lateCancellationHours:settings.late_cancellation_hours??24,
+      leaderboardPrivacy:settings.leaderboard_privacy||"first_name_initial",
+      firstPlaceReward:settings.first_place_reward??50,
+      secondPlaceReward:settings.second_place_reward??30,
+      thirdPlaceReward:settings.third_place_reward??20
+    });
+  },[settings.late_cancellation_hours,settings.leaderboard_privacy,settings.first_place_reward,settings.second_place_reward,settings.third_place_reward]);
+  return <Section eyebrow="Workspace Settings" title="إعدادات الحصص والترتيب">
+    {message&&<div className="msg ok">{message}</div>}{error&&<div className="msg error">{error}</div>}
+    <form className="aa-form-card aa-form" onSubmit={save} style={{maxWidth:820}}>
+      <label>مهلة الإلغاء المتأخر بالساعات
+        <input type="number" min="0" max="168" value={form.lateCancellationHours} onChange={e=>setForm(v=>({...v,lateCancellationHours:e.target.value}))}/>
+      </label>
+      <p style={{margin:"-4px 0 8px",fontSize:12,color:"var(--aa-muted)"}}>أي إلغاء من الأسرة قبل هذه المدة يُعامل كإلغاء متأخر ويُنشئ استحقاقًا حسب سياسة الفوترة.</p>
+      <label>خصوصية عرض أسماء الأطفال
+        <select value={form.leaderboardPrivacy} onChange={e=>setForm(v=>({...v,leaderboardPrivacy:e.target.value}))}>
+          <option value="first_name_initial">الاسم الأول + الحرف الأول من الاسم التالي</option>
+          <option value="first_name_only">الاسم الأول فقط</option>
+          <option value="hidden">طالب فقط</option>
+        </select>
+      </label>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:10}}>
+        <label>جائزة الأول<input type="number" min="0" max="100000" value={form.firstPlaceReward} onChange={e=>setForm(v=>({...v,firstPlaceReward:e.target.value}))}/></label>
+        <label>جائزة الثاني<input type="number" min="0" max="100000" value={form.secondPlaceReward} onChange={e=>setForm(v=>({...v,secondPlaceReward:e.target.value}))}/></label>
+        <label>جائزة الثالث<input type="number" min="0" max="100000" value={form.thirdPlaceReward} onChange={e=>setForm(v=>({...v,thirdPlaceReward:e.target.value}))}/></label>
+      </div>
+      <Button type="submit" disabled={busy} icon="shield">{busy?"جارٍ الحفظ...":"حفظ إعدادات مساحة المعلم"}</Button>
+    </form>
+  </Section>;
+}
+
 function TeacherSubscriptionPanel({subscription,standalone=false}){
   const statusLabels={PENDING_PLAN:"في انتظار اختيار الخطة",INCOMPLETE:"غير مكتمل",TRIALING:"فترة تجريبية",ACTIVE:"نشط",PAST_DUE:"متأخر السداد",CANCELLED:"ملغى",SUSPENDED:"موقوف",EXPIRED:"منتهٍ",MANUAL:"تفعيل يدوي"};
   const status=subscription?.status||"PENDING_PLAN";
@@ -44,7 +98,7 @@ function Dashboard({data}){
   return <>
     <Hero eyebrow="Teacher Workspace" title={data.workspace?.display_name||"مساحة المعلم"} description="الطلاب الآن مرتبطون بالمعلم عبر Enrollment مستقل، وليس ملكية مباشرة أو كود فصل." icon="teacher" tone="sky"/>
     <NotificationsPanel userId={data.workspace?.owner_teacher_user_id} title="تنبيهات الحصة والمتابعة" limit={6} mode="teacher"/>
-    <TeacherSubscriptionPanel subscription={data.subscription}/>
+    <TeacherSubscriptionPanel subscription={data.subscription}/>\n    <TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
 
     <div className="aa-teacher-layout">
       <Metric icon="users" label="طلاب مرتبطون" value={data.students.length} tone="mint"/>
