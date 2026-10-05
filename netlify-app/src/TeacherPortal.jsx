@@ -1,7 +1,7 @@
 import React,{useEffect,useMemo,useState} from "react";
 import {
   claimReward,createEnrollmentInvite,createTaskAssignment,dayKey,enrollmentInviteUrl,getCurrentUser,getProgress,
-  grantTeacherBonus,listPointLedger,updateTeacherSettings,updateTeacherWorkspace,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
+  grantTeacherBonus,listPointLedger,listSaasPlans,selectTeacherPlan,updateTeacherSettings,updateTeacherWorkspace,listTeacherTaskAssignments,listTeacherGameSessions,listTeacherGameEvents,listVisibleSessions,recordReview,rest,reversePointTransaction,reviewTaskAssignment,signOut,teacherEnrollmentOverview
 } from "./api.js";
 import {getSurah} from "./surahCatalog.js";
 import {TeacherBillingPanel,TeacherSchedulePanel} from "./TeacherOperations.jsx";
@@ -90,17 +90,41 @@ function TeacherSettingsPanel({data,reloadOverview}){
   </Section>;
 }
 
-function TeacherSubscriptionPanel({subscription,standalone=false}){
+function TeacherSubscriptionPanel({subscription,workspaceId,standalone=false}){
   const statusLabels={PENDING_PLAN:"في انتظار اختيار الخطة",INCOMPLETE:"غير مكتمل",TRIALING:"فترة تجريبية",ACTIVE:"نشط",PAST_DUE:"متأخر السداد",CANCELLED:"ملغى",SUSPENDED:"موقوف",EXPIRED:"منتهٍ",MANUAL:"تفعيل يدوي"};
   const status=subscription?.status||"PENDING_PLAN";
   const plan=subscription?.plan;
+  const [plans,setPlans]=useState([]),[planBusy,setPlanBusy]=useState(false),[planError,setPlanError]=useState("");
+  useEffect(()=>{let alive=true;(async()=>{try{const rows=await listSaasPlans();if(alive)setPlans(rows||[]);}catch(e){if(alive)setPlanError(e.message||"تعذر تحميل خطط الاشتراك.");}})();return()=>{alive=false;};},[]);
+  async function choose(planId){
+    if(!workspaceId||!planId)return;
+    setPlanBusy(true);setPlanError("");
+    try{
+      await selectTeacherPlan(workspaceId,planId);
+      window.dispatchEvent(new Event("abu-auth"));
+    }catch(e){setPlanError(e.message||"تعذر اختيار الخطة.")}
+    finally{setPlanBusy(false);}
+  }
   const end=subscription?.current_period_end;
   const date=end?formatDate(end):"لا يوجد موعد انتهاء مسجل";
-  const content=<div className="aa-card-grid">
-    <article className="aa-card aa-card-gold"><div className="aa-card-top"><span className="aa-card-icon"><Icon name="chart" size={28}/></span></div><h3>{plan?.name_ar||"لم تُحدد خطة بعد"}</h3><p>{plan?.description_ar||"حالة الاشتراك محفوظة الآن، بينما تفعيل الدفع الإلكتروني ينتظر ربط بوابة دفع معتمدة."}</p><strong>{statusLabels[status]||status}</strong></article>
-    <article className="aa-card aa-card-sky"><div className="aa-card-top"><span className="aa-card-icon"><Icon name="clock" size={28}/></span></div><h3>الفترة الحالية</h3><p>{end?"حتى "+date:"لا توجد فترة فوترة فعالة حاليًا."}</p><small>{subscription?.provider?"المزود: "+subscription.provider:"لم يتم ربط مزود دفع بعد."}</small></article>
-  </div>;
-  if(standalone)return <><Button kind="ghost" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button><Hero eyebrow="SaaS Subscription" title="اشتراك المنصة" description="تظهر هنا حالة الاشتراك والخطة الحالية. الدفع الإلكتروني سيُفعل بعد ربط بوابة معتمدة." icon="chart" tone="gold"/>{content}</>;
+  const canChoose=!subscription||["PENDING_PLAN","INCOMPLETE","CANCELLED","EXPIRED","SUSPENDED"].includes(status);
+  const content=<>
+    <div className="aa-card-grid">
+      <article className="aa-card aa-card-gold"><div className="aa-card-top"><span className="aa-card-icon"><Icon name="chart" size={28}/></span></div><h3>{plan?.name_ar||"لم تُحدد خطة بعد"}</h3><p>{plan?.description_ar||"اختر خطة أولًا. التفعيل الفعلي للاشتراك سيحدث بعد ربط بوابة الدفع."}</p><strong>{statusLabels[status]||status}</strong></article>
+      <article className="aa-card aa-card-sky"><div className="aa-card-top"><span className="aa-card-icon"><Icon name="clock" size={28}/></span></div><h3>الفترة الحالية</h3><p>{end?"حتى "+date:"لا توجد فترة فوترة فعالة حاليًا."}</p><small>{subscription?.provider?"المزود: "+subscription.provider:"لم يتم ربط مزود دفع بعد."}</small></article>
+    </div>
+    {planError&&<div className="msg error">{planError}</div>}
+    {canChoose&&<div className="aa-card-grid" style={{marginTop:16}}>
+      {plans.length?plans.map(item=><article className={`aa-card ${item.id===plan?.id?"aa-card-gold":"aa-card-sky"}`} key={item.id}>
+        <div className="aa-card-top"><span className="aa-card-icon"><Icon name="star" size={25}/></span></div>
+        <h3>{item.name_ar}</h3>
+        <p>{item.description_ar||"خطة اشتراك للمعلم."}</p>
+        <small>{item.monthly_price} {item.currency} / شهر{item.yearly_price!=null?" • "+item.yearly_price+" "+item.currency+" / سنة":""}</small>
+        <div style={{marginTop:10}}><Button kind={item.id===plan?.id?"soft":"secondary"} onClick={()=>choose(item.id)} disabled={planBusy}>{item.id===plan?.id?"الخطة الحالية":"اختيار الخطة"}</Button></div>
+      </article>):<Empty icon="chart" title="لا توجد خطط متاحة" text="اطلب من إدارة المنصة إضافة خطة قبل بدء الاشتراك."/>}
+    </div>}
+  </>;
+  if(standalone)return <><Button kind="ghost" icon="arrow" onClick={()=>go("/teacher")}>العودة للوحة المعلم</Button><Hero eyebrow="SaaS Subscription" title="اشتراك المنصة" description="اختر الخطة المناسبة أولًا. لا يُعد ذلك تفعيلًا مدفوعًا حتى تمر العملية عبر بوابة الدفع." icon="chart" tone="gold"/>{content}</>;
   return <Section eyebrow="SaaS Subscription" title="اشتراك المنصة" action={<Button kind="secondary" onClick={()=>go("/teacher/subscription")}>التفاصيل</Button>}>{content}</Section>;
 }
 
@@ -118,7 +142,7 @@ function Dashboard({data,reloadOverview}){
   return <>
     <Hero eyebrow="Teacher Workspace" title={data.workspace?.display_name||"مساحة المعلم"} description="الطلاب الآن مرتبطون بالمعلم عبر Enrollment مستقل، وليس ملكية مباشرة أو كود فصل." icon="teacher" tone="sky"/>
     <NotificationsPanel userId={data.workspace?.owner_teacher_user_id} title="تنبيهات الحصة والمتابعة" limit={6} mode="teacher"/>
-    <TeacherSubscriptionPanel subscription={data.subscription}/><TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
+    <TeacherSubscriptionPanel subscription={data.subscription} workspaceId={data.workspace?.id}/><TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
 
     <div className="aa-teacher-layout">
       <Metric icon="users" label="طلاب مرتبطون" value={data.students.length} tone="mint"/>
@@ -469,7 +493,7 @@ export default function TeacherPortal(){
     else if(path==="/teacher/tasks")page=<Tasks data={data}/>;
     else if(path==="/teacher/schedule")page=<TeacherSchedulePanel data={data}/>;
     else if(path==="/teacher/billing")page=<TeacherBillingPanel data={data}/>;
-    else if(path==="/teacher/subscription")page=<TeacherSubscriptionPanel subscription={data.subscription} standalone/>;
+    else if(path==="/teacher/subscription")page=<TeacherSubscriptionPanel subscription={data.subscription} workspaceId={data.workspace?.id} standalone/>;
     else if(path==="/teacher/leaderboard")page=<TeacherLeaderboardPanel data={data}/>;
     else if(match)page=<StudentDetail user={user} data={data} studentId={match[1]} reloadOverview={reload}/>;
     else page=<Empty icon="target" title="الصفحة غير موجودة" action={<Button onClick={()=>go("/teacher")}>لوحة المعلم</Button>}/>;
