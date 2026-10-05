@@ -250,6 +250,60 @@ begin
 end;
 $$;
 
+
+create or replace function public.set_teacher_subscription_manual(
+  p_workspace_id uuid,
+  p_plan_id uuid,
+  p_current_period_end timestamptz default null,
+  p_reason text
+)
+returns public.teacher_subscriptions
+language plpgsql
+security definer
+set search_path=public
+as $
+declare
+  v_sub public.teacher_subscriptions;
+  v_plan public.saas_plans;
+begin
+  if auth.uid() is null or not public.is_platform_admin() then
+    raise exception 'admin_required' using errcode='42501';
+  end if;
+  if char_length(trim(coalesce(p_reason,'')))<3 then
+    raise exception 'manual_activation_reason_required';
+  end if;
+  if not exists(select 1 from public.teacher_workspaces where id=p_workspace_id) then
+    raise exception 'workspace_not_found';
+  end if;
+  select * into v_plan from public.saas_plans where id=p_plan_id;
+  if v_plan.id is null then raise exception 'plan_not_found'; end if;
+
+  insert into public.teacher_subscriptions(
+    workspace_id,plan_id,status,provider,current_period_start,current_period_end,
+    cancel_at_period_end,grace_until,metadata
+  ) values(
+    p_workspace_id,p_plan_id,'MANUAL','manual',now(),p_current_period_end,
+    false,null,jsonb_build_object('manual_reason',trim(p_reason))
+  )
+  on conflict(workspace_id) do update
+    set plan_id=excluded.plan_id,
+        status='MANUAL',
+        provider='manual',
+        current_period_start=now(),
+        current_period_end=excluded.current_period_end,
+        cancel_at_period_end=false,
+        grace_until=null,
+        metadata=excluded.metadata,
+        updated_at=now()
+  returning * into v_sub;
+
+  insert into public.audit_logs(actor_user_id,action,entity_type,entity_id,after_state,reason)
+  values(auth.uid(),'TEACHER_SUBSCRIPTION_MANUAL_ACTIVATED','teacher_subscription',v_sub.id,to_jsonb(v_sub),trim(p_reason));
+
+  return v_sub;
+end;
+$;
+
 revoke all on public.saas_plans from anon,authenticated;
 revoke all on public.teacher_subscriptions from anon,authenticated;
 revoke all on public.teacher_subscription_events from anon,authenticated;
@@ -293,7 +347,9 @@ with check (false);
 
 revoke execute on function public.ensure_teacher_subscription() from public,anon,authenticated;
 revoke execute on function public.upsert_saas_plan(uuid,text,text,text,text,numeric,numeric,boolean,integer,jsonb,jsonb) from public,anon;
+revoke execute on function public.set_teacher_subscription_manual(uuid,uuid,timestamptz,text) from public,anon;
 revoke execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,uuid,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) from public,anon,authenticated;
 
 grant execute on function public.upsert_saas_plan(uuid,text,text,text,text,numeric,numeric,boolean,integer,jsonb,jsonb) to authenticated;
+grant execute on function public.set_teacher_subscription_manual(uuid,uuid,timestamptz,text) to authenticated;
 grant execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,uuid,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) to service_role;
