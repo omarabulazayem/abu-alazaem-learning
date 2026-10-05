@@ -277,14 +277,10 @@ export async function updateTeacherWorkspace(workspaceId,input) {
   if (!workspaceId) throw new Error("مساحة المعلم غير محددة.");
   const displayName=String(input?.displayName||"").trim();
   const timezone=String(input?.timezone||"").trim();
-  if (displayName.length<2) throw new Error("اسم مساحة المعلم قصير جدًا.");
-  if (!timezone) throw new Error("اختر المنطقة الزمنية.");
-  const rows=await rest("/teacher_workspaces?id=eq."+encodeURIComponent(workspaceId),{
-    method:"PATCH",
-    headers:{Prefer:"return=representation"},
-    body:JSON.stringify({display_name:displayName,timezone}),
+  const result=await rpc("update_teacher_workspace_settings",{
+    p_workspace_id:workspaceId,p_display_name:displayName,p_timezone:timezone
   });
-  return rows?.[0]||null;
+  return Array.isArray(result)?result[0]:result;
 }
 
 export async function getTeacherSettings(workspaceId) {
