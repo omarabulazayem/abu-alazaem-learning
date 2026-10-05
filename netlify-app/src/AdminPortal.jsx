@@ -1,20 +1,21 @@
 import React,{useEffect,useMemo,useState} from "react";
-import {getCurrentUser,listSaasPlans,signOut,upsertSaasPlan} from "./api.js";
+import {getCurrentUser,listSaasPlans,listTeacherSubscriptions,setTeacherSubscriptionManual,signOut,upsertSaasPlan} from "./api.js";
 import {AppShell,Button,Empty,Hero,Section,go} from "./ui-v4.jsx";
 import Icon from "./Icon.jsx";
 
 const emptyForm={id:"",code:"",nameAr:"",descriptionAr:"",currency:"EGP",monthlyPrice:"",yearlyPrice:"",active:true,sortOrder:0};
+const manualEmpty={workspaceId:"",planId:"",endAt:"",reason:""};
 
 function Loading(){return <div className="center"><i className="spinner"/><p>جارٍ تجهيز إدارة المنصة...</p></div>;}
 function ErrorBox({text}){return text?<div className="msg error">{text}</div>:null;}
 function money(value,currency){return new Intl.NumberFormat("ar-EG",{maximumFractionDigits:2}).format(Number(value||0))+" "+(currency||"EGP");}
 
 export default function AdminPortal(){
-  const [user,setUser]=useState(undefined),[plans,setPlans]=useState([]),[form,setForm]=useState(emptyForm),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[message,setMessage]=useState(""),[error,setError]=useState("");
+  const [user,setUser]=useState(undefined),[plans,setPlans]=useState([]),[subscriptions,setSubscriptions]=useState([]),[form,setForm]=useState(emptyForm),[manual,setManual]=useState(manualEmpty),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[message,setMessage]=useState(""),[error,setError]=useState("");
 
   async function load(){
     setLoading(true);
-    try{setPlans(await listSaasPlans(true));setError("");}
+    try{const [planRows,subscriptionRows]=await Promise.all([listSaasPlans(true),listTeacherSubscriptions()]);setPlans(planRows||[]);setSubscriptions(subscriptionRows||[]);setError("");}
     catch(e){setError(e.message||"تعذر تحميل خطط الاشتراك.");}
     finally{setLoading(false);}
   }
@@ -45,6 +46,16 @@ export default function AdminPortal(){
       setForm(emptyForm);
       await load();
     }catch(e){setError(e.message||"تعذر حفظ الخطة.");}
+    finally{setBusy(false);}
+  }
+  async function activateManual(e){
+    e.preventDefault();
+    if(!manual.workspaceId||!manual.planId||!manual.reason.trim()){setError("اختر المعلم والخطة واكتب سبب التفعيل اليدوي.");return;}
+    setBusy(true);setMessage("");setError("");
+    try{
+      await setTeacherSubscriptionManual(manual.workspaceId,manual.planId,manual.endAt?new Date(manual.endAt).toISOString():null,manual.reason);
+      setManual(manualEmpty);setMessage("تم تسجيل التفعيل اليدوي مع سبب واضح في سجل التدقيق.");await load();
+    }catch(e){setError(e.message||"تعذر تسجيل التفعيل اليدوي.");}
     finally{setBusy(false);}
   }
   async function logout(){await signOut();go("/");}
@@ -78,6 +89,29 @@ export default function AdminPortal(){
             {plan.description_ar&&<p style={{fontSize:12,margin:"8px 0",color:"var(--aa-muted)"}}>{plan.description_ar}</p>}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}><strong>{plan.active?"متاحة":"موقوفة"}</strong><Button kind="secondary" onClick={()=>edit(plan)}>تعديل</Button></div>
           </article>)}</div>:<Empty icon="chart" title="لم تُنشأ خطط بعد" text="أنشئ أول خطة من النموذج لتصبح جاهزة للربط ببوابة الدفع."/>}
+        </Section>
+        <Section eyebrow="Teacher subscriptions" title={subscriptions.length+" اشتراكات مسجلة"}>
+          {subscriptions.length?<div className="aa-table-list">{subscriptions.map(row=><article className="aa-table-row" key={row.id}>
+            <span><Icon name={row.status==="ACTIVE"||row.status==="MANUAL"?"circleCheck":"chart"} size={21}/></span>
+            <div><b>{row.workspace?.display_name||"مساحة معلم"}</b><small>{row.plan?.name_ar||"بدون خطة"} • الحالة: {row.status} • آخر تحديث: {money(0,"")}<span style={{marginInlineStart:6}}>{new Intl.DateTimeFormat("ar-EG",{dateStyle:"medium"}).format(new Date(row.updated_at))}</span></small></div>
+            <strong>{row.provider||"—"}</strong>
+            <Button kind="ghost" onClick={()=>setManual({workspaceId:row.workspace_id,planId:row.plan_id||plans.find(p=>p.active)?.id||"",endAt:row.current_period_end?new Date(row.current_period_end).toISOString().slice(0,16):"",reason:""})}>تفعيل يدوي</Button>
+          </article>)}</div>:<Empty icon="teacher" title="لا توجد اشتراكات مسجلة بعد"/>}
+        </Section>
+        <Section eyebrow="Exceptional support" title="تفعيل يدوي لمعلم" description="هذا مسار استثنائي للدعم أو العقود الخاصة، وليس بديلًا عن الدفع الإلكتروني." className="aa-form-card">
+          <form className="aa-form" onSubmit={activateManual}>
+            <label>مساحة المعلم<select value={manual.workspaceId} onChange={e=>setManual(v=>({...v,workspaceId:e.target.value}))} required>
+              <option value="">اختر المعلم</option>
+              {subscriptions.map(row=><option key={row.workspace_id} value={row.workspace_id}>{row.workspace?.display_name||row.workspace_id}</option>)}
+            </select></label>
+            <label>الخطة<select value={manual.planId} onChange={e=>setManual(v=>({...v,planId:e.target.value}))} required>
+              <option value="">اختر الخطة</option>
+              {plans.map(plan=><option key={plan.id} value={plan.id}>{plan.name_ar} • {money(plan.monthly_price,plan.currency)}/شهر</option>)}
+            </select></label>
+            <label>نهاية الفترة (اختياري)<input type="datetime-local" value={manual.endAt} onChange={e=>setManual(v=>({...v,endAt:e.target.value}))}/></label>
+            <label>سبب التفعيل<textarea rows="2" maxLength="300" value={manual.reason} onChange={e=>setManual(v=>({...v,reason:e.target.value}))} required placeholder="مثال: عقد خاص أو تفعيل دعم استثنائي"/></label>
+            <Button type="submit" disabled={busy} icon="circleCheck">حفظ التفعيل اليدوي</Button>
+          </form>
         </Section>
         <Section eyebrow="Payment gateway" title="عقد الربط جاهز" description="أحداث الاشتراك تحفظ provider/event identity وتمنع تكرار معالجة Webhook نفسه. لا يتم تفعيل أو إيقاف اشتراك حقيقي من هذه الصفحة قبل ربط مزود دفع.">
           <div className="aa-card-grid"><article className="aa-card aa-card-sky"><h3>Provider-neutral</h3><p>يمكن إضافة بوابة محلية أو عالمية دون تغيير نموذج الاشتراك أو لوحة المعلم.</p></article><article className="aa-card aa-card-mint"><h3>Webhook-safe</h3><p>كل حدث خارجي له معرف فريد، وسجل أحداث مستقل، وتحديث اشتراك قابل للتتبع.</p></article></div>
