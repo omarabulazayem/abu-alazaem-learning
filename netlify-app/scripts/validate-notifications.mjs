@@ -59,9 +59,14 @@ const checks=[
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
 
-const malformedDollarQuotes=(migration.match(/as \\$(?!\\$)|\\n\\$(?!\\$);/g)||[]);
-if(malformedDollarQuotes.length){
+const malformedDollarQuotes=[...migration.matchAll(/as \\$(?!\\$)|\\n\\$(?!\\$);/g),...reminderMigration.matchAll(/as \\$(?!\\$)|\\n\\$(?!\\$);/g)];
+const malformedTaggedQuotes=[...migration.matchAll(/as \\$\\$\\$/g),...migration.matchAll(/\\$\\$\\$;/g),...reminderMigration.matchAll(/as \\$\\$\\$/g),...reminderMigration.matchAll(/\\$\\$\\$;/g)];
+if(malformedDollarQuotes.length||malformedTaggedQuotes.length){
   console.error("Notifications SQL validation failed: malformed dollar quoting.");
+  process.exit(1);
+}
+if(!reminderMigration.includes("pg_advisory_xact_lock")){
+  console.error("Notifications SQL validation failed: reminder creation must be serialized per parent/session.");
   process.exit(1);
 }
 
