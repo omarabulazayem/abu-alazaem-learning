@@ -389,8 +389,6 @@ revoke execute on function public.notify_session_changed() from public,anon,auth
 revoke execute on function public.notify_point_ledger_insert() from public,anon,authenticated;
 revoke execute on function public.notify_enrollment_created() from public,anon,authenticated;
 revoke execute on function public.notify_billing_changed() from public,anon,authenticated;
-revoke execute on function public.notify_leaderboard_snapshot_created() from public,anon,authenticated;
-
 create or replace function public.notify_leaderboard_snapshot_created()
 returns trigger
 language plpgsql
