@@ -43,6 +43,12 @@ const checks=[
   [portal,"<NotificationsPanel userId=","teacher notification UI"],
 ];
 
+const malformedDollarQuotes=(migration.match(/as \\$(?!\\$)|\\n\\$(?!\\$);/g)||[]);
+if(malformedDollarQuotes.length){
+  console.error("Notifications SQL validation failed: malformed dollar quoting.");
+  process.exit(1);
+}
+
 const failed=checks.filter(([source,needle])=>!source.includes(needle)).map(([,needle,label])=>label+":"+needle);
 if(failed.length){
   console.error("Notifications validation failed.");
