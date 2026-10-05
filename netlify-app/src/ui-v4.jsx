@@ -80,8 +80,10 @@ function NotificationBell({mode}){
     load();
     const timer=setInterval(load,30000);
     const onAuth=()=>load();
+    const onNotifications=()=>load();
     window.addEventListener("abu-auth",onAuth);
-    return()=>{clearInterval(timer);window.removeEventListener("abu-auth",onAuth);};
+    window.addEventListener("abu-notifications",onNotifications);
+    return()=>{clearInterval(timer);window.removeEventListener("abu-auth",onAuth);window.removeEventListener("abu-notifications",onNotifications);};
   },[]);
   return <button className="aa-notification-bell" type="button" aria-label={unread ? "التنبيهات • "+unread+" جديدة" : "التنبيهات"} onClick={()=>go(target)}>
     <Icon name="mail" size={20}/>
