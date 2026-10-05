@@ -168,6 +168,7 @@ create or replace function public.apply_teacher_subscription_event(
   p_provider_event_id text,
   p_event_type text,
   p_status text,
+  p_plan_id uuid default null,
   p_provider_customer_id text default null,
   p_provider_subscription_id text default null,
   p_current_period_start timestamptz default null,
@@ -198,6 +199,9 @@ begin
   if p_status is not null and p_status not in ('PENDING_PLAN','INCOMPLETE','TRIALING','ACTIVE','PAST_DUE','CANCELLED','SUSPENDED','EXPIRED','MANUAL') then
     raise exception 'invalid_subscription_status';
   end if;
+  if p_plan_id is not null and not exists(select 1 from public.saas_plans where id=p_plan_id) then
+    raise exception 'plan_not_found';
+  end if;
 
   insert into public.teacher_subscription_events(
     workspace_id,provider,provider_event_id,event_type,status,provider_customer_id,provider_subscription_id,payload
@@ -214,15 +218,16 @@ begin
   end if;
 
   insert into public.teacher_subscriptions(
-    workspace_id,status,provider,provider_customer_id,provider_subscription_id,
+    workspace_id,plan_id,status,provider,provider_customer_id,provider_subscription_id,
     current_period_start,current_period_end,cancel_at_period_end,grace_until,metadata
   ) values(
-    p_workspace_id,coalesce(p_status,'INCOMPLETE'),trim(p_provider),
+    p_workspace_id,p_plan_id,coalesce(p_status,'INCOMPLETE'),trim(p_provider),
     nullif(trim(p_provider_customer_id),''),nullif(trim(p_provider_subscription_id),''),
     p_current_period_start,p_current_period_end,coalesce(p_cancel_at_period_end,false),p_grace_until,coalesce(p_payload,'{}'::jsonb)
   )
   on conflict(workspace_id) do update
-    set status=coalesce(excluded.status,public.teacher_subscriptions.status),
+    set plan_id=coalesce(excluded.plan_id,public.teacher_subscriptions.plan_id),
+        status=coalesce(excluded.status,public.teacher_subscriptions.status),
         provider=coalesce(excluded.provider,public.teacher_subscriptions.provider),
         provider_customer_id=coalesce(excluded.provider_customer_id,public.teacher_subscriptions.provider_customer_id),
         provider_subscription_id=coalesce(excluded.provider_subscription_id,public.teacher_subscriptions.provider_subscription_id),
@@ -288,7 +293,7 @@ with check (false);
 
 revoke execute on function public.ensure_teacher_subscription() from public,anon,authenticated;
 revoke execute on function public.upsert_saas_plan(uuid,text,text,text,text,numeric,numeric,boolean,integer,jsonb,jsonb) from public,anon;
-revoke execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) from public,anon,authenticated;
+revoke execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,uuid,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) from public,anon,authenticated;
 
 grant execute on function public.upsert_saas_plan(uuid,text,text,text,text,numeric,numeric,boolean,integer,jsonb,jsonb) to authenticated;
-grant execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) to service_role;
+grant execute on function public.apply_teacher_subscription_event(uuid,text,text,text,text,uuid,text,text,timestamptz,timestamptz,boolean,timestamptz,jsonb) to service_role;
