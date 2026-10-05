@@ -92,13 +92,13 @@ function StudentRow({student}){
   </button>;
 }
 
-function Dashboard({data}){
+function Dashboard({data,reloadOverview}){
   const recent=[...data.students].sort((a,b)=>new Date(b.lastActivityAt||0)-new Date(a.lastActivityAt||0)).slice(0,5);
   const pending=data.invites.filter(i=>i.status==="pending").length;
   return <>
     <Hero eyebrow="Teacher Workspace" title={data.workspace?.display_name||"مساحة المعلم"} description="الطلاب الآن مرتبطون بالمعلم عبر Enrollment مستقل، وليس ملكية مباشرة أو كود فصل." icon="teacher" tone="sky"/>
     <NotificationsPanel userId={data.workspace?.owner_teacher_user_id} title="تنبيهات الحصة والمتابعة" limit={6} mode="teacher"/>
-    <TeacherSubscriptionPanel subscription={data.subscription}/>\n    <TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
+    <TeacherSubscriptionPanel subscription={data.subscription}/><TeacherSettingsPanel data={data} reloadOverview={reloadOverview}/>
 
     <div className="aa-teacher-layout">
       <Metric icon="users" label="طلاب مرتبطون" value={data.students.length} tone="mint"/>
@@ -443,7 +443,7 @@ export default function TeacherPortal(){
   if(loading&&!data.workspace)page=<Loading/>;
   else{
     const match=path.match(/^\/teacher\/student\/([0-9a-f-]+)$/i);
-    if(path==="/teacher"||path==="/teacher/")page=<Dashboard data={data}/>;
+    if(path==="/teacher"||path==="/teacher/")page=<Dashboard data={data} reloadOverview={reload}/>;
     else if(path==="/teacher/invites"||path==="/teacher/classes")page=<Invites data={data} reload={reload}/>;
     else if(path==="/teacher/students")page=<Students data={data}/>;
     else if(path==="/teacher/tasks")page=<Tasks data={data}/>;
