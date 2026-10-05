@@ -31,6 +31,7 @@ import TeacherLearningPreview from "./TeacherLearningPreview.jsx";
 import TeacherQuranPreview from "./TeacherQuranPreview.jsx";
 import WhiteboardPage from "./WhiteboardPage.jsx";
 import WhiteboardJoinPage from "./WhiteboardJoinPage.jsx";
+import AdminPortal from "./AdminPortal.jsx";
 import {getCurrentUser} from "./api.js";
 import {isTeacherRestrictedRoute} from "./accessPolicy.js";
 
@@ -50,8 +51,9 @@ function useChildMode(){const [active,setActive]=useState(()=>isChildModeActive(
 function useAccountType(){const [role,setRole]=useState(undefined);useEffect(()=>{let alive=true;const sync=async()=>{try{const user=await getCurrentUser();if(alive)setRole(user?.accountType||null);}catch{if(alive)setRole(null);}};sync();window.addEventListener("abu-auth",sync);return()=>{alive=false;window.removeEventListener("abu-auth",sync);};},[]);return role;}
 
 export default function RootRouter(){
-  const route=usePath(),path=route.split("?")[0],childMode=useChildMode(),accountType=useAccountType(),teacher=accountType==="teacher",teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
+  const route=usePath(),path=route.split("?")[0],childMode=useChildMode(),accountType=useAccountType(),teacher=accountType==="teacher",admin=accountType==="admin",teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
   useEffect(()=>{if(teacherRestricted)navigate("/teacher",true);},[teacherRestricted]);
+  if((path==="/admin"||path.startsWith("/admin/"))&&admin)return <AdminPortal/>;
   if(path==="/teacher/game-reports")return <TeacherGameReports/>;
   if(path==="/teacher/whiteboard"&&teacher)return <WhiteboardPage/>;
   if(path==="/whiteboard/join"&&!teacher)return <WhiteboardJoinPage/>;
