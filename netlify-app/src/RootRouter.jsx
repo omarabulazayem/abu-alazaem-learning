@@ -52,7 +52,7 @@ function useAccountType(){const [role,setRole]=useState(undefined);useEffect(()=
 
 export default function RootRouter(){
   const route=usePath(),path=route.split("?")[0],childMode=useChildMode(),accountType=useAccountType(),teacher=accountType==="teacher",admin=accountType==="admin",teacherRestricted=teacher&&isTeacherRestrictedRoute(path);
-  useEffect(()=>{if(teacherRestricted)navigate("/teacher",true);},[teacherRestricted]);
+  useEffect(()=>{if(admin&&!path.startsWith("/admin"))navigate("/admin",true);else if(teacherRestricted)navigate("/teacher",true);},[admin,path,teacherRestricted]);
   if((path==="/admin"||path.startsWith("/admin/"))&&admin)return <AdminPortal/>;
   if(path==="/teacher/game-reports")return <TeacherGameReports/>;
   if(path==="/teacher/whiteboard"&&teacher)return <WhiteboardPage/>;
